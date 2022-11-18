@@ -2,5 +2,5 @@
 # todo: import simulation parameters from file
 
 # Run test case that only includes a blood flow model
-import testcases.testcase_blood_flow_model
+import testcases.testcase_robert_neu
 
