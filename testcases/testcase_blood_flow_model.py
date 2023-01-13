@@ -21,7 +21,7 @@ PARAMETERS = MappingProxyType(
                                    # 2: import graph from csv files
                                    # 3: todo import graph from igraph files
                                    # 4: todo import graph from edge_data and vertex_data pickle files
-        "write_network_option": 2,  # 1: do not write anything
+        "write_network_option": 1,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
                                     # 3-...: todo other file formats.
         "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
@@ -58,7 +58,7 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "data/network/b6_B_pre_061_simulated.pkl"  # only required for "write_network_option" 1
+        "write_path_igraph": "data/network/b6_B_pre_061_simulated.pkl"  # only required for "write_network_option" 2
     }
 )
 
