@@ -3,9 +3,7 @@ from source.inverse_model import InverseModel
 from types import MappingProxyType
 import source.setup.setup as setup
 # todo: in setup class
-import source.inverseproblemmethods.parameter_space as parameter_space
-import source.fileio.read_target_values as read_target_values
-import source.fileio.read_parameters as read_parameters
+
 
 
 # todo: read dict from file; need a good way to import from human readable file.
@@ -54,25 +52,33 @@ PARAMETERS = MappingProxyType(
         "write_override_initial_graph": False,
         "write_path_igraph": "data/network/b6_B_pre_061_simulated.pkl", # only required for "write_network_option" 2
         # Inverse problem options
+        # Define parameter space
+        "parameter_space": 1,  # 1: Relative diameter to baseline (alpha = d/d_base)
+                               # todo 2, 3, ...
+        "parameter_restriction": 2,  # 1: No restriction of parameter values (alpha_prime = alpha)
+                                     # 2: Restriction of parameter by a +/- tolerance to baseline
+        "inverse_model_solver": 1,  # Direct solver
         # Target edges
         "csv_path_edge_target_data": "data/inverse_model/edge_target.csv",
         # Parameter edges # todo: also vertex parameters, distinguish
-        "csv_path_edge_parameterspace": "data/inverse_model/edge_parameters.csv"
+        "csv_path_edge_parameterspace": "data/inverse_model/edge_parameters.csv",
+        # Gradient descent options:
+        "gamma": .5,
+        "phi": .5
     }
 )
 
-setup_blood_flow = setup.SetupBloodFlowSimulation()
+setup_simulation = setup.SetupSimulation()
 
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver = setup_blood_flow.setup_simulation(PARAMETERS)
+    imp_solver = setup_simulation.setup_simulation(PARAMETERS)
 
-imp_parameterspace = parameter_space.ParameterSpaceRelativeDiameter(PARAMETERS)
-imp_readtargetvalues = read_target_values.ReadTargetValuesEdge(PARAMETERS)
-imp_readparameters = read_parameters.ReadParametersEdges(PARAMETERS)
+imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter, imp_adjoint_solver, \
+    imp_alpha_mapping = setup_simulation.setup_inverse_model(PARAMETERS)
 
-# build flownetwork object
+# build flownetwork and  object
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem, imp_solver, imp_velocity, PARAMETERS)
-inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_parameterspace, PARAMETERS)
+inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter, imp_adjoint_solver, imp_alpha_mapping, PARAMETERS)
 
 print("Read network: ...")
 flow_network.read_network()
@@ -88,15 +94,13 @@ print("Update flow, pressure and velocity: DONE")
 
 flow_network.write_network()
 
-# print(inverse_model.edge_constraint_value)
 inverse_model.initialise_inverse_model()
-# print(inverse_model.edge_constraint_value)
-# print(inverse_model.edge_constraint_type)
-# print(inverse_model.edge_constraint_eid)
-# print(inverse_model.edge_constraint_range_pm)
-# print(inverse_model.edge_constraint_sigma)
-#
-# print(inverse_model.edge_param_eid)
-# print(inverse_model.edge_param_pm_range)
 
-imp_parameterspace.get_df_dalpha(inverse_model, flow_network)
+for i in range(100):
+    inverse_model.update_state()
+    flow_network.update_transmissibility()
+    flow_network.update_blood_flow()
+
+print(flow_network.flow_rate[inverse_model.edge_constraint_eid])
+print(flow_network.rbc_velocity[inverse_model.edge_constraint_eid])
+print(inverse_model.alpha)

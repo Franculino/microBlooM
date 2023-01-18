@@ -1,6 +1,8 @@
 from types import MappingProxyType
 import source.flow_network as flow_network
-import source.inverseproblemmethods.parameter_space as parameter_space
+import source.inverseproblemmodules.adjoint_method_parameters as adj_method_parameters
+import source.inverseproblemmodules.adjoint_method_solver as adj_method_solver
+import source.inverseproblemmodules.alpha_mapping as alpha_mapping
 import source.fileio.read_target_values as read_target_values
 import source.fileio.read_parameters as read_parameters
 
@@ -9,7 +11,9 @@ class InverseModel(object):
     # todo docstring and explain all attributes
     def __init__(self, flownetwork: flow_network.FlowNetwork, imp_readtargetvalues: read_target_values.ReadTargetValues,
                  imp_readparameters: read_parameters.ReadParameters,
-                 imp_parameterspace: parameter_space.ParameterSpace, PARAMETERS: MappingProxyType):
+                 imp_adjointmethodparameters: adj_method_parameters.AdjointMethodParameters,
+                 imp_adjointmethodsolver: adj_method_solver.AdjointMethodSolver,
+                 imp_alphamapping: alpha_mapping.AlphaMapping, PARAMETERS: MappingProxyType):
         # "Reference" to flow network
         self._flow_network = flownetwork
 
@@ -35,6 +39,9 @@ class InverseModel(object):
         self.vertex_param_pm_range = None
         self.nr_of_vertex_parameters = None
 
+        # Total parameters
+        self.nr_of_parameters = None
+
         # Parameter edge attributes
         self.alpha = None
         self.alpha_prime = None
@@ -50,32 +57,43 @@ class InverseModel(object):
         self.gamma = None
         self.phi = None
 
+        # Adjoint method vectors and matrices
+        self.d_f_d_alpha = None  # Vector
+        self.d_f_d_pressure = None  # Vector
+        self.d_g_d_alpha = None  # coo_matrix
+
+        # Gradient
+        self.gradient_alpha = None
+        self.gradient_alpha_prime = None
+
         # "References" to implementations
-        self._imp_parameterspace = imp_parameterspace
+        self._imp_adjointmethodparameters = imp_adjointmethodparameters
         self._imp_readtargetvalues = imp_readtargetvalues
         self._imp_readparameters = imp_readparameters
+        self._imp_adjointmethodsolver = imp_adjointmethodsolver
+        self._imp_alphamapping = imp_alphamapping
 
     def initialise_inverse_model(self):
-        # todo implementation
+        # todo comments
         self._imp_readtargetvalues.read(self)
-        self._imp_readparameters.read(self)
-        self._imp_parameterspace.initialise_parameters(self, self._flow_network)
+        self._imp_readparameters.read(self, self._flow_network)
+        self._imp_adjointmethodparameters.initialise_parameters(self, self._flow_network)
+        self.gamma = self._PARAMETERS["gamma"]
+        self.phi = self._PARAMETERS["phi"]
 
+    def update_state(self):
+        # todo comments
 
-    def update_parameter(self):
-        # todo implementation
-        # this is a construction site
-        # update current cost function value (Class CostFunction)
-        # get df/dT, df/dp (Class CostFunction)
-        # get dg/dp and dg/dT (new class?)
-        # get dT/d_alpha (Class ParameterSpace)
-        # get d_alpha/d_alpha_prime (class AlphaMapping)
-        # get gradient f (later maybe separate class?)
-        # apply optimiser for alpha_prime and alpha (later: separate class, allow for Gauss-Newton also)
-        # update d, T (Class ParameterSpace)
-        pass
-
-
-
-
-
+        # Update all partial derivatives needed to solve the adjoint method
+        self._imp_adjointmethodparameters.update_partial_derivatives(self, self._flow_network)
+        # Update gradient d f / d alpha by solving the adjoint method
+        self._imp_adjointmethodsolver.update_gradient_alpha(self, self._flow_network)
+        # Update gradient d f / f alpha_prime (mapping between parameter and pseudo parameter)
+        self._imp_alphamapping.update_gradient_alpha_prime(self)
+        # Update alpha_prime by using gradient descent with constant learning rate.
+        # Todo: different algorithms, e.g. with adaptive gamma or Adams algorithm
+        self.alpha_prime -= self.gamma * self.gradient_alpha_prime
+        # Transform pseudo parameter alpha_prime back to alpha space
+        self._imp_alphamapping.update_alpha_from_alpha_prime(self)
+        # Update the system state depending on the parameter (e.g. diameter, transmissibility, boundary pressures)
+        self._imp_adjointmethodparameters.update_state(self, self._flow_network)

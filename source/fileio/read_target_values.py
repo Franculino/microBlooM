@@ -58,3 +58,5 @@ class ReadTargetValuesEdge(ReadTargetValues):
         inversemodel.edge_constraint_sigma = df_target_data["edge_tar_sigma"].to_numpy().astype(np.double)
 
         inversemodel.nr_of_edge_constraints = np.size(inversemodel.edge_constraint_eid)
+
+        # todo: check if max edge id is smaller than number of edges

@@ -18,7 +18,7 @@ class ReadParameters(ABC):
         self._PARAMETERS = PARAMETERS
 
     @abstractmethod
-    def read(self, inversemodel):
+    def read(self, inversemodel, flownetwork):
         """
         Read parameter space
         :param inversemodel: inverse model object
@@ -31,7 +31,7 @@ class ReadParametersEdges(ReadParameters):
     Class for importing the parameter space related to edges
     """
 
-    def read(self, inversemodel):
+    def read(self, inversemodel, flownetwork):
         """
         Import target values and types for edges
         :param inversemodel: inverse model object
@@ -44,13 +44,21 @@ class ReadParametersEdges(ReadParameters):
         # Read files with pandas, sort and check for duplicates
         df_parameter_space = pd.read_csv(path_edge_parameterspace)
 
-        df_parameter_space = df_parameter_space.sort_values('edge_param_eid')  # sort according to ascending eids
-        if True in df_parameter_space.duplicated(subset=['edge_param_eid']).to_numpy():  # check for duplicate eids
-            sys.exit("Error: Duplicate edge id in parameter space definition.")
+        if df_parameter_space['edge_param_eid'][0] == 'all':  # All edge ids are parameters with constant range
+            inversemodel.edge_param_eid = np.arange(flownetwork.nr_of_es)
+            inversemodel.edge_param_pm_range = np.ones(flownetwork.nr_of_es) * df_parameter_space['edge_param_pm_range'][0]
 
-        # Assign data to inversemodel class
-        # Edge attributes
-        inversemodel.edge_param_eid = df_parameter_space["edge_param_eid"].to_numpy().astype(np.int)
-        inversemodel.edge_param_pm_range = df_parameter_space["edge_param_pm_range"].to_numpy().astype(np.double)
+        else:
+            df_parameter_space = df_parameter_space.sort_values('edge_param_eid')  # sort according to ascending eids
+            if True in df_parameter_space.duplicated(subset=['edge_param_eid']).to_numpy():  # check for duplicate eids
+                sys.exit("Error: Duplicate edge id in parameter space definition.")
+
+            # Assign data to inversemodel class
+            # Edge attributes
+            inversemodel.edge_param_eid = df_parameter_space["edge_param_eid"].to_numpy().astype(np.int)
+            inversemodel.edge_param_pm_range = df_parameter_space["edge_param_pm_range"].to_numpy().astype(np.double)
 
         inversemodel.nr_of_edge_parameters = np.size(inversemodel.edge_param_eid)
+        inversemodel.nr_of_parameters = inversemodel.nr_of_edge_parameters
+
+        # todo: check if max edge id is smaller than number of edges
