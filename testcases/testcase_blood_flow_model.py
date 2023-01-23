@@ -66,7 +66,7 @@ PARAMETERS = MappingProxyType(
 setup_blood_flow = setup.SetupSimulation()
 # Initialise the implementations based on the parameters specified
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver = setup_blood_flow.setup_simulation(PARAMETERS)
+    imp_solver = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file

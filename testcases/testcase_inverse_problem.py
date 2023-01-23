@@ -2,12 +2,7 @@ from source.flow_network import FlowNetwork
 from source.inverse_model import InverseModel
 from types import MappingProxyType
 import source.setup.setup as setup
-# todo: in setup class
 
-
-
-# todo: read dict from file; need a good way to import from human readable file.
-# todo: Problem: Json does not support comments; need better solution...
 
 # MappingProxyType is basically a const dict
 PARAMETERS = MappingProxyType(
@@ -51,6 +46,7 @@ PARAMETERS = MappingProxyType(
         # Write options
         "write_override_initial_graph": False,
         "write_path_igraph": "data/network/b6_B_pre_061_simulated.pkl", # only required for "write_network_option" 2
+        ##########################
         # Inverse problem options
         # Define parameter space
         "parameter_space": 1,  # 1: Relative diameter to baseline (alpha = d/d_base)
@@ -60,25 +56,30 @@ PARAMETERS = MappingProxyType(
         "inverse_model_solver": 1,  # Direct solver
         # Target edges
         "csv_path_edge_target_data": "data/inverse_model/edge_target.csv",
-        # Parameter edges # todo: also vertex parameters, distinguish
+        # Parameter edges
         "csv_path_edge_parameterspace": "data/inverse_model/edge_parameters.csv",
         # Gradient descent options:
         "gamma": .5,
-        "phi": .5
+        "phi": .5,
+        "max_nr_of_iterations": 25
     }
 )
 
 setup_simulation = setup.SetupSimulation()
 
+# Initialise objects related to simulate blood flow without RBC tracking.
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver = setup_simulation.setup_simulation(PARAMETERS)
+    imp_solver = setup_simulation.setup_bloodflow_model(PARAMETERS)
 
+# Initialise objects related to the inverse model.
 imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter, imp_adjoint_solver, \
     imp_alpha_mapping = setup_simulation.setup_inverse_model(PARAMETERS)
 
-# build flownetwork and  object
-flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem, imp_solver, imp_velocity, PARAMETERS)
-inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter, imp_adjoint_solver, imp_alpha_mapping, PARAMETERS)
+# Initialise flownetwork and inverse model objects
+flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
+                           imp_solver, imp_velocity, PARAMETERS)
+inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter,
+                             imp_adjoint_solver, imp_alpha_mapping, PARAMETERS)
 
 print("Read network: ...")
 flow_network.read_network()
@@ -92,15 +93,24 @@ print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
-flow_network.write_network()
-
 inverse_model.initialise_inverse_model()
 
-for i in range(100):
+nr_of_iterations = int(PARAMETERS["max_nr_of_iterations"])
+print("Solve the inverse problem and update the diameters: ...")
+for i in range(nr_of_iterations):
     inverse_model.update_state()
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
+    if i % 5 == 0:
+        print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
+print(str(nr_of_iterations-1)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
+print("Solve the inverse problem and update the diameters: DONE")
 
-print(flow_network.flow_rate[inverse_model.edge_constraint_eid])
-print(flow_network.rbc_velocity[inverse_model.edge_constraint_eid])
-print(inverse_model.alpha)
+flow_network.write_network()
+
+print("Type\t\tEid\t\tVal_tar_min\t\tVal_tar_max,\tVal_opt,\tVal_base ")
+for eid, value, range, type in zip(inverse_model.edge_constraint_eid, inverse_model.edge_constraint_value, inverse_model.edge_constraint_range_pm, inverse_model.edge_constraint_type):
+    if type==1:
+        print("Flow rate","\t",eid,"\t",value-range,"\t","\t",value+range,"\t","\t","%.2e" % flow_network.flow_rate[eid])
+    elif type==2:
+        print("Velocity","\t",eid,"\t",value-range,"\t",value+range,"\t","\t","\t", "%.2e" % flow_network.rbc_velocity[eid])

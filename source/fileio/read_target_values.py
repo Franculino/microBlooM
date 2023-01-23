@@ -18,11 +18,13 @@ class ReadTargetValues(ABC):
         self._PARAMETERS = PARAMETERS
 
     @abstractmethod
-    def read(self, inversemodel):
+    def read(self, inversemodel, flownetwork):
         """
         Read target values
         :param inversemodel: inverse model object
         :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
         """
 
 
@@ -31,11 +33,13 @@ class ReadTargetValuesEdge(ReadTargetValues):
     Class for importing the target values related to edges
     """
 
-    def read(self, inversemodel):
+    def read(self, inversemodel, flownetwork):
         """
         Import target values and types for edges
         :param inversemodel: inverse model object
         :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
         """
         import pandas as pd
         # Extract file path of target values.
@@ -59,4 +63,5 @@ class ReadTargetValuesEdge(ReadTargetValues):
 
         inversemodel.nr_of_edge_constraints = np.size(inversemodel.edge_constraint_eid)
 
-        # todo: check if max edge id is smaller than number of edges
+        if np.max(inversemodel.edge_constraint_eid) > flownetwork.nr_of_es - 1:
+            sys.exit("Error: Edge constraint refers to invalid edge id.")

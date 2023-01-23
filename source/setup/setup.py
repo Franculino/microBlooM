@@ -10,9 +10,9 @@ import source.bloodflowmodel.build_system as build_system
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
 import source.fileio.read_target_values as read_target_values
 import source.fileio.read_parameters as read_parameters
-import source.inverseproblemmodules.adjoint_method_parameters as adjoint_method_parameters
+import source.inverseproblemmodules.adjoint_method_implementations as adjoint_method_parameters
 import source.inverseproblemmodules.adjoint_method_solver as adjoint_method_solver
-import source.inverseproblemmodules.alpha_mapping as alpha_mapping
+import source.inverseproblemmodules.alpha_restriction as alpha_mapping
 import sys
 
 
@@ -22,7 +22,7 @@ class Setup(ABC):
     """
 
     @abstractmethod
-    def setup_simulation(self, PARAMETERS):
+    def setup_bloodflow_model(self, PARAMETERS):
         """
         Abstract method to set up the simulation
         """
@@ -37,11 +37,11 @@ class SetupSimulation(Setup):
     """
     Class for setting up a simulation that only includes the blood flow model
     """
-    def setup_simulation(self, PARAMETERS):
+    def setup_bloodflow_model(self, PARAMETERS):
         """
         Set up the simulation and returns various implementations of the blood flow model
-        :param flownetwork: flow network object
-        :type: source.flow_network.FlowNetwork
+        :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
+        :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
         :returns: the implementation objects. Error if invalid option is chosen. todo return specification
         """
 
@@ -99,14 +99,14 @@ class SetupSimulation(Setup):
     def setup_inverse_model(self, PARAMETERS):
         """
         Set up the inverse model and returns various implementations of the inverse model
-        :param flownetwork: flow network object
-        :type: source.flow_network.FlowNetwork
-        :returns: the implementation objects. Error if invalid option is chosen. todo return specification
+        :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
+        :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
+        :returns: the implementation objects. Error if invalid option is chosen.
         """
 
         match PARAMETERS["parameter_space"]:
             case 1:
-                imp_adjointparameter = adjoint_method_parameters.AdjointMethodParametersRelDiam(PARAMETERS)
+                imp_adjointparameter = adjoint_method_parameters.AdjointMethodImplementationsRelDiam(PARAMETERS)
                 imp_readtargetvalues = read_target_values.ReadTargetValuesEdge(PARAMETERS)
                 imp_readparameters = read_parameters.ReadParametersEdges(PARAMETERS)
             case _:
@@ -114,7 +114,7 @@ class SetupSimulation(Setup):
 
         match PARAMETERS["parameter_restriction"]:
             case 1:
-                imp_alphamapping = alpha_mapping.AlphaMappingLinear(PARAMETERS)
+                imp_alphamapping = alpha_mapping.AlphaRestrictionLinear(PARAMETERS)
             case 2:
                 imp_alphamapping = alpha_mapping.AlphaMappingTanh(PARAMETERS)
             case _:

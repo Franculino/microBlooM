@@ -20,7 +20,7 @@ class AdjointMethodSolver(ABC):
     @abstractmethod
     def _get_lambda_vector(self, inversemodel, flownetwork):
         """
-        Solve the linear system of equations for the pressure and update the pressure in flownetwork.
+        Abstract method to solve the adjoint equation.
         :param inversemodel: inverse model object
         :type inversemodel: source.inverse_model.InverseModel
         :param flownetwork: flow network object
@@ -30,12 +30,12 @@ class AdjointMethodSolver(ABC):
         """
 
     def update_gradient_alpha(self, inversemodel, flownetwork):
-
+        # Compute the vector lambda by solving the adjoint equation
         lambda_vector = self._get_lambda_vector(inversemodel, flownetwork)
-
-        # Compute the gradient (1d array) Note: is identical to lambda^T*dg/dalpha + df/dalpha, but more efficient
+        # Compute the gradient (1d array).
+        # Note: this is identical to lambda^T*dg/dalpha + df/dalpha, but should ensure that calculation remains sparse.
         gradient = inversemodel.d_g_d_alpha.transpose().dot(lambda_vector)+inversemodel.d_f_d_alpha
-
+        # Update the gradient with respect to alpha.
         inversemodel.gradient_alpha = gradient
 
 class AdjointMethodSolverSparseDirect(AdjointMethodSolver):
@@ -45,7 +45,7 @@ class AdjointMethodSolverSparseDirect(AdjointMethodSolver):
 
     def _get_lambda_vector(self, inversemodel, flownetwork):
         """
-        Solve the linear system of equations for the pressure and update the pressure in flownetwork.
+        Solve the adjoint equation with a sparse direct solver.
         :param inversemodel: inverse model object
         :type inversemodel: source.inverse_model.InverseModel
         :param flownetwork: flow network object
@@ -53,10 +53,7 @@ class AdjointMethodSolverSparseDirect(AdjointMethodSolver):
         :returns: Lambda vector
         :rtype: 1d numpy array
         """
-
         lambda_vector = spsolve(csc_matrix(flownetwork.system_matrix.transpose()), -inversemodel.d_f_d_pressure)
-
         return lambda_vector
 
-
-# todo: Other solvers (cg, amg, ...), do when necessary
+# Todo: Implement other solvers (cg, amg, ...), do when necessary
