@@ -68,4 +68,9 @@ class RbcVelocityFahraeus(RbcVelocity):
         """
         hd = flownetwork.hd
         ht = flownetwork.ht
-        flownetwork.rbc_velocity = self._get_bulk_flow_velocity(flownetwork) * hd / ht
+
+        hd_ht_ratio = np.ones(flownetwork.nr_of_es)
+        if not 0. in ht:
+            hd_ht_ratio = hd / ht
+
+        flownetwork.rbc_velocity = self._get_bulk_flow_velocity(flownetwork) * hd_ht_ratio

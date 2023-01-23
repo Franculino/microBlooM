@@ -56,7 +56,7 @@ class TransmissibilityPoiseuille(Transmissibility):
         flownetwork.transmiss = self._get_transmiss_poiseuille(flownetwork) # implementation from base class
 
 
-class TransmissibilityVitroPries1992(TransmissibilityPoiseuille):
+class TransmissibilityVitroPries1992(Transmissibility):
     """
     Class for calculating the transmissibility with red blood cells. Also calculates mu_rel. The impact of red blood
     cells is considered by the empirical in vitro equations by Pries, Neuhaus, Gaehtgens (1992).
@@ -86,7 +86,7 @@ class TransmissibilityVitroPries1992(TransmissibilityPoiseuille):
         flownetwork.transmiss = transmiss_poiseuille / mu_rel  # Update transmissibility.
 
 
-class TransmissibilityVivoPries2005(TransmissibilityPoiseuille):
+class TransmissibilityVivoPries2005(Transmissibility):
     def update_transmiss(self, flownetwork):
         # Todo: implement
         pass
