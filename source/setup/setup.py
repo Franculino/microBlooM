@@ -109,6 +109,10 @@ class SetupSimulation(Setup):
                 imp_adjointparameter = adjoint_method_parameters.AdjointMethodImplementationsRelDiam(PARAMETERS)
                 imp_readtargetvalues = read_target_values.ReadTargetValuesEdge(PARAMETERS)
                 imp_readparameters = read_parameters.ReadParametersEdges(PARAMETERS)
+            case 2:
+                imp_adjointparameter = adjoint_method_parameters.AdjointMethodImplementationsRelTransmiss(PARAMETERS)
+                imp_readtargetvalues = read_target_values.ReadTargetValuesEdge(PARAMETERS)
+                imp_readparameters = read_parameters.ReadParametersEdges(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option for the parameter space (parameter_space)")
 

@@ -47,7 +47,7 @@ class InverseModel(object):
         self.alpha_prime = None
         self.alpha_pm_range = None
 
-        self.transmiss_base = None
+        self.transmiss_baselinevalue = None
         self.diameter_baselinevalue = None
 
         self.mu_rel_tilde = None

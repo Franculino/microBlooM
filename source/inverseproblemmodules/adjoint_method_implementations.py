@@ -118,8 +118,7 @@ class AdjointMethodImplementations(ABC):
         # Get the derivative of hd with respect to ht of all edges with a target value. Ensure that is always valid and
         # prevent division by 0.
         hd_ht_ratio = np.ones(flownetwork.nr_of_es)
-        if not 0 in flownetwork.ht:  # only if ht is larger 0: otherwise, hd / ht = 1 is enforced.
-            hd_ht_ratio = flownetwork.hd / flownetwork.ht
+        hd_ht_ratio[flownetwork.ht > 0.] = flownetwork.hd[flownetwork.ht > 0.] / flownetwork.ht[flownetwork.ht > 0.]
 
         # = 2*(u_sim_ij-u_tar)/sigma^2 * d u_ij / d_pressure_i * (+1)
         data[is_target_type_2, 0] = 2. * u_difference / np.square(sigma_u) * 4. * flownetwork.transmiss[eids_u_target] * hd_ht_ratio[eids_u_target] / (np.pi * np.square(flownetwork.diameter[eids_u_target]))
@@ -413,8 +412,7 @@ class AdjointMethodImplementationsRelDiam(AdjointMethodImplementationsEdge):
 
         # Ensure that ratio hd/ht is always valid (If ht=0 -> set ratio to 1)
         hd_ht_ratio = np.ones(np.size(hd_param_es))
-        if not 0 in hd_ht_ratio:
-            hd_ht_ratio = hd_param_es / ht_param_es
+        hd_ht_ratio[ht_param_es > 0.] = hd_param_es[ht_param_es > 0.] / ht_param_es[ht_param_es > 0.]
 
         # Return the derivative
         return 4. / np.pi * hd_ht_ratio * (
@@ -440,4 +438,82 @@ class AdjointMethodImplementationsRelDiam(AdjointMethodImplementationsEdge):
                     32. * length_param_es * mu_plasma * mu_rel_param_es) * inversemodel.alpha
 
 
-# Todo: Implementations for other edge parameters (abs diameter, rel. transmiss, ...) and vertex parameters (BCs)
+class AdjointMethodImplementationsRelTransmiss(AdjointMethodImplementationsEdge):
+    """
+    Class for a parameter space that includes all vessel transmissibilities relative to baseline
+    """
+
+    def initialise_parameters(self, inversemodel, flownetwork):
+        """
+        Initialises the parameter space, if relative transmissibilities to baseline are tuned (alpha=T/T_base)
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        inversemodel.d_f_d_alpha = np.zeros(inversemodel.nr_of_edge_parameters)
+        inversemodel.d_f_d_pressure = np.zeros(flownetwork.nr_of_vs)
+
+        inversemodel.transmiss_baselinevalue = flownetwork.transmiss[inversemodel.edge_param_eid]  # same length as alpha
+        inversemodel.alpha = np.ones(inversemodel.nr_of_edge_parameters)  # Edge parameter initialised with 1
+        inversemodel.alpha_prime = np.ones(inversemodel.nr_of_edge_parameters)  # Pseudo edge parameter for range
+
+    def update_state(self, inversemodel, flownetwork):
+        """
+        Updates the system state of the flow network (here: transmissibility) based on the
+        current parameter value (here: alpha = T/T_base)
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        flownetwork.transmiss[inversemodel.edge_param_eid] = inversemodel.transmiss_baselinevalue * inversemodel.alpha
+
+        # Update the diameter of the vascular network based on the tuned transmissibility. Make diameter consistent with
+        # transmissibility again. Warning: mu_rel based on d from previous iteration step is used.
+        mu_plasma = self._PARAMETERS["mu_plasma"]
+        flownetwork.diameter = np.power(128. / np.pi * flownetwork.transmiss * flownetwork.length *
+                                        mu_plasma * flownetwork.mu_rel, .25)
+
+    def _get_d_velocity_d_alpha(self, inversemodel, flownetwork):
+        """
+        Computes the derivative of the velocity in all edges with respect to the relative diameter alpha.
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        :returns: Derivative of velocity with respect to alpha.
+        :rtype: 1d numpy array
+        """
+        hd_param_es = flownetwork.hd[inversemodel.edge_param_eid]  # read Hd
+        ht_param_es = flownetwork.ht[inversemodel.edge_param_eid]  # read Ht
+
+        transmiss_param_es = flownetwork.transmiss[inversemodel.edge_param_eid]  # read diameter of all edges with parameters
+
+        mu_plasma = self._PARAMETERS["mu_plasma"]
+        # Lengths and mu_rel of edges that are parameters
+        length_param_es = flownetwork.length[inversemodel.edge_param_eid]
+        mu_rel_param_es = flownetwork.mu_rel[inversemodel.edge_param_eid]
+
+        edge_list_params = flownetwork.edge_list[inversemodel.edge_param_eid, :]
+
+        # Ensure that ratio hd/ht is always valid (If ht=0 -> set ratio to 1)
+        hd_ht_ratio = np.ones(np.size(hd_param_es))
+        hd_ht_ratio[ht_param_es > 0.] = hd_param_es[ht_param_es > 0.] / ht_param_es[ht_param_es > 0.]
+
+        return (flownetwork.pressure[edge_list_params[:, 0]] - flownetwork.pressure[edge_list_params[:, 1]]) * \
+            hd_ht_ratio / np.sqrt(32 * np.pi * length_param_es * mu_plasma * mu_rel_param_es) * \
+            np.power(transmiss_param_es, -.5) * inversemodel.transmiss_baselinevalue
+
+    def _get_d_transmiss_d_alpha(self, inversemodel, flownetwork):
+        """
+        Computes the derivative of the transmissibility with respect to the parameter alpha (d T_ij/d alpha_ij).
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        :returns: Derivative of transmissibility with respect to parameters.
+        :rtype: 1d numpy array
+        """
+
+        return inversemodel.transmiss_baselinevalue
