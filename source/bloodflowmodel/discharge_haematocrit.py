@@ -37,7 +37,7 @@ class DischargeHaematocritNewtonian(DischargeHaematocrit):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
-        flownetwork.hd = np.zeros(flownetwork.nr_of_es, dtype=np.float)
+        flownetwork.hd = flownetwork.ht
 
 
 class DischargeHaematocritVitroPries1992(DischargeHaematocrit):

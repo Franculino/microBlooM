@@ -1,3 +1,18 @@
+"""
+A python script to estimate edge parameters such as diameters and transmissibilities of microvascular networks based
+on given flow rates and velocities in selected edges. Capabilities:
+1. Import a network from file or generate a hexagonal network
+2. Compute the edge transmissibilities with taking the impact of RBCs into account (Fahraeus, Fahraeus-Linquist effects)
+3. Solve for flow rates, pressures and RBC velocities
+4. Update the diameters and transmissibilities with a gradient descent algorithm minimising a given cost function.
+5. Restriction of parameters to desired ranges (target value +/- tolerance).
+6. Individual selection of parameter edges and target edges.
+7. Target flow rates and velocities can be specified and combined into a single cost function.
+8. Tuning of either relative diameters or relative transmissibilities compared to baseline.
+9. Optimisation of diameters for a fixed number of iteration steps.
+10. Save the results in a file.
+"""
+
 from source.flow_network import FlowNetwork
 from source.inverse_model import InverseModel
 from types import MappingProxyType
@@ -19,7 +34,7 @@ PARAMETERS = MappingProxyType(
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
                                        # 4-xxx: todo: steady state RBC laws
-        "rbc_impact_option": 2,  # 1: No RBCs (hd=0)
+        "rbc_impact_option": 2,  # 1: hd = ht (makes only sense if tube_haematocrit_option:1, with ht=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: todo Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
@@ -50,7 +65,7 @@ PARAMETERS = MappingProxyType(
         # Inverse problem options
         # Define parameter space
         "parameter_space": 1,  # 1: Relative diameter to baseline (alpha = d/d_base)
-                               # todo 2, 3, ...
+                               # 2: Relative transmissibility to baseline (alpha = T/T_base)
         "parameter_restriction": 2,  # 1: No restriction of parameter values (alpha_prime = alpha)
                                      # 2: Restriction of parameter by a +/- tolerance to baseline
         "inverse_model_solver": 1,  # Direct solver
@@ -61,7 +76,7 @@ PARAMETERS = MappingProxyType(
         # Gradient descent options:
         "gamma": .5,
         "phi": .5,
-        "max_nr_of_iterations": 25
+        "max_nr_of_iterations": 50
     }
 )
 
