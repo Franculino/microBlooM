@@ -95,7 +95,7 @@ class AdjointMethodImplementations(ABC):
         # all pressures (size is nr_of_edge_constraints x nr_of_vertices). To obtain the derivative of the full cost
         # function f with respect to all pressures, this matrix will be summed up over all rows at the end.
         col = edge_list_target.reshape(-1)
-        row = np.array([[i,i] for i in range(nr_of_constraints)]).reshape(-1)
+        row = np.array([[i, i] for i in range(nr_of_constraints)]).reshape(-1)
         data = np.zeros((nr_of_constraints, 2))
 
         # Constraints of type 1 (flow rate)
@@ -103,8 +103,8 @@ class AdjointMethodImplementations(ABC):
         sigma_flow = inversemodel.edge_constraint_sigma[is_target_type_1]
 
         # = 2*(q_sim_ij-q_tar)/sigma^2 * T_ij * (+1)
-        data[is_target_type_1, 0] = 2. * q_difference / np.square(sigma_flow) * \
-                                    flownetwork.transmiss[edge_id_target[is_target_type_1]]
+        data[is_target_type_1, 0] = 2. * q_difference / np.square(sigma_flow) * flownetwork.transmiss[
+            edge_id_target[is_target_type_1]]
         # = 2*(q_sim_ij-q_tar)/sigma^2 * T_ij * (-1)
         data[is_target_type_1, 1] = -data[is_target_type_1, 0]
 
@@ -121,7 +121,9 @@ class AdjointMethodImplementations(ABC):
         hd_ht_ratio[flownetwork.ht > 0.] = flownetwork.hd[flownetwork.ht > 0.] / flownetwork.ht[flownetwork.ht > 0.]
 
         # = 2*(u_sim_ij-u_tar)/sigma^2 * d u_ij / d_pressure_i * (+1)
-        data[is_target_type_2, 0] = 2. * u_difference / np.square(sigma_u) * 4. * flownetwork.transmiss[eids_u_target] * hd_ht_ratio[eids_u_target] / (np.pi * np.square(flownetwork.diameter[eids_u_target]))
+        data[is_target_type_2, 0] = 2. * u_difference / np.square(sigma_u) * 4. * \
+                                    flownetwork.transmiss[eids_u_target] * hd_ht_ratio[eids_u_target] / (
+                                                np.pi * np.square(flownetwork.diameter[eids_u_target]))
         # = 2 * (u_sim_ij - u_tar) / sigma ^ 2 * du_ij / d_pressure_j * (-1)
         data[is_target_type_2, 1] = -data[is_target_type_2, 0]
 
@@ -230,7 +232,7 @@ class AdjointMethodImplementations(ABC):
         inversemodel.f_h = np.sum(cost_terms)
 
 
-class AdjointMethodImplementationsEdge(AdjointMethodImplementations):
+class AdjointMethodImplementationsEdge(AdjointMethodImplementations, ABC):
     """
     Class for the implementations related to edge-based parameter spaces (diameter, transmissibility)
     """
@@ -296,18 +298,19 @@ class AdjointMethodImplementationsEdge(AdjointMethodImplementations):
 
         # Constraints of type 2 (velocity)
         # True if current edge constraint is of type 2 (velocity) and has a matching edge parameter.
-        is_current_target_u = np.logical_and(np.in1d(inversemodel.edge_constraint_eid, inversemodel.edge_param_eid),
-                                           is_target_type_2)
+        is_current_target_u = np.logical_and(np.in1d(inversemodel.edge_constraint_eid,
+                                                     inversemodel.edge_param_eid), is_target_type_2)
         # True if current edge parameter has a matching edge constraint of type 2 (velocity)
-        is_current_parameter_u = np.in1d(inversemodel.edge_param_eid, inversemodel.edge_constraint_eid[is_target_type_2])
+        is_current_parameter_u = np.in1d(inversemodel.edge_param_eid,
+                                         inversemodel.edge_constraint_eid[is_target_type_2])
 
         u_difference = val_difference[is_current_target_u]  # u_simulated - u_target / u_min / u_max
         sigma_u = inversemodel.edge_constraint_sigma[is_current_target_u]
 
         # Partial derivative with respect to parameters (all velocity terms). If a target velocity has no matching
         # edge parameter, derivative is zero)
-        inversemodel.d_f_d_alpha[is_current_parameter_u] = 2. * u_difference / np.square(sigma_u) * \
-                                                           d_velocity_d_alpha[is_current_parameter_u]
+        inversemodel.d_f_d_alpha[is_current_parameter_u] = 2. * u_difference / np.square(sigma_u) * d_velocity_d_alpha[
+            is_current_parameter_u]
 
     def _update_d_g_d_alpha(self, inversemodel, flownetwork):
         """
@@ -454,7 +457,7 @@ class AdjointMethodImplementationsRelTransmiss(AdjointMethodImplementationsEdge)
         inversemodel.d_f_d_alpha = np.zeros(inversemodel.nr_of_edge_parameters)
         inversemodel.d_f_d_pressure = np.zeros(flownetwork.nr_of_vs)
 
-        inversemodel.transmiss_baselinevalue = flownetwork.transmiss[inversemodel.edge_param_eid]  # same length as alpha
+        inversemodel.transmiss_baselinevalue = flownetwork.transmiss[inversemodel.edge_param_eid]  # same len as alpha
         inversemodel.alpha = np.ones(inversemodel.nr_of_edge_parameters)  # Edge parameter initialised with 1
         inversemodel.alpha_prime = np.ones(inversemodel.nr_of_edge_parameters)  # Pseudo edge parameter for range
 
@@ -488,7 +491,8 @@ class AdjointMethodImplementationsRelTransmiss(AdjointMethodImplementationsEdge)
         hd_param_es = flownetwork.hd[inversemodel.edge_param_eid]  # read Hd
         ht_param_es = flownetwork.ht[inversemodel.edge_param_eid]  # read Ht
 
-        transmiss_param_es = flownetwork.transmiss[inversemodel.edge_param_eid]  # read diameter of all edges with parameters
+        # read diameter of all edges with parameters
+        transmiss_param_es = flownetwork.transmiss[inversemodel.edge_param_eid]
 
         mu_plasma = self._PARAMETERS["mu_plasma"]
         # Lengths and mu_rel of edges that are parameters
@@ -517,3 +521,124 @@ class AdjointMethodImplementationsRelTransmiss(AdjointMethodImplementationsEdge)
         """
 
         return inversemodel.transmiss_baselinevalue
+
+
+class AdjointMethodImplementationsVertex(AdjointMethodImplementations, ABC):
+    """
+    Abstract class for the implementations related to vertex-based parameter spaces (e.g. boundary conditions)
+    """
+
+
+class AdjointMethodImplementationsAbsBoundaryPressure(AdjointMethodImplementationsVertex):
+    """
+    Class for a parameter space that includes absolute boundary pressure condition values
+    """
+
+    def _update_d_f_d_alpha(self, inversemodel, flownetwork):
+        """
+        Computes and updates the partial derivative of the cost function with respect to the vertex parameters
+        (boundary pressure).
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        # Initialise derivative d f / d alpha (reset to zero)
+        inversemodel.d_f_d_alpha *= 0.
+
+    def _update_d_g_d_alpha(self, inversemodel, flownetwork):
+        """
+        Computes and updates the partial derivative of the blood flow model g(p,alpha) with respect to vertex
+        parameters (boundary pressures).
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        nr_of_vertices = flownetwork.nr_of_vs
+        nr_of_vertex_parameters = inversemodel.nr_of_vertex_parameters
+
+        vids_params = inversemodel.vertex_param_vid  # Indices of vertices with a parameter
+        param_ids = np.arange(nr_of_vertex_parameters)  # All parameter indices (0 ... nr_of_vertex_parameters-1)
+
+        # Build sparse matrix
+        row = vids_params
+        col = param_ids
+        data = -np.ones(nr_of_vertex_parameters)
+
+        # Update matrix
+        inversemodel.d_g_d_alpha = coo_matrix((data, (row, col)), shape=(nr_of_vertices, nr_of_vertex_parameters))
+
+    def _get_d_flowrate_d_alpha(self, inversemodel, flownetwork):
+        """
+        Computes the derivative of the edge flow rate with respect to the corresponding vertex parameter (boundary
+        pressure)
+        (d q_ij/d p_0)
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        :returns: Derivative of flow rate with respect to parameters.
+        :rtype: 1d numpy array of length "nr of edge parameters"
+        """
+        return np.zeros(inversemodel.nr_of_parameters)
+
+    def initialise_parameters(self, inversemodel, flownetwork):
+        """
+        Initialises the parameter space, if boundary pressures are tuned (alpha=p_0)
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        inversemodel.d_f_d_alpha = np.zeros(inversemodel.nr_of_vertex_parameters)
+        inversemodel.d_f_d_pressure = np.zeros(flownetwork.nr_of_vs)
+
+        inversemodel.diameter_baselinevalue = None
+
+        # identify the boundary vertices which are parameters
+        is_boundary_parameter = np.in1d(flownetwork.boundary_vs, inversemodel.vertex_param_vid)
+
+        # Vertex parameter and pseudo parameter initialised with base value
+        inversemodel.alpha = flownetwork.boundary_val[is_boundary_parameter]
+        inversemodel.alpha_prime = flownetwork.boundary_val[is_boundary_parameter]
+        inversemodel.boundary_pressure_baselinevalue = flownetwork.boundary_val[is_boundary_parameter]
+
+    def update_state(self, inversemodel, flownetwork):
+        """
+        Updates the system state of the flow network (here: absolute boundary pressure) based on the
+        current parameter value (here: alpha = p_0)
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        is_boundary_parameter = np.in1d(flownetwork.boundary_vs, inversemodel.vertex_param_vid)
+        flownetwork.boundary_val[is_boundary_parameter] = inversemodel.alpha
+
+    def _get_d_velocity_d_alpha(self, inversemodel, flownetwork):
+        """
+        Computes the derivative of the edge velocity with respect to the corresponding vertex parameter (boundary
+        pressure)
+        (d v_ij/d p_0)
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        :returns: Derivative of velocity with respect to alpha.
+        :rtype: 1d numpy array
+        """
+        return np.zeros(inversemodel.nr_of_parameters)
+
+    def _get_d_transmiss_d_alpha(self, inversemodel, flownetwork):
+        """
+        Computes the derivative of the edge transmissibility with respect to the corresponding vertex parameter
+        (boundary pressure) (d T_ij/d p_0)
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        :returns: Derivative of transmissibility with respect to parameters.
+        :rtype: 1d numpy array
+        """
+        return np.zeros(inversemodel.nr_of_parameters)

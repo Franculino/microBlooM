@@ -4,12 +4,12 @@ on given flow rates and velocities in selected edges. Capabilities:
 1. Import a network from file or generate a hexagonal network
 2. Compute the edge transmissibilities with taking the impact of RBCs into account (Fahraeus, Fahraeus-Linquist effects)
 3. Solve for flow rates, pressures and RBC velocities
-4. Update the diameters and transmissibilities with a gradient descent algorithm minimising a given cost function.
+4. Update the boundary pressures with a gradient descent algorithm minimising a given cost function.
 5. Restriction of parameters to desired ranges (target value +/- tolerance).
-6. Individual selection of parameter edges and target edges.
+6. Individual selection of parameter boundary vertices and target edges.
 7. Target flow rates and velocities can be specified and combined into a single cost function.
-8. Tuning of either relative diameters or relative transmissibilities compared to baseline.
-9. Optimisation of diameters for a fixed number of iteration steps.
+8. Tuning of absolute boundary pressures.
+9. Optimisation of pressures for a fixed number of iteration steps.
 10. Save the results in a file.
 """
 
@@ -34,22 +34,22 @@ PARAMETERS = MappingProxyType(
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
                                        # 4-xxx: todo: steady state RBC laws
-        "rbc_impact_option": 2,  # 1: hd = ht (makes only sense if tube_haematocrit_option:1, with ht=0)
+        "rbc_impact_option": 2,  # 1: hd = ht (makes only sense if tube_haematocrit_option:1 or ht=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: todo Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
-                             # 2-...: other solvers (CG, AMG, ...)
+                             # 2: todo: other solvers (CG, AMG, ...)
         # Blood properties
         "ht_constant": 0.3,
         "mu_plasma": 0.0012,
         # Hexagonal network properties
-        "nr_of_hexagon_x": 3,
-        "nr_of_hexagon_y": 3,
+        "nr_of_hexagon_x": 5,
+        "nr_of_hexagon_y": 5,
         "hexa_edge_length": 62.e-6,
         "hexa_diameter": 4.e-6,
-        "hexa_boundary_vertices": [0, 27],
-        "hexa_boundary_values": [2, 1],
-        "hexa_boundary_types": [1, 1],  # 1: pressure, 2: flow rate
+        "hexa_boundary_vertices": [0, 65, 21, 48, 41, 31, 56],
+        "hexa_boundary_values": [2, 1, 3, 1, 1, 5, 2],
+        "hexa_boundary_types": [1, 1, 1, 1, 1, 1, 1],  # 1: pressure, 2: flow rate
         # Import network from csv options
         "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
         "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
@@ -64,19 +64,23 @@ PARAMETERS = MappingProxyType(
         ##########################
         # Inverse problem options
         # Define parameter space
-        "parameter_space": 1,  # 1: Relative diameter to baseline (alpha = d/d_base)
-                               # 2: Relative transmissibility to baseline (alpha = T/T_base)
-        "parameter_restriction": 2,  # 1: No restriction of parameter values (alpha_prime = alpha)
+        "parameter_space": 11,  # 1: Relative diameter to baseline (alpha = d/d_base)
+                                # 2: Relative transmissibility to baseline (alpha = T/T_base)
+                                # 11: Pressure boundary condition values (alpha = p_0)
+        "parameter_restriction": 1,  # 1: No restriction of parameter values (alpha_prime = alpha)
                                      # 2: Restriction of parameter by a +/- tolerance to baseline
         "inverse_model_solver": 1,  # Direct solver
-        # Target edges
-        "csv_path_edge_target_data": "data/inverse_model/edge_target.csv",
-        # Parameter edges
-        "csv_path_edge_parameterspace": "data/inverse_model/edge_parameters.csv",
+                                    # 2: todo: other solvers (CG, AMG, ...)
+        # Filepath to prescribe target values / constraints on edges
+        "csv_path_edge_target_data": "data/inverse_model/edge_target_BC_tuning.csv",
+        # Filepath to define the edge parameter space (only for tuning of diameters and transmissibilities)
+        "csv_path_edge_parameterspace": "not needed",
+        # Filepath to define the vertex parameter space (only for tuning of boundary conditions)
+        "csv_path_vertex_parameterspace": "data/inverse_model/vertex_parameters.csv",
         # Gradient descent options:
         "gamma": .5,
-        "phi": .5,
-        "max_nr_of_iterations": 50
+        "phi": .5,  # for parameter_restriction 2
+        "max_nr_of_iterations": 50  # Maximum of iterations
     }
 )
 
@@ -113,11 +117,13 @@ inverse_model.update_cost()
 
 nr_of_iterations = int(PARAMETERS["max_nr_of_iterations"])
 print("Solve the inverse problem and update the diameters: ...")
+cost_h = [inverse_model.f_h]
 for i in range(nr_of_iterations):
     inverse_model.update_state()
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
     inverse_model.update_cost()
+    cost_h.append(inverse_model.f_h)
 
     if i % 5 == 0:
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
@@ -132,3 +138,8 @@ for eid, value, range, type in zip(inverse_model.edge_constraint_eid, inverse_mo
         print("Flow rate","\t",eid,"\t",value-range,"\t","\t",value+range,"\t","\t","%.2e" % flow_network.flow_rate[eid])
     elif type==2:
         print("Velocity","\t",eid,"\t",value-range,"\t",value+range,"\t","\t","\t", "%.2e" % flow_network.rbc_velocity[eid])
+
+import matplotlib.pyplot as plt
+plt.semilogy(cost_h)
+plt.title("Cost")
+plt.show()

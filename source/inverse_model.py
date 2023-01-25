@@ -31,24 +31,26 @@ class InverseModel(object):
         # Parameter space
         # Edge parameters
         self.edge_param_eid = None
-        self.edge_param_pm_range = None
+        self.parameter_pm_range = None
         self.nr_of_edge_parameters = None
 
         # Vertex parameters
         self.vertex_param_vid = None
-        self.vertex_param_pm_range = None
+        # self.vertex_param_pm_range = None
         self.nr_of_vertex_parameters = None
 
         # Total parameters
         self.nr_of_parameters = None
 
-        # Parameter edge attributes
+        # Parameter edge and vertex attributes
         self.alpha = None
         self.alpha_prime = None
         self.alpha_pm_range = None
 
         self.transmiss_baselinevalue = None
         self.diameter_baselinevalue = None
+
+        self.boundary_pressure_baselinevalue = None
 
         self.mu_rel_tilde = None
         self.transmiss_tilde = None
@@ -83,7 +85,6 @@ class InverseModel(object):
         self._imp_readtargetvalues.read(self, self._flow_network)
         self._imp_readparameters.read(self, self._flow_network)
         self._imp_adjointmethodparameters.initialise_parameters(self, self._flow_network)
-        self._imp_adjointmethodparameters.update_cost_hardconstraint(self, self._flow_network)
         self.gamma = self._PARAMETERS["gamma"]
         self.phi = self._PARAMETERS["phi"]
 
@@ -104,5 +105,10 @@ class InverseModel(object):
         self._imp_alphamapping.update_alpha_from_alpha_prime(self)
         # Update the system state depending on the parameter (e.g. diameter, transmissibility, boundary pressures)
         self._imp_adjointmethodparameters.update_state(self, self._flow_network)
+
+    def update_cost(self):
+        """
+        Method to update the cost function value
+        """
         # Update the cost function value
         self._imp_adjointmethodparameters.update_cost_hardconstraint(self, self._flow_network)

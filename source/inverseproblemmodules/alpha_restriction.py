@@ -68,7 +68,7 @@ class AlphaMappingTanh(AlphaRestriction):
         :param inversemodel: inverse model object
         :type inversemodel: source.inverse_model.InverseModel
         """
-        delta = inversemodel.edge_param_pm_range
+        delta = inversemodel.parameter_pm_range
         phi = inversemodel.phi
         alpha_prime = inversemodel.alpha_prime
 
@@ -83,12 +83,12 @@ class AlphaMappingTanh(AlphaRestriction):
         :param inversemodel: inverse model object
         :type inversemodel: source.inverse_model.InverseModel
         """
-        delta = inversemodel.edge_param_pm_range
+        delta = inversemodel.parameter_pm_range
         phi = inversemodel.phi
         alpha_prime = inversemodel.alpha_prime
 
         # Restrict alpha prime to 1 +- 3/phi (alpha_prime with alpha = 0.995*alpha_max) to not drift too far away
-        # from the symmetry proint alpha_prime=1 and alpha=1. Otherwise, the gradient gets very small.
+        # from the symmetry point alpha_prime=1 and alpha=1. Otherwise, the gradient gets very small.
         alpha_prime[alpha_prime < 1. - 3./phi] = 1. - 3./phi
         alpha_prime[alpha_prime > 1. + 3. / phi] = 1. + 3. / phi
 
