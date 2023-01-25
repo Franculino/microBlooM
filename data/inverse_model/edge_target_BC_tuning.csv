@@ -1,0 +1,5 @@
+edge_tar_eid,edge_tar_type,edge_tar_value,edge_tar_range_pm,edge_tar_sigma
+10,1,-1E-17,0,1.00E-17
+20,1,8E-18,2E-18,1.00E-17
+53,2,-1E-6,.5E-6,1.00E-6
+67,2,-5E-7,0,1.00E-6

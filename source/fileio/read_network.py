@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
-import sys
 
 
 class ReadNetwork(ABC):
@@ -47,7 +46,7 @@ class ReadNetworkHexagonal(ReadNetwork):
 
         nr_vs_x = nr_of_hexagon_x + 1  # Number of vertices in x direction
         nr_vs_y = nr_of_hexagon_y * 2 + 1  # Number of vertices in y direction
-        xyz_vs = np.zeros((nr_vs_x * nr_vs_y, 3), dtype=np.float) # Coordinates x, y, z of vertices
+        xyz_vs = np.zeros((nr_vs_x * nr_vs_y, 3), dtype=np.float)  # Coordinates x, y, z of vertices
 
         # Create vertices, calculate xyz coordinates:
         for ii in range(nr_vs_x * nr_vs_y):  # Loop over all vertex indices. Current index ii.
@@ -73,10 +72,10 @@ class ReadNetworkHexagonal(ReadNetwork):
 
         # Generate edges; connect vertices by edge list
         nr_of_edges = nr_vs_x // 2 * (3 * (nr_vs_y - 1) + 1) - (nr_vs_y - 1) // 2
-        edge_list = np.ones((nr_of_edges, 2), dtype=np.int) * (-1) # initialise edge list with -1
+        edge_list = np.ones((nr_of_edges, 2), dtype=np.int) * (-1)  # initialise edge list with -1
         eid = 0
         # Generate the edges that horizontally connect vertices.
-        for ii in range(nr_vs_x * nr_vs_y): # loop over all vertex indices
+        for ii in range(nr_vs_x * nr_vs_y):  # loop over all vertex indices
             i = ii % nr_vs_x  # Current vertex index in x-direction (ii = j*n_vs_x + i).
             j = ii // nr_vs_x  # Current vertex index in y-direction.
 
@@ -124,10 +123,17 @@ class ReadNetworkHexagonal(ReadNetwork):
         # Vertex attributes
         flownetwork.xyz = xyz_vs
 
-        # Boundaries
-        flownetwork.boundary_vs = np.array(self._PARAMETERS["hexa_boundary_vertices"], dtype=np.int)
-        flownetwork.boundary_val = np.array(self._PARAMETERS["hexa_boundary_values"], dtype=np.float)
-        flownetwork.boundary_type = np.array(self._PARAMETERS["hexa_boundary_types"], dtype=np.int)
+        # Boundaries, sort according to ascending vertex ids
+        import pandas as pd
+        df_boundaries = pd.DataFrame({'vs_ids': np.array(self._PARAMETERS["hexa_boundary_vertices"], dtype=np.int),
+                        'vals': np.array(self._PARAMETERS["hexa_boundary_values"], dtype=np.float),
+                        'types': np.array(self._PARAMETERS["hexa_boundary_types"], dtype=np.int)})
+
+        df_boundaries = df_boundaries.sort_values('vs_ids')
+
+        flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
+        flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
+        flownetwork.boundary_type = df_boundaries["types"].to_numpy()
 
 
 class ReadNetworkCsv(ReadNetwork):
@@ -203,6 +209,7 @@ class ReadNetworkCsv(ReadNetwork):
         flownetwork.nr_of_es = np.size(edge_list, 0)
 
         # Boundaries
+        df_boundary_data.sort_values('csv_boundary_vs')  # Sort according to ascending vertex indices of boundaries
         flownetwork.boundary_vs = df_boundary_data[self._PARAMETERS["csv_boundary_vs"]].to_numpy().astype(np.int)
         flownetwork.boundary_type = df_boundary_data[self._PARAMETERS["csv_boundary_type"]].to_numpy().astype(np.int)
         flownetwork.boundary_val = df_boundary_data[self._PARAMETERS["csv_boundary_value"]].to_numpy()

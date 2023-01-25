@@ -105,14 +105,19 @@ class SetupSimulation(Setup):
         """
 
         match PARAMETERS["parameter_space"]:
-            case 1:
+            case 1:  # Tune relative diameters
                 imp_adjointparameter = adjoint_method_parameters.AdjointMethodImplementationsRelDiam(PARAMETERS)
                 imp_readtargetvalues = read_target_values.ReadTargetValuesEdge(PARAMETERS)
                 imp_readparameters = read_parameters.ReadParametersEdges(PARAMETERS)
-            case 2:
+            case 2:  # Tune relative transmissibilities
                 imp_adjointparameter = adjoint_method_parameters.AdjointMethodImplementationsRelTransmiss(PARAMETERS)
                 imp_readtargetvalues = read_target_values.ReadTargetValuesEdge(PARAMETERS)
                 imp_readparameters = read_parameters.ReadParametersEdges(PARAMETERS)
+            case 11:  # Tune boundary pressures
+                imp_adjointparameter = adjoint_method_parameters.AdjointMethodImplementationsAbsBoundaryPressure(
+                    PARAMETERS)
+                imp_readtargetvalues = read_target_values.ReadTargetValuesEdge(PARAMETERS)
+                imp_readparameters = read_parameters.ReadParametersVertices(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option for the parameter space (parameter_space)")
 
