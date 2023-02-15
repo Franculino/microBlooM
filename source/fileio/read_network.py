@@ -209,7 +209,8 @@ class ReadNetworkCsv(ReadNetwork):
         flownetwork.nr_of_es = np.size(edge_list, 0)
 
         # Boundaries
-        df_boundary_data.sort_values('csv_boundary_vs')  # Sort according to ascending vertex indices of boundaries
+        # Sort according to ascending vertex indices of boundaries
+        df_boundary_data.sort_values(self._PARAMETERS["csv_boundary_vs"])
         flownetwork.boundary_vs = df_boundary_data[self._PARAMETERS["csv_boundary_vs"]].to_numpy().astype(np.int)
         flownetwork.boundary_type = df_boundary_data[self._PARAMETERS["csv_boundary_type"]].to_numpy().astype(np.int)
         flownetwork.boundary_val = df_boundary_data[self._PARAMETERS["csv_boundary_value"]].to_numpy()
