@@ -33,6 +33,7 @@ class Setup(ABC):
         Abstract method to set up the inverse model
         """
 
+
 class SetupSimulation(Setup):
     """
     Class for setting up a simulation that only includes the blood flow model
@@ -60,6 +61,8 @@ class SetupSimulation(Setup):
                 imp_write = write_network.WriteNetworkNothing(PARAMETERS)  # Does not do anything
             case 2:
                 imp_write = write_network.WriteNetworkIgraph(PARAMETERS)  # Writes the results into an igraph pkl file
+            case 3:
+                imp_write = write_network.WriteNetworkVtp(PARAMETERS)  # Writes the results into an igraph pkl file
             case _:
                 sys.exit("Error: Choose valid option to write a network to file (write_network_option)")
 
