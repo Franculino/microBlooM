@@ -61,3 +61,17 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         :type flownetwork: source.flow_network.FlowNetwork
         """
         flownetwork.pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
+
+
+class PressureFlowSolverConjugateGradient(PressureFlowSolver):
+    """
+    Class for calculating the pressure with a sparse direct solver.
+    """
+
+    def _solve_pressure(self, flownetwork):
+        """
+        Solve the linear system of equations for the pressure and update the pressure in flownetwork.
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        pass  # New implementations
