@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 from scipy.sparse import csc_matrix
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import spsolve, cg
+
 
 
 class PressureFlowSolver(ABC):
@@ -61,6 +62,9 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         :type flownetwork: source.flow_network.FlowNetwork
         """
         flownetwork.pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
+        print(flownetwork.pressure)
+        import pandas as pd
+        pd.DataFrame(flownetwork.pressure).to_csv('DS.csv')
 
 
 class PressureFlowSolverConjugateGradient(PressureFlowSolver):
@@ -74,4 +78,7 @@ class PressureFlowSolverConjugateGradient(PressureFlowSolver):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
-        pass  # New implementations
+        flownetwork.pressure, ex_code = cg(csc_matrix(flownetwork.system_matrix), flownetwork.rhs, tol=1e-15)
+        print(flownetwork.pressure)
+        import pandas as pd
+        pd.DataFrame(flownetwork.pressure).to_csv('CGS.csv')

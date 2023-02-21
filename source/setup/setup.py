@@ -93,6 +93,9 @@ class SetupSimulation(Setup):
             case 1:
                 imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
                 imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirect(PARAMETERS)  # Direct solver
+            case 2:
+                imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
+                imp_solver = pressure_flow_solver.PressureFlowSolverConjugateGradient(PARAMETERS)  # Direct solver
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
