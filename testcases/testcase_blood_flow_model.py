@@ -17,7 +17,7 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,  # 1: generate hexagonal graph
+        "read_network_option": 2,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: todo import graph from igraph files
                                    # 4: todo import graph from edge_data and vertex_data pickle files
@@ -31,8 +31,9 @@ PARAMETERS = MappingProxyType(
         "rbc_impact_option": 2,  # 1: No RBCs (hd=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3-...: todo: Other laws. in vivo?
-        "solver_option": 1,  # 1: Direct solver
-                             # 2-...: other solvers (CG, AMG, ...)
+        "solver_option": 2,  # 1: Direct solver
+                             # 2: PyAMG solver
+                             # 3-...: other solvers (CG, AMG, ...)
 
         # Blood properties
         "ht_constant": 0.3,  # only required if RBC impact is considered

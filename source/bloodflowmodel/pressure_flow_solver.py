@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from types import MappingProxyType
-from scipy.sparse import csc_matrix
+from scipy.sparse import csc_matrix, csr_matrix
 from scipy.sparse.linalg import spsolve, cg
+from pyamg import smoothed_aggregation_solver
 
 
 
@@ -67,7 +68,7 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         pd.DataFrame(flownetwork.pressure).to_csv('DS.csv')
 
 
-class PressureFlowSolverConjugateGradient(PressureFlowSolver):
+class PressureFlowSolverPyAMG(PressureFlowSolver):
     """
     Class for calculating the pressure with a sparse direct solver.
     """
@@ -78,7 +79,8 @@ class PressureFlowSolverConjugateGradient(PressureFlowSolver):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
-        flownetwork.pressure, ex_code = cg(csc_matrix(flownetwork.system_matrix), flownetwork.rhs, tol=1e-15)
-        print(flownetwork.pressure)
+        ml = smoothed_aggregation_solver(csr_matrix(flownetwork.system_matrix))  # AMG solver
+        M = ml.aspreconditioner(cycle='V')  # preconditioner
+        flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, tol=8e-18, M=M)  # solve with CG
         import pandas as pd
-        pd.DataFrame(flownetwork.pressure).to_csv('CGS.csv')
+        pd.DataFrame(flownetwork.pressure).to_csv('IterativeSolver.csv')
