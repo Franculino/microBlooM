@@ -77,10 +77,10 @@ class AdjointMethodSolverPyAMG(AdjointMethodSolver):
         M = ml.aspreconditioner(cycle='V')  # preconditioner
         if inversemodel._lambda is None:
             inversemodel._lambda, _ = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure, tol=1e-10,
-                                  M=M)  # solve with CG
+                                         M=M)  # solve with CG
         else:
             inversemodel._lambda, _ = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure,
-                                  x0=inversemodel._lambda, tol=1e-10, M=M)  # solve with CG
+                                         x0=inversemodel._lambda, tol=1e-10, M=M)  # solve with CG
         return inversemodel._lambda
 
 # Todo: Implement other solvers (cg, amg, ...), do when necessary
