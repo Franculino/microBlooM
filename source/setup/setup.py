@@ -95,7 +95,7 @@ class SetupSimulation(Setup):
                 imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirect(PARAMETERS)  # Direct solver
             case 2:
                 imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
-                imp_solver = pressure_flow_solver.PressureFlowSolverPyAMG(PARAMETERS)  # Direct solver
+                imp_solver = pressure_flow_solver.PressureFlowSolverPyAMG(PARAMETERS)  # Iterative solver
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
@@ -138,6 +138,8 @@ class SetupSimulation(Setup):
         match PARAMETERS["inverse_model_solver"]:
             case 1:
                 imp_adjointsolver = adjoint_method_solver.AdjointMethodSolverSparseDirect(PARAMETERS)
+            case 2:
+                imp_adjointsolver = adjoint_method_solver.AdjointMethodSolverPyAMG(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option for the solver of the inverse model (inverse_model_solver)")
 

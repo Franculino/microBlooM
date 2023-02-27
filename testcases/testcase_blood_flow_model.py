@@ -33,7 +33,7 @@ PARAMETERS = MappingProxyType(
                                  # 3-...: todo: Other laws. in vivo?
         "solver_option": 2,  # 1: Direct solver
                              # 2: PyAMG solver
-                             # 3-...: other solvers (CG, AMG, ...)
+                             # 3-...: other solvers
 
         # Blood properties
         "ht_constant": 0.3,  # only required if RBC impact is considered

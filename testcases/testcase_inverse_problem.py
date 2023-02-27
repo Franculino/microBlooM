@@ -23,7 +23,7 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,  # 1: generate hexagonal graph
+        "read_network_option": 2,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: todo import graph from igraph files
                                    # 4: todo import graph from edge_data and vertex_data pickle files
@@ -38,7 +38,9 @@ PARAMETERS = MappingProxyType(
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: todo Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
-                             # 2-...: other solvers (CG, AMG, ...)
+                             # 2: PyAMG solver
+                             # 3-...: other solvers (CG, AMG, ...)
+
         # Blood properties
         "ht_constant": 0.3,
         "mu_plasma": 0.0012,
@@ -68,7 +70,9 @@ PARAMETERS = MappingProxyType(
                                # 2: Relative transmissibility to baseline (alpha = T/T_base)
         "parameter_restriction": 2,  # 1: No restriction of parameter values (alpha_prime = alpha)
                                      # 2: Restriction of parameter by a +/- tolerance to baseline
-        "inverse_model_solver": 1,  # Direct solver
+        "inverse_model_solver": 1,  # 1: Direct solver
+                                    # 2: PyAMG solver
+                                    # 3-...: other solvers
         # Target edges
         "csv_path_edge_target_data": "data/inverse_model/edge_target.csv",
         # Parameter edges
@@ -76,7 +80,7 @@ PARAMETERS = MappingProxyType(
         # Gradient descent options:
         "gamma": .5,
         "phi": .5,
-        "max_nr_of_iterations": 50
+        "max_nr_of_iterations": 2
     }
 )
 
@@ -119,7 +123,7 @@ for i in range(nr_of_iterations):
     flow_network.update_blood_flow()
     inverse_model.update_cost()
 
-    if i % 5 == 0:
+    if i % 1 == 0:
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
 print(str(nr_of_iterations-1)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
 print("Solve the inverse problem and update the diameters: DONE")

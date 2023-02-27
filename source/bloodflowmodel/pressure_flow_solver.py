@@ -63,14 +63,11 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         :type flownetwork: source.flow_network.FlowNetwork
         """
         flownetwork.pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
-        print(flownetwork.pressure)
-        import pandas as pd
-        pd.DataFrame(flownetwork.pressure).to_csv('DS.csv')
 
 
 class PressureFlowSolverPyAMG(PressureFlowSolver):
     """
-    Class for calculating the pressure with a sparse direct solver.
+    Class for calculating the pressure with an algebraic multigrid (AMG) solver.
     """
 
     def _solve_pressure(self, flownetwork):
@@ -81,6 +78,9 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
         """
         ml = smoothed_aggregation_solver(csr_matrix(flownetwork.system_matrix))  # AMG solver
         M = ml.aspreconditioner(cycle='V')  # preconditioner
-        flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, tol=8e-18, M=M)  # solve with CG
-        import pandas as pd
-        pd.DataFrame(flownetwork.pressure).to_csv('IterativeSolver.csv')
+        if flownetwork.pressure is None:
+            flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, tol=1e-17, M=M)  # solve with CG
+        else:
+            flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, x0=flownetwork.pressure,
+                                         tol=1e-17, M=M)  # solve with CG
+

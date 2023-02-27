@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from types import MappingProxyType
-from scipy.sparse import csc_matrix
-from scipy.sparse.linalg import spsolve
+from scipy.sparse import csc_matrix, csr_matrix
+from scipy.sparse.linalg import spsolve, cg
+from pyamg import smoothed_aggregation_solver
 
 
 class AdjointMethodSolver(ABC):
@@ -54,6 +55,32 @@ class AdjointMethodSolverSparseDirect(AdjointMethodSolver):
         :rtype: 1d numpy array
         """
         lambda_vector = spsolve(csc_matrix(flownetwork.system_matrix.transpose()), -inversemodel.d_f_d_pressure)
+        print(lambda_vector)
         return lambda_vector
+
+class AdjointMethodSolverPyAMG(AdjointMethodSolver):
+    """
+    Class for updating the gradient in alpha space with a sparse direct solver.
+    """
+
+    def _get_lambda_vector(self, inversemodel, flownetwork):
+        """
+        Solve the adjoint equation with an algebraic multigrid (AMG) solver.
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        :returns: Lambda vector
+        :rtype: 1d numpy array
+        """
+        ml = smoothed_aggregation_solver(csr_matrix(flownetwork.system_matrix))  # AMG solver
+        M = ml.aspreconditioner(cycle='V')  # preconditioner
+        if inversemodel._lambda is None:
+            inversemodel._lambda, _ = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure, tol=1e-10,
+                                  M=M)  # solve with CG
+        else:
+            inversemodel._lambda, _ = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure,
+                                  x0=inversemodel._lambda, tol=1e-10, M=M)  # solve with CG
+        return inversemodel._lambda
 
 # Todo: Implement other solvers (cg, amg, ...), do when necessary
