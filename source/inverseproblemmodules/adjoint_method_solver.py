@@ -54,12 +54,12 @@ class AdjointMethodSolverSparseDirect(AdjointMethodSolver):
         :returns: Lambda vector
         :rtype: 1d numpy array
         """
-        lambda_vector = spsolve(csc_matrix(flownetwork.system_matrix.transpose()), -inversemodel.d_f_d_pressure)
-        return lambda_vector
+        inversemodel._lambda = spsolve(csc_matrix(flownetwork.system_matrix.transpose()), -inversemodel.d_f_d_pressure)
+        return inversemodel._lambda
 
 class AdjointMethodSolverPyAMG(AdjointMethodSolver):
     """
-    Class for updating the gradient in alpha space with a sparse direct solver.
+    Class for updating the gradient in alpha space with an algebraic multigrid (AMG) solver.
     """
 
     def _get_lambda_vector(self, inversemodel, flownetwork):
@@ -75,9 +75,9 @@ class AdjointMethodSolverPyAMG(AdjointMethodSolver):
         ml = smoothed_aggregation_solver(csr_matrix(flownetwork.system_matrix))  # AMG solver
         M = ml.aspreconditioner(cycle='V')  # preconditioner
         if inversemodel._lambda is None:
-            inversemodel._lambda, _ = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure, tol=1e-10,
+            inversemodel._lambda, info = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure, tol=1e-8,
                                          M=M)  # solve with CG
         else:
-            inversemodel._lambda, _ = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure,
-                                         x0=inversemodel._lambda, tol=1e-10, M=M)  # solve with CG
+            inversemodel._lambda, info = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure,
+                                         x0=inversemodel._lambda, tol=1e-8, M=M)  # solve with CG
         return inversemodel._lambda

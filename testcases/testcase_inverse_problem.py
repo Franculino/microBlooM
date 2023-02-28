@@ -23,7 +23,7 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 2,  # 1: generate hexagonal graph
+        "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: todo import graph from igraph files
                                    # 4: todo import graph from edge_data and vertex_data pickle files
@@ -80,7 +80,7 @@ PARAMETERS = MappingProxyType(
         # Gradient descent options:
         "gamma": .5,
         "phi": .5,
-        "max_nr_of_iterations": 5
+        "max_nr_of_iterations": 50
     }
 )
 
@@ -123,7 +123,7 @@ for i in range(nr_of_iterations):
     flow_network.update_blood_flow()
     inverse_model.update_cost()
 
-    if i % 1 == 0:
+    if i % 5 == 0:
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
 print(str(nr_of_iterations-1)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
 print("Solve the inverse problem and update the diameters: DONE")
