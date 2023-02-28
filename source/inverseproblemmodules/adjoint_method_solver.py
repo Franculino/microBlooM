@@ -75,9 +75,9 @@ class AdjointMethodSolverPyAMG(AdjointMethodSolver):
         ml = smoothed_aggregation_solver(csr_matrix(flownetwork.system_matrix))  # AMG solver
         M = ml.aspreconditioner(cycle='V')  # preconditioner
         if inversemodel._lambda is None:
-            inversemodel._lambda, info = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure, tol=1e-8,
+            inversemodel._lambda, _ = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure, tol=1e-8,
                                          M=M)  # solve with CG
         else:
-            inversemodel._lambda, info = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure,
+            inversemodel._lambda, _ = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure,
                                          x0=inversemodel._lambda, tol=1e-8, M=M)  # solve with CG
         return inversemodel._lambda
