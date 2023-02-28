@@ -55,7 +55,6 @@ class AdjointMethodSolverSparseDirect(AdjointMethodSolver):
         :rtype: 1d numpy array
         """
         lambda_vector = spsolve(csc_matrix(flownetwork.system_matrix.transpose()), -inversemodel.d_f_d_pressure)
-        print(lambda_vector)
         return lambda_vector
 
 class AdjointMethodSolverPyAMG(AdjointMethodSolver):
@@ -82,5 +81,3 @@ class AdjointMethodSolverPyAMG(AdjointMethodSolver):
             inversemodel._lambda, _ = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure,
                                          x0=inversemodel._lambda, tol=1e-10, M=M)  # solve with CG
         return inversemodel._lambda
-
-# Todo: Implement other solvers (cg, amg, ...), do when necessary

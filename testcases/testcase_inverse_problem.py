@@ -80,7 +80,7 @@ PARAMETERS = MappingProxyType(
         # Gradient descent options:
         "gamma": .5,
         "phi": .5,
-        "max_nr_of_iterations": 2
+        "max_nr_of_iterations": 5
     }
 )
 

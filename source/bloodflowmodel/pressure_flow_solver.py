@@ -79,8 +79,8 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
         ml = smoothed_aggregation_solver(csr_matrix(flownetwork.system_matrix))  # AMG solver
         M = ml.aspreconditioner(cycle='V')  # preconditioner
         if flownetwork.pressure is None:
-            flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, tol=1e-17, M=M)  # solve with CG
+            flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, tol=1E-17, M=M)  # solve with CG
         else:
             flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, x0=flownetwork.pressure,
-                                         tol=1e-17, M=M)  # solve with CG
+                                         tol=1E-19, M=M)  # solve with CG
 
