@@ -13,3 +13,4 @@
 - Scipy 1.9.3
 - igraph 0.10.2
 - Pandas 1.5.1
+- Pyamg 4.2.3

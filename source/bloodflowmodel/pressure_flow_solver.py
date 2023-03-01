@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from types import MappingProxyType
-from scipy.sparse import csc_matrix
-from scipy.sparse.linalg import spsolve
+from scipy.sparse import csc_matrix, csr_matrix
+from scipy.sparse.linalg import spsolve, cg
+from pyamg import smoothed_aggregation_solver
+
 
 
 class PressureFlowSolver(ABC):
@@ -61,3 +63,24 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         :type flownetwork: source.flow_network.FlowNetwork
         """
         flownetwork.pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
+
+
+class PressureFlowSolverPyAMG(PressureFlowSolver):
+    """
+    Class for calculating the pressure with an algebraic multigrid (AMG) solver.
+    """
+
+    def _solve_pressure(self, flownetwork):
+        """
+        Solve the linear system of equations for the pressure and update the pressure in flownetwork.
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        ml = smoothed_aggregation_solver(csr_matrix(flownetwork.system_matrix))  # AMG solver
+        M = ml.aspreconditioner(cycle='V')  # preconditioner
+        if flownetwork.pressure is None:
+            flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, tol=1E-17, M=M)  # solve with CG
+        else:
+            flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, x0=flownetwork.pressure,
+                                         tol=1E-19, M=M)  # solve with CG
+

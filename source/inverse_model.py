@@ -66,6 +66,7 @@ class InverseModel(object):
         self.d_f_d_alpha = None  # Vector
         self.d_f_d_pressure = None  # Vector
         self.d_g_d_alpha = None  # coo_matrix
+        self._lambda = None # Vector
 
         # Gradient
         self.gradient_alpha = None

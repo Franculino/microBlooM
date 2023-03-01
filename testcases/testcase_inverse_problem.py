@@ -38,7 +38,9 @@ PARAMETERS = MappingProxyType(
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: todo Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
-                             # 2-...: other solvers (CG, AMG, ...)
+                             # 2: PyAMG solver
+                             # 3-...: other solvers (CG, AMG, ...)
+
         # Blood properties
         "ht_constant": 0.3,
         "mu_plasma": 0.0012,
@@ -68,7 +70,9 @@ PARAMETERS = MappingProxyType(
                                # 2: Relative transmissibility to baseline (alpha = T/T_base)
         "parameter_restriction": 2,  # 1: No restriction of parameter values (alpha_prime = alpha)
                                      # 2: Restriction of parameter by a +/- tolerance to baseline
-        "inverse_model_solver": 1,  # Direct solver
+        "inverse_model_solver": 1,  # 1: Direct solver
+                                    # 2: PyAMG solver
+                                    # 3-...: other solvers
         # Target edges
         "csv_path_edge_target_data": "data/inverse_model/edge_target.csv",
         # Parameter edges
