@@ -1,6 +1,8 @@
+import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
+import igraph
 
 
 class ReadNetwork(ABC):
@@ -184,7 +186,7 @@ class ReadNetworkCsv(ReadNetwork):
         path_vertex_data = self._PARAMETERS["csv_path_vertex_data"]
         path_boundary_data = self._PARAMETERS["csv_path_boundary_data"]
 
-        # Read files with pandas.
+        # Read files with pandas
         df_edge_data = pd.read_csv(path_edge_data)
         df_vertex_data = pd.read_csv(path_vertex_data)
         df_boundary_data = pd.read_csv(path_boundary_data)
@@ -218,11 +220,158 @@ class ReadNetworkCsv(ReadNetwork):
 
 class ReadNetworkIgraph(ReadNetwork):
     def read(self, flownetwork):
-        # import pickle
-        # todo: implementation to read graph from file (pickle).
+        """
+        Import a network from igraph file (pickle file)
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+
+        # Extract file path of network file
+        path_igraph = self._PARAMETERS["pkl_path_igraph"]
+
+        # Import pickle
+        graph = igraph.Graph.Read_Pickle(path_igraph)
+
+        # Check graph attributes
+        current_graph_attributes = graph.attributes()
+        current_vertex_attributes = graph.vs.attributes()
+        current_edge_attributes = graph.es.attributes()
+
+        target_attributes = ["Mouse", "network_gen_date"]
+
+        target_vert_attri = ["ACA_in", "MCA_in", "COW_in", "coords", "is_AV_root", "is_DA_startingPt",
+                             "is_DA_startingPt_added_manually", "is_connected_2caps"]
+
+        target_edge_attri = ["added_manually", "diam_post_exp", "diam_pre_exp", "diameter", "index_exp",
+                             "is_collateral", "is_stroke", "length", "type",
+                             "vRBC_post_exp", "vRBC_pre_exp", "vRBC_pre_larger10"]
+
+        # deleted:  "diam_post0_exp", "diam_post30_exp", "diam_post60_exp", "diam_post90_exp", "diam_post120_exp",
+        #           "vRBC_post0_exp", "vRBC_post0_larger10", "vRBC_post30_exp", "vRBC_post30_larger10", "vRBC_post60_exp",
+        #           "vRBC_post60_larger10", "vRBC_post90_exp",     "vRBC_post90_larger10", "vRBC_post120_exp",
+        #           "vRBC_post120_larger10",
+
+        attributes_missing_in_graph = []
+        attributes_excessive_in_graph = []
+        is_consistent = True
+
+        # Check for duplicates in the target_attributes, target_vert_attri & target_edge_attri
+        # Sets cannot have two items with the same value. Duplicates Not Allowed.
+        if len(set(target_attributes)) != len(target_attributes) or len(set(target_vert_attri)) != len(
+                target_vert_attri) or len(set(target_edge_attri)) != len(target_edge_attri):
+            is_consistent = False
+            print("List of target edge attributes not unique.")
+            return is_consistent
+
+        # check if all target attributes are in current graph
+        # Graph attributes
+        for attr in target_attributes:
+            if attr in current_graph_attributes:
+                continue
+            else:
+                attributes_missing_in_graph.append(attr)
+                is_consistent = False
+
+        # Vertex attributes
+        for attr in target_vert_attri:
+            if attr in current_vertex_attributes:
+                continue
+            else:
+                attributes_missing_in_graph.append(attr)
+                is_consistent = False
+
+        # Edge attributes
+        for attr in target_edge_attri:
+            if attr in current_edge_attributes:
+                continue
+            else:
+                attributes_missing_in_graph.append(attr)
+                is_consistent = False
+
+        # Check if no additional attributes are in current graph
+        # Graph attributes
+        for attr in current_graph_attributes:
+            if attr in target_attributes:
+                continue
+            else:
+                attributes_excessive_in_graph.append(attr)
+                is_consistent = False
+
+        # Vertex attributes
+        for attr in current_vertex_attributes:
+            if attr in target_vert_attri:
+                continue
+            else:
+                attributes_excessive_in_graph.append(attr)
+                is_consistent = False
+
+        # Edge attributes
+        for attr in current_edge_attributes:
+            if attr in target_edge_attri:
+                continue
+            else:
+                attributes_excessive_in_graph.append(attr)
+                is_consistent = False
+
+        if not is_consistent:
+            print("Something is wrong with graph attributes...")
+            print("The following attributes are missing in current graph:", attributes_missing_in_graph)
+            print("The following attributes are excessive in current graph:", attributes_excessive_in_graph)
+            import sys
+            sys.exit("Warning Message: Check graph attributes")
+
+        print(graph.summary())
+
+        # Assign data to flownetwork class
+        # Edge attributes
+        flownetwork.diameter = np.array(graph.es["diameter"])
+        flownetwork.length = np.array(graph.es["length"])
+        flownetwork.edge_list = np.array(graph.get_edgelist())
+
+        # Vertex attributes (numpy array containing all dimensions)
+        flownetwork.xyz = np.array(graph.vs["coords"])
+
+        # Network attributes
+        flownetwork.nr_of_vs = np.array(graph.vcount())
+        flownetwork.nr_of_es = np.array(graph.ecount())
+
+        # Boundaries
+        boundary_types = self._PARAMETERS["boundaryType"]
+        boundary_values = self._PARAMETERS["boundaryValue"]
+
+        flownetwork.boundary_vs = np.concatenate((np.array(graph.vs(COW_in_eq=1).indices),
+                                                  np.array(graph.vs(is_AV_root_eq=1).indices)))
+
+        flownetwork.boundary_type = np.ones(np.size(flownetwork.boundary_vs), dtype=np.int) * boundary_types[1]
+        flownetwork.boundary_type[0] = boundary_types[0]
+
+        if boundary_types == [1, 1]:
+            # pressure for all AV_roots - outlet
+            flownetwork.boundary_val = np.ones(np.size(flownetwork.boundary_vs)) * boundary_values["outlet_pressure"]
+            # pressure for COW_in - inlet
+            flownetwork.boundary_val[0] = boundary_values["inlet_pressure"]
+        elif boundary_types == [2, 1]:
+            # pressure for all AV_roots - outlet
+            flownetwork.boundary_val = np.ones(np.size(flownetwork.boundary_vs)) * boundary_values["outlet_pressure"]
+            # flow rate for COW_in - inlet
+            flownetwork.boundary_val[0] = boundary_values["inlet_flow_rate"]
+        elif boundary_types == [1, 2]:
+            # flow rate for all AV_roots - outlet
+            flownetwork.boundary_val = np.ones(np.size(flownetwork.boundary_vs)) * boundary_values["outlet_flow_rate"]
+            # pressure for COW_in - inlet
+            flownetwork.boundary_val[0] = boundary_values["inlet_pressure"]
+        else:
+            import sys
+            sys.exit("Warning Message - Boundary Conditions: Only flow rate boundary conditions were assigned! "
+                     "Define new boundary conditions, including at least one pressure boundary condition!")
+
+
+class ReadNetworkPlk(ReadNetwork):
+    def read(self, flownetwork):
+        # todo: import graph from edge_data and vertex_data pickle files.
         # Need example format from franca. that always consistent
-        # with open(path_es_dict, 'rb') as f:
-        #     data_edge = pickle.load(f, encoding='latin1')
-        # with open(path_vs_dict, 'rb') as f:
-        #     data_vertex = pickle.load(f, encoding='latin1')
+        # with open(path_es_dict, "rb") as f:
+        #     data_edge = pickle.load(f, encoding="latin1")
+        # with open(path_vs_dict, "rb") as f:
+        #     data_vertex = pickle.load(f, encoding="latin1")
         pass

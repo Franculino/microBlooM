@@ -5,6 +5,7 @@ A python script to simulate stationary blood flow in microvascular networks. Cap
 3. Solve for flow rates, pressures and RBC velocities
 4. Save the results in a file
 """
+import sys
 
 from source.flow_network import FlowNetwork
 from types import MappingProxyType
@@ -19,7 +20,7 @@ PARAMETERS = MappingProxyType(
         # Setup parameters for blood flow model
         "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
-                                   # 3: todo import graph from igraph files
+                                   # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
         "write_network_option": 1,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
@@ -56,6 +57,14 @@ PARAMETERS = MappingProxyType(
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
+
+        # Import network from igraph option. Only required for "read_network_option" 3
+        "pkl_path_igraph": "data/network/b6_B_pre_061/b6_B_init.pkl",
+        "boundaryType": [1, 1],  # 1: pressure & 2: flow rate
+        "boundaryValue": {'inlet_pressure': 13332.2,
+                          'inlet_flow_rate': None,
+                          'outlet_pressure': 1333.22,
+                          'outlet_flow_rate': None},
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
