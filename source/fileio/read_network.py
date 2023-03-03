@@ -366,7 +366,7 @@ class ReadNetworkIgraph(ReadNetwork):
                      "Define new boundary conditions, including at least one pressure boundary condition!")
 
 
-class ReadNetworkPlk(ReadNetwork):
+class ReadNetworkPkl(ReadNetwork):
     def read(self, flownetwork):
         # todo: import graph from edge_data and vertex_data pickle files.
         # Need example format from franca. that always consistent
