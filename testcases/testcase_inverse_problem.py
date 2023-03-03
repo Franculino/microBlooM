@@ -92,7 +92,7 @@ PARAMETERS = MappingProxyType(
         "csv_path_edge_target_data": "data/inverse_model/edge_target.csv",
         # Parameter edges
         "csv_path_edge_parameterspace": "data/inverse_model/edge_parameters.csv",
-        #Gradient descent options:
+        # Gradient descent options:
         "gamma": .5,
         "phi": .5,
         "max_nr_of_iterations": 50
