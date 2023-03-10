@@ -64,12 +64,10 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "data/network/b6_B_pre_061/b6_B_init.pkl",
-        "boundaryType": [1, 1],  # 1: pressure & 2: flow rate
-        "boundaryValue": {'inlet_pressure': 13332.2,
-                          'inlet_flow_rate': None,
-                          'outlet_pressure': 1333.22,
-                          'outlet_flow_rate': None},
+        "pkl_path_igraph": "data/network/b6_B_pre_061/b6_B_initial.pkl",
+        "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
+        "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
+        "ig_boundary_value": "boundaryValue",
 
         # Write options
         "write_override_initial_graph": False,
@@ -84,7 +82,7 @@ PARAMETERS = MappingProxyType(
                                # 2: Relative transmissibility to baseline (alpha = T/T_base)
         "parameter_restriction": 2,  # 1: No restriction of parameter values (alpha_prime = alpha)
                                      # 2: Restriction of parameter by a +/- tolerance to baseline
-        "inverse_model_solver": 1,  # 1: Direct solver
+        "inverse_model_solver": 2,  # 1: Direct solver
                                     # 2: PyAMG solver
                                     # 3-...: other solvers
 
