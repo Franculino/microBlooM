@@ -82,7 +82,7 @@ PARAMETERS = MappingProxyType(
                                # 2: Relative transmissibility to baseline (alpha = T/T_base)
         "parameter_restriction": 2,  # 1: No restriction of parameter values (alpha_prime = alpha)
                                      # 2: Restriction of parameter by a +/- tolerance to baseline
-        "inverse_model_solver": 2,  # 1: Direct solver
+        "inverse_model_solver": 1,  # 1: Direct solver
                                     # 2: PyAMG solver
                                     # 3-...: other solvers
 
