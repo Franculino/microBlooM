@@ -1,5 +1,8 @@
+import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
+
+import numpy as np
 from scipy.sparse import csc_matrix, csr_matrix
 from scipy.sparse.linalg import spsolve, cg
 from pyamg import smoothed_aggregation_solver
@@ -70,7 +73,7 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
     Class for calculating the pressure with an algebraic multigrid (AMG) solver.
     """
 
-    def _solve_pressure(self, flownetwork):
+    def _solve_pressure(self, flownetwork, tol=1.00E-06):
         """
         Solve the linear system of equations for the pressure and update the pressure in flownetwork.
         :param flownetwork: flow network object
@@ -78,9 +81,10 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
         """
         ml = smoothed_aggregation_solver(csr_matrix(flownetwork.system_matrix))  # AMG solver
         M = ml.aspreconditioner(cycle='V')  # preconditioner
+        tol_solver = np.abs(np.min(flownetwork.system_matrix)) * tol
+
         if flownetwork.pressure is None:
-            flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, tol=1E-17, M=M)  # solve with CG
+            flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, tol=tol_solver, M=M)  # solve with CG
         else:
             flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, x0=flownetwork.pressure,
-                                         tol=1E-19, M=M)  # solve with CG
-
+                                         tol=tol_solver*tol, M=M)  # solve with CG
