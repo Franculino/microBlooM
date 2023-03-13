@@ -115,7 +115,7 @@ flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
 print("Check flow balance: ...")
-flow_balance.check_flow_balance(flow_network)
+flow_balance.check_flow_balance()
 print("Check flow balance: DONE")
 
 inverse_model.initialise_inverse_model()
@@ -127,7 +127,7 @@ for i in range(nr_of_iterations):
     inverse_model.update_state()
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
-    flow_balance.check_flow_balance(flow_network)
+    flow_balance.check_flow_balance()
     inverse_model.update_cost()
 
     if i % 5 == 0:

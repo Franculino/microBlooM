@@ -9,15 +9,15 @@ class FlowBalance(object):
 
         self.flownetwork = flownetwork
 
-    def _get_flow_balance(self, flownetwork):
+    def _get_flow_balance(self):
 
-        nr_of_vs = flownetwork.nr_of_vs
-        nr_of_es = flownetwork.nr_of_es
+        nr_of_vs = self.flownetwork.nr_of_vs
+        nr_of_es = self.flownetwork.nr_of_es
 
-        edge_list = flownetwork.edge_list
+        edge_list = self.flownetwork.edge_list
 
         flow_balance = np.zeros(nr_of_vs)
-        flow_rate = flownetwork.flow_rate
+        flow_rate = self.flownetwork.flow_rate
 
         for eid in range(nr_of_es):
             flow_balance[edge_list[eid, 0]] += flow_rate[eid]
@@ -25,13 +25,13 @@ class FlowBalance(object):
 
         return flow_balance
 
-    def check_flow_balance(self, flownetwork, tol=1.00E-05):
+    def check_flow_balance(self, tol=1.00E-05):
 
-        nr_of_vs = flownetwork.nr_of_vs
-        flow_rate = flownetwork.flow_rate
-        boundary_vs = flownetwork.boundary_vs
+        nr_of_vs = self.flownetwork.nr_of_vs
+        flow_rate = self.flownetwork.flow_rate
+        boundary_vs = self.flownetwork.boundary_vs
 
-        flow_balance = self._get_flow_balance(flownetwork)
+        flow_balance = self._get_flow_balance()
 
         ref_flow = np.abs(flow_rate[boundary_vs[0]])
         tol_flow = tol * ref_flow
