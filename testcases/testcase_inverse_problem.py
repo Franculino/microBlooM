@@ -17,6 +17,7 @@ import sys
 from source.flow_network import FlowNetwork
 from source.inverse_model import InverseModel
 from source.visualisation.solution_monitoring_inverseproblem import SolutionMonitoring
+from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
 
@@ -29,7 +30,7 @@ PARAMETERS = MappingProxyType(
         # Setup parameters for blood flow model
         "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
-                                   # 3: todo import graph from igraph files
+                                   # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
         "write_network_option": 2,  # 1: do not write anything
                                     # 2: igraph format
@@ -48,6 +49,7 @@ PARAMETERS = MappingProxyType(
         # Blood properties
         "ht_constant": 0.3,
         "mu_plasma": 0.0012,
+
         # Hexagonal network properties
         "nr_of_hexagon_x": 3,
         "nr_of_hexagon_y": 3,
@@ -56,6 +58,7 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_vertices": [0, 27],
         "hexa_boundary_values": [2, 1],
         "hexa_boundary_types": [1, 1],  # 1: pressure, 2: flow rate
+
         # Import network from csv options
         "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
         "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
@@ -64,11 +67,21 @@ PARAMETERS = MappingProxyType(
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
+
+        # Import network from igraph option. Only required for "read_network_option" 3
+        "pkl_path_igraph": "data/network/b6_B_pre_061/b6_B_initial.pkl",
+        "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
+        "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
+        "ig_boundary_value": "boundaryValue",
+
         # Write options
         "write_override_initial_graph": False,
         "write_path_igraph": "data/network/b6_B_pre_061_simulated.pkl", # only required for "write_network_option" 2
+
         ##########################
         # Inverse problem options
+        ##########################
+
         # Define parameter space
         "parameter_space": 1,  # 1: Relative diameter to baseline (alpha = d/d_base)
                                # 2: Relative transmissibility to baseline (alpha = T/T_base)
@@ -77,6 +90,7 @@ PARAMETERS = MappingProxyType(
         "inverse_model_solver": 1,  # 1: Direct solver
                                     # 2: PyAMG solver
                                     # 3-...: other solvers
+
         # Target edges
         "csv_path_edge_target_data": "data/inverse_model/edge_target.csv",
         # Parameter edges
@@ -108,6 +122,7 @@ flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, im
 inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter,
                              imp_adjoint_solver, imp_alpha_mapping, PARAMETERS)
 solution_monitoring = SolutionMonitoring(flow_network, inverse_model, PARAMETERS)
+flow_balance = FlowBalance(flow_network)
 
 print("Read network: ...")
 flow_network.read_network()
@@ -121,6 +136,10 @@ print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
+print("Check flow balance: ...")
+flow_balance.check_flow_balance()
+print("Check flow balance: DONE")
+
 inverse_model.initialise_inverse_model()
 inverse_model.update_cost()
 solution_monitoring.get_arrays_for_plots()
@@ -132,6 +151,7 @@ for i in range(1,nr_of_iterations+1):
     inverse_model.update_state()
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
+    flow_balance.check_flow_balance()
     inverse_model.update_cost()
 
     if i % 5 == 0:
