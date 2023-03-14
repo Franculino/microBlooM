@@ -15,6 +15,7 @@ on given flow rates and velocities in selected edges. Capabilities:
 
 from source.flow_network import FlowNetwork
 from source.inverse_model import InverseModel
+from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
 
@@ -99,6 +100,7 @@ flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, im
                            imp_solver, imp_velocity, PARAMETERS)
 inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter,
                              imp_adjoint_solver, imp_alpha_mapping, PARAMETERS)
+flow_balance = FlowBalance(flow_network)
 
 print("Read network: ...")
 flow_network.read_network()
@@ -112,6 +114,10 @@ print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
+print("Check flow balance: ...")
+flow_balance.check_flow_balance()
+print("Check flow balance: DONE")
+
 inverse_model.initialise_inverse_model()
 inverse_model.update_cost()
 
@@ -121,6 +127,7 @@ for i in range(nr_of_iterations):
     inverse_model.update_state()
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
+    flow_balance.check_flow_balance()
     inverse_model.update_cost()
 
     if i % 5 == 0:
