@@ -52,6 +52,8 @@ class SetupSimulation(Setup):
                 imp_read = read_network.ReadNetworkHexagonal(PARAMETERS)  # Initialises a hexagonal 2D network
             case 2:
                 imp_read = read_network.ReadNetworkCsv(PARAMETERS)  # Imports an arbitrary network from csv files
+            case 3:
+                imp_read = read_network.ReadNetworkIgraph(PARAMETERS)  # Imports a graph from igraph file (pickle file)
             case _:
                 sys.exit("Error: Choose valid option to generate or import a network (read_network_option)")
 
