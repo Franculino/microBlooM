@@ -12,11 +12,15 @@ on given flow rates and velocities in selected edges. Capabilities:
 9. Optimisation of diameters for a fixed number of iteration steps.
 10. Save the results in a file.
 """
+import sys
 
 from source.flow_network import FlowNetwork
 from source.inverse_model import InverseModel
+from source.visualisation.solution_monitoring_inverseproblem import SolutionMonitoring
 from types import MappingProxyType
 import source.setup.setup as setup
+
+import numpy as np
 
 
 # MappingProxyType is basically a const dict
@@ -80,7 +84,11 @@ PARAMETERS = MappingProxyType(
         # Gradient descent options:
         "gamma": .5,
         "phi": .5,
-        "max_nr_of_iterations": 50
+        "max_nr_of_iterations": 50,
+        # Output
+        "png_path_solution_monitoring": "output/solution_monitoring_plots/",
+        "csv_path_solution_monitoring": "output/solution_monitoring_csv/",
+        "pkl_path_solution_monitoring": "output/solution_monitoring_pkl/"
     }
 )
 
@@ -99,6 +107,7 @@ flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, im
                            imp_solver, imp_velocity, PARAMETERS)
 inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter,
                              imp_adjoint_solver, imp_alpha_mapping, PARAMETERS)
+solution_monitoring = SolutionMonitoring(flow_network, inverse_model, PARAMETERS)
 
 print("Read network: ...")
 flow_network.read_network()
@@ -114,18 +123,28 @@ print("Update flow, pressure and velocity: DONE")
 
 inverse_model.initialise_inverse_model()
 inverse_model.update_cost()
+solution_monitoring.get_arrays_for_plots()
 
 nr_of_iterations = int(PARAMETERS["max_nr_of_iterations"])
 print("Solve the inverse problem and update the diameters: ...")
-for i in range(nr_of_iterations):
+for i in range(1,nr_of_iterations+1):
+    inverse_model._current_iteration = int(i)
     inverse_model.update_state()
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
     inverse_model.update_cost()
 
     if i % 5 == 0:
+        solution_monitoring.get_arrays_for_plots()
+
+    if i % 10 == 0:
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
-print(str(nr_of_iterations-1)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
+        print("Plot graphs and export data: ...")
+        solution_monitoring.plot_cost_fuction_vs_iterations()
+        solution_monitoring.export_data_convergence_csv()
+        solution_monitoring.export_sim_data_vs_es_csv()
+        print("Plot graphs and store data: DONE")
+print(str(nr_of_iterations)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
 print("Solve the inverse problem and update the diameters: DONE")
 
 flow_network.write_network()
