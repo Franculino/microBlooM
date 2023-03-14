@@ -1,5 +1,3 @@
-import sys
-
 import numpy as np
 import pandas as pd
 import igraph
@@ -22,9 +20,10 @@ class SolutionMonitoring(object):
 
     def get_arrays_for_plots(self):
 
+        current_iteration = self.inversemodel._current_iteration
+
         # Create arrays for plotting cost_function vs iterations
         f_h = self.inversemodel.f_h
-        current_iteration = self.inversemodel._current_iteration
         self.inversemodel._iteration_array = np.append(self.inversemodel._iteration_array, current_iteration)
         self.inversemodel._f_h_array = np.append(self.inversemodel._f_h_array, f_h)
 
@@ -44,13 +43,14 @@ class SolutionMonitoring(object):
         current_rbc_velocity = rbc_velocity[edge_id_target[is_target_type_2]]
 
         if current_iteration == 0:
-            self.inversemodel._flow_rate_tuning_array = np.array(current_flow_rate)
-            self.inversemodel._rbc_velocity_tuning_array = np.array(current_rbc_velocity)
+            self.inversemodel._flow_rate_sim_array = np.array(current_flow_rate)
+            self.inversemodel._rbc_velocity_sim_array = np.array(current_rbc_velocity)
         else:
-            self.inversemodel._flow_rate_tuning_array = np.vstack((self.inversemodel._flow_rate_tuning_array,
+            self.inversemodel._flow_rate_sim_array = np.vstack((self.inversemodel._flow_rate_sim_array,
                                                                    current_flow_rate))
-            self.inversemodel._rbc_velocity_tuning_array = np.vstack((self.inversemodel._rbc_velocity_tuning_array,
+            self.inversemodel._rbc_velocity_sim_array = np.vstack((self.inversemodel._rbc_velocity_sim_array,
                                                                       current_rbc_velocity))
+
         return
 
     def plot_cost_fuction_vs_iterations(self):
@@ -75,52 +75,120 @@ class SolutionMonitoring(object):
         ax.grid(which="minor", color="#CCCCCC", linestyle=":")
 
         fig.savefig(filepath, dpi=600)
-
         plt.close(fig)
 
-    def plot_sim_target_value_vs_iterations(self):
+        return
 
-        rbc_velocity_tuning = self.inversemodel._rbc_velocity_tuning_array
+    def plot_sim_target_values_vs_iterations(self):
 
-        data = pd.read_csv(filename_csv + 'cost_function_data_trial_' + str(trial) + '.csv')
-        iterations = data['iterations'].values
+        png_path = self._PARAMETERS["png_path_solution_monitoring"]
+        current_iteration = self.inversemodel._current_iteration
 
-        n_edge_tuning = int((len(data.columns) - 2) / 2)  # number of tuning edges
-        n_graphs_pre_plot = 3
-        n_plots = int(n_edge_tuning // n_graphs_pre_plot + 1)
-        n_row = 1
-        n_col = n_plots
+        filepath_rbc_velocity = png_path + "tuning_urbc_vs_iterations_" + str(current_iteration) + ".png"
+        filepath_flow_rate = png_path + "tuning_flowrate_vs_iterations_" + str(current_iteration) + ".png"
 
-        n2 = 0
-        fig, ax = plt.subplots(n_row, n_col, sharex='col', sharey='row')
+        rbc_velocity_sim = self.inversemodel._rbc_velocity_sim_array
+        flow_rate_sim = self.inversemodel._flow_rate_sim_array
+        iterations = self.inversemodel._iteration_array
 
-        for j in range(n_col):
-            n_edge_tuning -= n_graphs_pre_plot
-            i = 0
-            if n_edge_tuning > 0:
-                n1 = n2
-                n2 += n_graphs_pre_plot
+        edge_constraint_value = self.inversemodel.edge_constraint_value
+        edge_constraint_range = self.inversemodel.edge_constraint_range_pm
+        edge_constraint_type = self.inversemodel.edge_constraint_type
+        is_target_type_1 = np.logical_and(edge_constraint_type == 1, edge_constraint_range == 0.)
+        is_target_type_2 = np.logical_and(edge_constraint_type == 2, edge_constraint_range == 0.)
+        target_values_flow_rate = edge_constraint_value[is_target_type_1]
+        target_values_rbc_velocity = edge_constraint_value[is_target_type_2]
+
+        n_edge_rbc_velocity = np.size(rbc_velocity_sim, axis=1)
+        n_edge_flow_rate = np.size(flow_rate_sim, axis=1)
+
+        # Plot n_curves per each graph - n_graph is the number of graphs in one panel
+        n_curves = 3
+        if n_edge_rbc_velocity % n_curves == 0:
+            n_graphs_rbc_velocity = n_edge_rbc_velocity // n_curves
+        else:
+            n_graphs_rbc_velocity = (n_edge_rbc_velocity // n_curves) + 1
+
+        if n_edge_flow_rate % n_curves == 0:
+            n_graphs_flow_rate = n_edge_flow_rate // n_curves
+        else:
+            n_graphs_flow_rate = (n_edge_flow_rate // n_curves) + 1
+
+        n_cols = 3
+        if n_graphs_rbc_velocity > 0:
+            if n_graphs_rbc_velocity % n_cols == 0:
+                n_rows = n_graphs_rbc_velocity // n_cols
             else:
-                n1 = n2
-                n2 = n_edge_tuning + n_graphs_pre_plot + n1
-            for k in range(n1, n2):
-                c = ['blue', 'green', 'red']
-                ax[j].plot(iterations, data['tuning_Urbc_' + str(k) + ' (mm/s)'].values, linewidth=2,
-                           label='Tuned_Urbc', color=c[i])
-                ax[j].hlines(y=data['target_Urbc_' + str(k) + ' (mm/s)'].values, xmin=0, xmax=iterations[-1],
-                             linewidth=1, linestyles='--', label='Target_Urbc', color=c[i])
-                ax[j].xaxis.set_major_locator(MaxNLocator(integer=True))
-                i += 1
-            ax[j].tick_params(axis='x', labelsize=14)
-            ax[j].tick_params(axis='y', labelsize=14)
+                n_rows = (n_graphs_rbc_velocity // n_cols) + 1
 
-        ax[0].set_ylabel('RBC velocity [mm/s]', fontsize=20)
-        fig.suptitle('RBC velocity vs Number of iterations, after ' + str(iterations[-1]) + ' iterations', fontsize=22)
-        fig.set_size_inches(40, 10, forward=True)
-        filepath = filename_graphs + "Urbc_tuning_PAs_vs_iterations_trial" + str(trial) + ".png"
-        fig.savefig(filepath, dpi=700)
+            fig, ax = plt.subplots(n_rows, n_cols, sharex='col', sharey='row')
+            n2 = 0
+            for j in range(n_cols):
+                n_edge_rbc_velocity -= n_curves
+                i = 0
+                if n_edge_rbc_velocity > 0:
+                    n1 = n2
+                    n2 += n_curves
+                else:
+                    n1 = n2
+                    n2 = n_edge_rbc_velocity + n_curves + n1
+                for k in range(n1, n2):
+                    c = ['blue', 'green', 'red']
+                    ax[j].plot(iterations, rbc_velocity_sim[:, k], linewidth=2, label='Tuned', color=c[i])
+                    ax[j].hlines(y=target_values_rbc_velocity[k], xmin=0, xmax=iterations[-1], linewidth=1,
+                                 linestyles='--', label='Target', color=c[i])
+                    ax[j].xaxis.set_major_locator(MaxNLocator(integer=True))
+                    i += 1
+                ax[j].tick_params(axis='x', labelsize=14)
+                ax[j].tick_params(axis='y', labelsize=14)
+            ax[0].set_ylabel('RBC velocity [m/s]', fontsize=20)
+            fig.suptitle('After ' + str(current_iteration) + ' iterations', fontsize=22)
+            if n_edge_rbc_velocity % n_curves > 0:
+                n_graphs_empty = n_curves - (n_graphs_rbc_velocity % n_curves)
+                for i in range(1, n_graphs_empty+1):
+                    ax.flat[-i].set_visible(False)  # to remove last empty graphs
+            fig.set_size_inches(20, 10, forward=True)
+            fig.savefig(filepath_rbc_velocity, dpi=600)
+            plt.close(fig)
 
-        plt.close(fig)
+        n_cols = 3
+        if n_graphs_flow_rate > 0:
+            if n_graphs_flow_rate % n_cols == 0:
+                n_rows = n_graphs_flow_rate // n_cols
+            else:
+                n_rows = (n_graphs_flow_rate // n_cols) + 1
+
+            fig, ax = plt.subplots(n_rows, n_cols, sharex='col', sharey='row')
+            n2 = 0
+            for j in range(n_cols):
+                n_edge_flow_rate -= n_curves
+                i = 0
+                if n_edge_flow_rate > 0:
+                    n1 = n2
+                    n2 += n_curves
+                else:
+                    n1 = n2
+                    n2 = n_edge_flow_rate + n_curves + n1
+                for k in range(n1, n2):
+                    c = ['blue', 'green', 'red']
+                    ax[j].plot(iterations, flow_rate_sim[:, k], linewidth=2, label='Tuned', color=c[i])
+                    ax[j].hlines(y=target_values_flow_rate[k], xmin=0, xmax=iterations[-1], linewidth=1,
+                                 linestyles='--', label='Target', color=c[i])
+                    ax[j].xaxis.set_major_locator(MaxNLocator(integer=True))
+                    i += 1
+                ax[j].tick_params(axis='x', labelsize=14)
+                ax[j].tick_params(axis='y', labelsize=14)
+            ax[0].set_ylabel('RBC velocity [m/s]', fontsize=20)
+            fig.suptitle('After ' + str(current_iteration) + ' iterations', fontsize=22)
+            if n_graphs_flow_rate % n_curves > 0:
+                n_graphs_empty = n_curves - (n_graphs_flow_rate % n_curves)
+                for i in range(1, n_graphs_empty + 1):
+                    ax.flat[-i].set_visible(False)  # to remove last empty graphs
+            fig.set_size_inches(20, 10, forward=True)
+            fig.savefig(filepath_flow_rate, dpi=600)
+            plt.close(fig)
+
+        return
 
     def export_data_convergence_csv(self):
 
@@ -137,8 +205,8 @@ class SolutionMonitoring(object):
         edge_constraint_value = self.inversemodel.edge_constraint_value
         edge_constraint_range = self.inversemodel.edge_constraint_range_pm
         edge_constraint_type = self.inversemodel.edge_constraint_type
-        tuning_flow_rate = self.inversemodel._flow_rate_tuning_array
-        tuning_rbc_velocity = self.inversemodel._rbc_velocity_tuning_array
+        tuning_flow_rate = self.inversemodel._flow_rate_sim_array
+        tuning_rbc_velocity = self.inversemodel._rbc_velocity_sim_array
 
         is_target_type_1 = np.logical_and(edge_constraint_type == 1, edge_constraint_range == 0.)
         is_target_type_2 = np.logical_and(edge_constraint_type == 2, edge_constraint_range == 0.)
@@ -245,14 +313,3 @@ class SolutionMonitoring(object):
         graph.write_pickle(filepath)
 
         return
-
-
-
-
-
-
-
-
-
-
-

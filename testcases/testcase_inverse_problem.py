@@ -121,8 +121,8 @@ flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, im
                            imp_solver, imp_velocity, PARAMETERS)
 inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter,
                              imp_adjoint_solver, imp_alpha_mapping, PARAMETERS)
-solution_monitoring = SolutionMonitoring(flow_network, inverse_model, PARAMETERS)
 flow_balance = FlowBalance(flow_network)
+solution_monitoring = SolutionMonitoring(flow_network, inverse_model, PARAMETERS)
 
 print("Read network: ...")
 flow_network.read_network()
@@ -161,6 +161,7 @@ for i in range(1,nr_of_iterations+1):
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
         print("Plot graphs and export data: ...")
         solution_monitoring.plot_cost_fuction_vs_iterations()
+        solution_monitoring.plot_sim_target_values_vs_iterations()
         solution_monitoring.export_data_convergence_csv()
         solution_monitoring.export_sim_data_vs_es_csv()
         print("Plot graphs and store data: DONE")
