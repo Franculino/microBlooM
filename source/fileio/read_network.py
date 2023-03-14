@@ -1,6 +1,8 @@
+import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
+import igraph
 
 
 class ReadNetwork(ABC):
@@ -184,7 +186,7 @@ class ReadNetworkCsv(ReadNetwork):
         path_vertex_data = self._PARAMETERS["csv_path_vertex_data"]
         path_boundary_data = self._PARAMETERS["csv_path_boundary_data"]
 
-        # Read files with pandas.
+        # Read files with pandas
         df_edge_data = pd.read_csv(path_edge_data)
         df_vertex_data = pd.read_csv(path_vertex_data)
         df_boundary_data = pd.read_csv(path_boundary_data)
@@ -218,11 +220,55 @@ class ReadNetworkCsv(ReadNetwork):
 
 class ReadNetworkIgraph(ReadNetwork):
     def read(self, flownetwork):
-        # import pickle
-        # todo: implementation to read graph from file (pickle).
+        """
+        Import a network from igraph file (pickle file)
+
+        Vertex data: At least one attribute is required to describe the x, y and z coordinates of all vertices.
+
+        Edge data: At least two columns are required to describe the diameters and lengths of all edges.
+
+        Boundary data: At least two vertex attributes are required to prescribe the boundary type
+        (1: pressure, 2: flow rate) and the boundary values (can be pressure or flow rate).
+
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+
+        # Extract file path of network file
+        path_igraph = self._PARAMETERS["pkl_path_igraph"]
+
+        # Import pickle
+        graph = igraph.Graph.Read_Pickle(path_igraph)
+
+        print(graph.summary())
+
+        # Assign data to flownetwork class
+        # Edge attributes
+        flownetwork.diameter = np.array(graph.es[self._PARAMETERS["ig_diameter"]])
+        flownetwork.length = np.array(graph.es[self._PARAMETERS["ig_length"]])
+        flownetwork.edge_list = np.array(graph.get_edgelist())
+
+        # Vertex attributes (numpy array containing all dimensions)
+        flownetwork.xyz = np.array(graph.vs[self._PARAMETERS["ig_coord_xyz"]])
+
+        # Network attributes
+        flownetwork.nr_of_vs = graph.vcount()
+        flownetwork.nr_of_es = graph.ecount()
+
+        # Boundaries
+        boundary_types = np.array(graph.vs[self._PARAMETERS["ig_boundary_type"]])
+        flownetwork.boundary_type = boundary_types[np.logical_or(boundary_types == 1, boundary_types == 2)]
+        boundary_values = np.array(graph.vs[self._PARAMETERS["ig_boundary_value"]])
+        flownetwork.boundary_val = boundary_values[np.logical_or(boundary_types == 1, boundary_types == 2)]
+        flownetwork.boundary_vs = np.arange(flownetwork.nr_of_vs)[np.logical_or(boundary_types == 1, boundary_types == 2)]
+
+
+class ReadNetworkPkl(ReadNetwork):
+    def read(self, flownetwork):
+        # todo: import graph from edge_data and vertex_data pickle files.
         # Need example format from franca. that always consistent
-        # with open(path_es_dict, 'rb') as f:
-        #     data_edge = pickle.load(f, encoding='latin1')
-        # with open(path_vs_dict, 'rb') as f:
-        #     data_vertex = pickle.load(f, encoding='latin1')
+        # with open(path_es_dict, "rb") as f:
+        #     data_edge = pickle.load(f, encoding="latin1")
+        # with open(path_vs_dict, "rb") as f:
+        #     data_vertex = pickle.load(f, encoding="latin1")
         pass
