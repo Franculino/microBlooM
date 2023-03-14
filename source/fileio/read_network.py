@@ -222,6 +222,14 @@ class ReadNetworkIgraph(ReadNetwork):
     def read(self, flownetwork):
         """
         Import a network from igraph file (pickle file)
+
+        Vertex data: At least one attribute is required to describe the x, y and z coordinates of all vertices.
+
+        Edge data: At least two columns are required to describe the diameters and lengths of all edges.
+
+        Boundary data: At least two vertex attributes are required to prescribe the boundary type
+        (1: pressure, 2: flow rate) and the boundary values (can be pressure or flow rate).
+
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
