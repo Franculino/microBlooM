@@ -334,12 +334,17 @@ class AdjointMethodImplementationsEdge(AdjointMethodImplementations, ABC):
         # Derivative of the transmissibility with respect to the precise parameter
         d_transmiss_d_alpha = self._get_d_transmiss_d_alpha(inversemodel, flownetwork)  # Has length "nr of parameters"
 
-        # Build sparse matrix
+        # Prepare row, col and data vectors to build the sparse matrix
         row = np.append(edge_list_params[:, 0], edge_list_params[:, 1])
         col = np.append(np.arange(nr_of_edge_parameters), np.arange(nr_of_edge_parameters))
         data = np.append(param_p_diff_ij * d_transmiss_d_alpha, param_p_diff_ji * d_transmiss_d_alpha)
 
-        # Update matrix
+        # Account for Dirichlet (pressure) boundaries. Set values to 0, if vertex is a pressure boundary.
+        pressure_boundary_vs = flownetwork.boundary_vs[flownetwork.boundary_type == 1]  # identify pressure vertices
+        is_pressure_boundary_vs = np.in1d(row, pressure_boundary_vs)
+        data[is_pressure_boundary_vs] = 0.  # Set value to 0 if current vertex is a pressure boundary vertex
+
+        # Update sparse matrix
         inversemodel.d_g_d_alpha = coo_matrix((data, (row, col)), shape=(nr_of_vertices, nr_of_edge_parameters))
 
     def _get_d_flowrate_d_alpha(self, inversemodel, flownetwork):
