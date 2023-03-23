@@ -20,7 +20,7 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 3,  # 1: generate hexagonal graph
+        "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
@@ -31,7 +31,7 @@ PARAMETERS = MappingProxyType(
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
                                        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 3,  # 1: No RBCs (hd=0)
+        "rbc_impact_option": 2,  # 1: No RBCs (hd=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: Laws by Pries and Secomb (2005)
                                  # 4-...: todo: Other laws. in vivo?
@@ -98,17 +98,6 @@ print("Update transmissibility: DONE")
 print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
-
-data = {}
-data['eid'] = np.arange(flow_network.nr_of_es)
-data['diameter'] = flow_network.diameter
-data['flow_rate'] = flow_network.flow_rate
-data['rbc_velocity'] = flow_network.rbc_velocity
-df_data = [pd.DataFrame({k: v}) for k, v in data.items()]
-df_data = pd.concat(df_data, axis=1)
-df_data.to_csv('data/network/B6_B_02/microbloom_tuned_graph_trial_1500.csv', index=False)
-
-sys.exit()
 
 # Write the results to file
 flow_network.write_network()
