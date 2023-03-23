@@ -1,3 +1,4 @@
+import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
@@ -86,7 +87,52 @@ class TransmissibilityVitroPries1992(Transmissibility):
         flownetwork.transmiss = transmiss_poiseuille / mu_rel  # Update transmissibility.
 
 
-class TransmissibilityVivoPries2005(Transmissibility):
+class TransmissibilityVitroPries2005(Transmissibility):
+    """
+    Class for calculating the transmissibility with red blood cells. Also calculates mu_rel. The impact of red blood
+    cells is considered by the empirical in vitro equations by Pries and Secomb (2005).
+    """
+
     def update_transmiss(self, flownetwork):
-        # Todo: implement
-        pass
+        """
+        Update the transmissibility in flownetwork based on poiseuille's law and the empirical in vitro equations
+        by Pries and Secomb (2005).
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        transmiss_poiseuille = self._get_transmiss_poiseuille(flownetwork)  # Transmissibility without red blood cells.
+
+        # Relative viscosity based on Pries and Secomb (2005).
+        diameter_um = 1.e6 * flownetwork.diameter  # Diameter in micro meters
+        hd = flownetwork.hd
+
+        ##### chryso
+        length = flownetwork.length
+        visc = 0.0012
+
+        C = (0.8 + np.exp(-0.075 * diameter_um)) * (-1 + 1. / (1. + 1.e-11 * np.power(diameter_um, 12.))) \
+            + 1. / (1. + 1.e-11 * np.power(diameter_um, 12.))
+        mu_rel_45 = 220 * np.exp(-1.3 * diameter_um) + 3.2 - 2.44 * np.exp(-0.06 * np.power(diameter_um, 0.645))
+        mu_rel = 1. + (mu_rel_45 - 1.) * ((np.power((1. - hd), C) - 1.) / (np.power((1. - 0.45), C) - 1.))
+
+
+        transmiss = np.pi * np.power(flownetwork.diameter, 4.) / (128. * length * visc * mu_rel)
+        flownetwork.mu_rel = mu_rel
+        flownetwork.transmiss = self._get_transmiss_poiseuille(flownetwork)/mu_rel  # Update transmissibility.
+        print(flownetwork.transmiss)
+        print(transmiss)
+        print(np.max(np.abs(transmiss - flownetwork.transmiss) / transmiss))
+
+        # C = (0.8 + np.exp(-0.075 * diameter_um)) * (-1. + 1. / (1. + 1e-11 * np.power(diameter_um, 12.))) \
+        #     + 1. / (1 + 1e-11 * np.power(diameter_um, 12.))  # Eq.(7) in paper
+        # mu_rel_45 = 220 * np.exp(-1.3 * diameter_um) + 3.2 - 2.44 * np.exp(-0.06 * np.power(diameter_um, 0.645))  # Eq.(6) in paper
+        # mu_rel = 1 + (mu_rel_45 - 1) * (np.power(1 - hd, C) - 1) / (np.power(1. - 0.45, C) - 1)  # Eq.(5) in paper
+
+        # flownetwork.mu_rel = n_rel
+        # flownetwork.transmiss = transmiss_poiseuille / n_rel  # Update transmissibility.
+
+        # length = flownetwork.length
+        # visc = 0.0012
+        # transmiss = np.pi * np.power(flownetwork.diameter, 4.) / (128. * length * visc * mu_rel)
+        # flownetwork.mu_rel = mu_rel
+        # flownetwork.transmiss = transmiss  # Update transmissibility.

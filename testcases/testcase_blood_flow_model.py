@@ -6,6 +6,8 @@ A python script to simulate stationary blood flow in microvascular networks. Cap
 4. Save the results in a file
 """
 import sys
+import numpy as np
+import pandas as pd
 
 from source.flow_network import FlowNetwork
 from types import MappingProxyType
@@ -18,7 +20,7 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,  # 1: generate hexagonal graph
+        "read_network_option": 3,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
@@ -29,9 +31,10 @@ PARAMETERS = MappingProxyType(
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
                                        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 2,  # 1: No RBCs (hd=0)
+        "rbc_impact_option": 3,  # 1: No RBCs (hd=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-                                 # 3-...: todo: Other laws. in vivo?
+                                 # 3: Laws by Pries and Secomb (2005)
+                                 # 4-...: todo: Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
                              # 3-...: other solvers
@@ -50,23 +53,23 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
-        "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
-        "csv_path_boundary_data": "data/network/b6_B_pre_061/boundary_node_data.csv",
-        "csv_diameter": "D", "csv_length": "L",
+        "csv_path_vertex_data": "data/network/B6_B_02_tuned/node_data.csv",
+        "csv_path_edge_data": "data/network/B6_B_02_tuned/edge_data.csv",
+        "csv_path_boundary_data": "data/network/B6_B_02_tuned/boundary_node_data.csv",
+        "csv_diameter": "tuned_diameter", "csv_length": "length",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
-        "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
+        "csv_coord_x": "coord_x", "csv_coord_y": "coord_y", "csv_coord_z": "coord_z",
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "data/network/b6_B_pre_061/b6_B_initial.pkl",
-        "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
+        "pkl_path_igraph": "data/network/b6_B_02/tuned_graph_trail_1500.pkl",
+        "ig_diameter": "tuned_diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "data/network/b6_B_pre_061_simulated.pkl"  # only required for "write_network_option" 2
+        "write_path_igraph": "data/network/b6_B_02_tuned_simulated.pkl"  # only required for "write_network_option" 2
     }
 )
 
@@ -95,6 +98,17 @@ print("Update transmissibility: DONE")
 print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
+
+data = {}
+data['eid'] = np.arange(flow_network.nr_of_es)
+data['diameter'] = flow_network.diameter
+data['flow_rate'] = flow_network.flow_rate
+data['rbc_velocity'] = flow_network.rbc_velocity
+df_data = [pd.DataFrame({k: v}) for k, v in data.items()]
+df_data = pd.concat(df_data, axis=1)
+df_data.to_csv('data/network/B6_B_02/microbloom_tuned_graph_trial_1500.csv', index=False)
+
+sys.exit()
 
 # Write the results to file
 flow_network.write_network()

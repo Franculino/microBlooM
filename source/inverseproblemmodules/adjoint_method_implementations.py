@@ -309,10 +309,10 @@ class AdjointMethodImplementationsEdge(AdjointMethodImplementations, ABC):
 
         # Partial derivative with respect to parameters (all velocity terms). If a target velocity has no matching
         # edge parameter, derivative is zero)
-        inversemodel.d_f_d_alpha[is_current_parameter_u] = 2. * u_difference / np.square(sigma_u) * d_velocity_d_alpha[
-            is_current_parameter_u]
+        inversemodel.d_f_d_alpha[is_current_parameter_u] = 2. * u_difference / np.square(sigma_u) * \
+                                                           d_velocity_d_alpha[is_current_parameter_u]
 
-    def _update_d_g_d_alpha(self, inversemodel, flownetwork):
+    def _update_d_g_d_alpha(self, inversemodel, flownetwork): # differences
         """
         Computes and updates the partial derivative of the blood flow model g(p,alpha) with respect to edge parameters.
         :param inversemodel: inverse model object

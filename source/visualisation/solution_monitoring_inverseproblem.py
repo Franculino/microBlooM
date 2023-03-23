@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pandas as pd
 import igraph
@@ -123,25 +125,26 @@ class SolutionMonitoring(object):
 
             fig, ax = plt.subplots(n_rows, n_cols, sharex='col', sharey='row')
             n2 = 0
-            for j in range(n_cols):
-                n_edge_rbc_velocity -= n_curves
-                i = 0
-                if n_edge_rbc_velocity > 0:
-                    n1 = n2
-                    n2 += n_curves
-                else:
-                    n1 = n2
-                    n2 = n_edge_rbc_velocity + n_curves + n1
-                for k in range(n1, n2):
-                    c = ['blue', 'green', 'red']
-                    ax[j].plot(iterations, rbc_velocity_sim[:, k], linewidth=2, label='Tuned', color=c[i])
-                    ax[j].hlines(y=target_values_rbc_velocity[k], xmin=0, xmax=iterations[-1], linewidth=1,
-                                 linestyles='--', label='Target', color=c[i])
-                    ax[j].xaxis.set_major_locator(MaxNLocator(integer=True))
-                    i += 1
-                ax[j].tick_params(axis='x', labelsize=14)
-                ax[j].tick_params(axis='y', labelsize=14)
-            ax[0].set_ylabel('RBC velocity [m/s]', fontsize=20)
+            for r in range(n_rows):
+                for c in range(n_cols):
+                    n_edge_rbc_velocity -= n_curves
+                    i = 0
+                    if n_edge_rbc_velocity > 0:
+                        n1 = n2
+                        n2 += n_curves
+                    else:
+                        n1 = n2
+                        n2 = n_edge_rbc_velocity + n_curves + n1
+                    for k in range(n1, n2):
+                        col = ['blue', 'green', 'red']
+                        ax[r, c].plot(iterations, rbc_velocity_sim[:, k], linewidth=2, label='Tuned', color=col[i])
+                        ax[r, c].hlines(y=target_values_rbc_velocity[k], xmin=0, xmax=iterations[-1], linewidth=1,
+                                        linestyles='--', label='Target', color=col[i])
+                        ax[r, c].xaxis.set_major_locator(MaxNLocator(integer=True))
+                        i += 1
+                    ax[r, c].tick_params(axis='x', labelsize=14)
+                    ax[r, c].tick_params(axis='y', labelsize=14)
+            ax[0, 0].set_ylabel('RBC velocity [m/s]', fontsize=20)
             fig.suptitle('After ' + str(current_iteration) + ' iterations', fontsize=22)
             if n_edge_rbc_velocity % n_curves > 0:
                 n_graphs_empty = n_curves - (n_graphs_rbc_velocity % n_curves)
@@ -263,10 +266,13 @@ class SolutionMonitoring(object):
             labels = ["baseline_transmiss", "tuned_transmiss"]
 
         data_es = {}
+        data_es["n1"] = self.flownetwork.edge_list[:, 0]
+        data_es["n2"] = self.flownetwork.edge_list[:, 1]
         data_es["es_id"] = np.arange(self.flownetwork.nr_of_es)
         data_es["alpha"] = self.inversemodel.alpha
         data_es[labels[0]] = parameter_baseline_value
         data_es[labels[1]] = tuned_parameter
+        data_es["length"] = self.flownetwork.length
         data_es["tuned_flow_rate"] = self.flownetwork.flow_rate
         data_es["tuned_rbc_velocity"] = self.flownetwork.rbc_velocity
         df_es = [pd.DataFrame({k: v}) for k, v in data_es.items()]
