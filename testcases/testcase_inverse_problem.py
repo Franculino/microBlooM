@@ -37,9 +37,10 @@ PARAMETERS = MappingProxyType(
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
                                        # 4-xxx: todo: steady state RBC laws
-        "rbc_impact_option": 2,  # 1: hd = ht (makes only sense if tube_haematocrit_option:1, with ht=0)
+        "rbc_impact_option": 3,  # 1: hd = ht (makes only sense if tube_haematocrit_option:1, with ht=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-                                 # 3: todo Other laws. in vivo?
+                                 # 3: Laws by Pries and Secomb (2005)
+                                 # 4-...: todo: Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
                              # 3-...: other solvers (CG, AMG, ...)
@@ -67,7 +68,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option - Only required for "read_network_option": 3
-        "pkl_path_igraph": "data/network/b6_B_02/b6_B_initial.pkl",
+        "pkl_path_igraph": "data/network/B6_B_02_pre/b6_B_initial.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",
         "ig_boundary_value": "boundaryValue",
@@ -90,17 +91,17 @@ PARAMETERS = MappingProxyType(
                                     # 3-...: other solvers
 
         # Target edges
-        "csv_path_edge_target_data": "data/inverse_model/b6_B_02/edge_target.csv",
+        "csv_path_edge_target_data": "data/inverse_model/B6_B_02/edge_target.csv",
         # Parameter edges
-        "csv_path_edge_parameterspace": "data/inverse_model/b6_B_02/edge_parameters.csv",
+        "csv_path_edge_parameterspace": "data/inverse_model/B6_B_02/edge_parameters.csv",
         # Gradient descent options:
         "gamma": 5,
         "phi": .5,
-        "max_nr_of_iterations": 2500,
+        "max_nr_of_iterations": 1500,
         # Output
-        "png_path_solution_monitoring": "output/b6_B_02/solution_monitoring_plots/",
-        "csv_path_solution_monitoring": "output/b6_B_02/solution_monitoring_csv/",
-        "pkl_path_solution_monitoring": "output/b6_B_02/solution_monitoring_pkl/"
+        "png_path_solution_monitoring": "output/B6_B_02/trial_02/solution_monitoring_plots/",
+        "csv_path_solution_monitoring": "output/B6_B_02/trial_02/solution_monitoring_csv/",
+        "pkl_path_solution_monitoring": "output/B6_B_02/trial_02/solution_monitoring_pkl/"
     }
 )
 
