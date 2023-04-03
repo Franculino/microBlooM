@@ -4,10 +4,8 @@ from types import MappingProxyType
 
 import numpy as np
 from scipy.sparse import csc_matrix, csr_matrix
-from scipy.sparse.linalg import spsolve, cg
-from pyamg import smoothed_aggregation_solver, rootnode_solver
-
-from source.solver_diagnostics import solver_diagnostics
+from scipy.sparse.linalg import spsolve
+from pyamg import smoothed_aggregation_solver
 
 
 class PressureFlowSolver(ABC):
@@ -117,4 +115,4 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
             flownetwork.pressure= ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600, cycle="V")
         else:
             x0 = flownetwork.pressure
-            flownetwork.pressure = ml.solve(b, x0=x0, tol=tol_solver, accel="cg", maxiter=600, cycle="V")
+            flownetwork.pressure = ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600, cycle="V")

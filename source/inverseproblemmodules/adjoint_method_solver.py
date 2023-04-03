@@ -5,8 +5,6 @@ from scipy.sparse import csc_matrix, csr_matrix
 from scipy.sparse.linalg import spsolve, cg
 from pyamg import smoothed_aggregation_solver
 
-import numpy as np
-
 
 class AdjointMethodSolver(ABC):
     """
