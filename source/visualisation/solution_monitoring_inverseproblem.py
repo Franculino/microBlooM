@@ -104,7 +104,7 @@ class SolutionMonitoring(object):
         n_edge_rbc_velocity = np.size(rbc_velocity_sim, axis=1)
         n_edge_flow_rate = np.size(flow_rate_sim, axis=1)
 
-        # Plot n_curves per each graph - n_graph is the number of graphs in one panel
+        # Plot n_curves per each graph - n_graph is the number of graphs in one panel (.png file)
         n_curves = 3
         if n_edge_rbc_velocity % n_curves == 0:
             n_graphs_rbc_velocity = n_edge_rbc_velocity // n_curves
@@ -116,6 +116,9 @@ class SolutionMonitoring(object):
         else:
             n_graphs_flow_rate = (n_edge_flow_rate // n_curves) + 1
 
+        ########################
+        # plotting rbc_velocity
+        #######################
         n_cols = 3
         if n_graphs_rbc_velocity > 0:
             if n_graphs_rbc_velocity % n_cols == 0:
@@ -137,51 +140,84 @@ class SolutionMonitoring(object):
                         n2 = n_edge_rbc_velocity + n_curves + n1
                     for k in range(n1, n2):
                         col = ['blue', 'green', 'red']
-                        ax[r, c].plot(iterations, rbc_velocity_sim[:, k], linewidth=2, label='Tuned', color=col[i])
-                        ax[r, c].hlines(y=target_values_rbc_velocity[k], xmin=0, xmax=iterations[-1], linewidth=1,
-                                        linestyles='--', label='Target', color=col[i])
-                        ax[r, c].xaxis.set_major_locator(MaxNLocator(integer=True))
+                        if n_rows == 1:
+                            ax[c].plot(iterations, rbc_velocity_sim[:, k], linewidth=2, label='Tuned', color=col[i])
+                            ax[c].hlines(y=target_values_rbc_velocity[k], xmin=0, xmax=iterations[-1], linewidth=1,
+                                            linestyles='--', label='Target', color=col[i])
+                            ax[c].xaxis.set_major_locator(MaxNLocator(integer=True))
+                        else:
+                            ax[r, c].plot(iterations, rbc_velocity_sim[:, k], linewidth=2, label='Tuned', color=col[i])
+                            ax[r, c].hlines(y=target_values_rbc_velocity[k], xmin=0, xmax=iterations[-1], linewidth=1,
+                                            linestyles='--', label='Target', color=col[i])
+                            ax[r, c].xaxis.set_major_locator(MaxNLocator(integer=True))
                         i += 1
-                    ax[r, c].tick_params(axis='x', labelsize=14)
-                    ax[r, c].tick_params(axis='y', labelsize=14)
-            ax[0, 0].set_ylabel('RBC velocity [m/s]', fontsize=20)
+                    if n_rows == 1:
+                        ax[c].tick_params(axis='x', labelsize=14)
+                        ax[c].tick_params(axis='y', labelsize=14)
+                    else:
+                        ax[r,c].tick_params(axis='x', labelsize=14)
+                        ax[r,c].tick_params(axis='y', labelsize=14)
+            if n_rows == 1:
+                ax[0].set_ylabel('RBC velocity [m/s]', fontsize=20)
+            else:
+                for ir in range(n_rows):
+                    ax[ir,0].set_ylabel('RBC velocity [m/s]', fontsize=20)
             fig.suptitle('After ' + str(current_iteration) + ' iterations', fontsize=22)
             if n_edge_rbc_velocity % n_curves > 0:
                 n_graphs_empty = n_curves - (n_graphs_rbc_velocity % n_curves)
-                for i in range(1, n_graphs_empty+1):
+                for i in range(1, n_graphs_empty + 1):
                     ax.flat[-i].set_visible(False)  # to remove last empty graphs
             fig.set_size_inches(20, 10, forward=True)
             fig.savefig(filepath_rbc_velocity, dpi=600)
             plt.close(fig)
+        else:
+            pass
 
+        ####################
+        # plotting flow_rate
+        ####################
         n_cols = 3
         if n_graphs_flow_rate > 0:
             if n_graphs_flow_rate % n_cols == 0:
                 n_rows = n_graphs_flow_rate // n_cols
             else:
                 n_rows = (n_graphs_flow_rate // n_cols) + 1
-
             fig, ax = plt.subplots(n_rows, n_cols, sharex='col', sharey='row')
             n2 = 0
-            for j in range(n_cols):
-                n_edge_flow_rate -= n_curves
-                i = 0
-                if n_edge_flow_rate > 0:
-                    n1 = n2
-                    n2 += n_curves
-                else:
-                    n1 = n2
-                    n2 = n_edge_flow_rate + n_curves + n1
-                for k in range(n1, n2):
-                    c = ['blue', 'green', 'red']
-                    ax[j].plot(iterations, flow_rate_sim[:, k], linewidth=2, label='Tuned', color=c[i])
-                    ax[j].hlines(y=target_values_flow_rate[k], xmin=0, xmax=iterations[-1], linewidth=1,
-                                 linestyles='--', label='Target', color=c[i])
-                    ax[j].xaxis.set_major_locator(MaxNLocator(integer=True))
-                    i += 1
-                ax[j].tick_params(axis='x', labelsize=14)
-                ax[j].tick_params(axis='y', labelsize=14)
-            ax[0].set_ylabel('RBC velocity [m/s]', fontsize=20)
+            for r in range(n_rows):
+                for c in range(n_cols):
+                    n_edge_flow_rate -= n_curves
+                    i = 0
+                    if n_edge_flow_rate > 0:
+                        n1 = n2
+                        n2 += n_curves
+                    else:
+                        n1 = n2
+                        n2 = n_edge_flow_rate + n_curves + n1
+                    for k in range(n1, n2):
+                        col = ['blue', 'green', 'red']
+                        if n_rows == 1:
+                            ax[c].plot(iterations, flow_rate_sim[:, k], linewidth=2, label='Tuned', color=col[i])
+                            ax[c].hlines(y=target_values_flow_rate[k], xmin=0, xmax=iterations[-1], linewidth=1,
+                                         linestyles='--', label='Target', color=col[i])
+                            ax[c].xaxis.set_major_locator(MaxNLocator(integer=True))
+                        else:
+                            ax[r,c].plot(iterations, flow_rate_sim[:, k], linewidth=2, label='Tuned', color=col[i])
+                            ax[r,c].hlines(y=target_values_flow_rate[k], xmin=0, xmax=iterations[-1], linewidth=1,
+                                         linestyles='--', label='Target', color=col[i])
+                            ax[r,c].xaxis.set_major_locator(MaxNLocator(integer=True))
+                        i += 1
+                    if n_rows == 1:
+                        ax[c].tick_params(axis='x', labelsize=14)
+                        ax[c].tick_params(axis='y', labelsize=14)
+                    else:
+                        ax[r,c].tick_params(axis='x', labelsize=14)
+                        ax[r,c].tick_params(axis='y', labelsize=14)
+            if n_rows == 1:
+                ax[0].set_ylabel('RBC velocity [m/s]', fontsize=20)
+            else:
+                for ir in range(n_rows):
+                    ax[ir,0].set_ylabel('RBC velocity [m/s]', fontsize=20)
             fig.suptitle('After ' + str(current_iteration) + ' iterations', fontsize=22)
             if n_graphs_flow_rate % n_curves > 0:
                 n_graphs_empty = n_curves - (n_graphs_flow_rate % n_curves)
@@ -190,6 +226,8 @@ class SolutionMonitoring(object):
             fig.set_size_inches(20, 10, forward=True)
             fig.savefig(filepath_flow_rate, dpi=600)
             plt.close(fig)
+        else:
+            pass
 
         return
 

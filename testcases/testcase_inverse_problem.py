@@ -26,7 +26,7 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 3,  # 1: generate hexagonal graph
+        "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
@@ -75,7 +75,7 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": False,
-        "write_path_igraph": "data/network/b6_B_02/b6_B_02_pre_simulated.pkl", # only required for "write_network_option" 2
+        "write_path_igraph": "data/network/hex_net_tuned.pkl", # only required for "write_network_option" 2
 
         ##########################
         # Inverse problem options
@@ -95,13 +95,13 @@ PARAMETERS = MappingProxyType(
         # Parameter edges
         "csv_path_edge_parameterspace": "data/inverse_model/B6_B_02/edge_parameters.csv",
         # Gradient descent options:
-        "gamma": 5,
+        "gamma": .5,
         "phi": .5,
-        "max_nr_of_iterations": 1500,
+        "max_nr_of_iterations": 50,
         # Output
-        "png_path_solution_monitoring": "output/B6_B_02/trial_02/solution_monitoring_plots/",
-        "csv_path_solution_monitoring": "output/B6_B_02/trial_02/solution_monitoring_csv/",
-        "pkl_path_solution_monitoring": "output/B6_B_02/trial_02/solution_monitoring_pkl/"
+        "png_path_solution_monitoring": "output/solution_monitoring_plots/",
+        "csv_path_solution_monitoring": "output/solution_monitoring_csv/",
+        "pkl_path_solution_monitoring": "output/solution_monitoring_pkl/"
     }
 )
 
@@ -153,15 +153,15 @@ for i in range(1,nr_of_iterations+1):
     flow_balance.check_flow_balance()
     inverse_model.update_cost()
 
-    if i % 10 == 0:
+    if i % 5 == 0:
         print(str(i) + " / " + str(nr_of_iterations) + " iterations done")
         solution_monitoring.get_arrays_for_plots()
 
-    if i % 100 == 0:
+    if i % 10 == 0:
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
         print("Plot graphs and export data: ...")
         solution_monitoring.plot_cost_fuction_vs_iterations()
-        solution_monitoring.plot_sim_target_values_vs_iterations() # slow function - optimization
+        solution_monitoring.plot_sim_target_values_vs_iterations()
         solution_monitoring.export_data_convergence_csv()
         solution_monitoring.export_sim_data_vs_es_csv()
         print("Plot graphs and store data: DONE")
