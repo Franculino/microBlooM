@@ -312,7 +312,7 @@ class AdjointMethodImplementationsEdge(AdjointMethodImplementations, ABC):
         inversemodel.d_f_d_alpha[is_current_parameter_u] = 2. * u_difference / np.square(sigma_u) * \
                                                            d_velocity_d_alpha[is_current_parameter_u]
 
-    def _update_d_g_d_alpha(self, inversemodel, flownetwork): # differences
+    def _update_d_g_d_alpha(self, inversemodel, flownetwork):
         """
         Computes and updates the partial derivative of the blood flow model g(p,alpha) with respect to edge parameters.
         :param inversemodel: inverse model object
