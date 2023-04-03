@@ -414,6 +414,7 @@ class AdjointMethodImplementationsRelDiam(AdjointMethodImplementationsEdge):
         ht_param_es = flownetwork.ht[inversemodel.edge_param_eid]  # read Ht
         diam_param_es = flownetwork.diameter[inversemodel.edge_param_eid]  # read diameter of all edges with parameters
         flowrate_param_es = flownetwork.flow_rate[inversemodel.edge_param_eid]  # read flow rate of all edge with param
+        diam_baselinevalue_param_es = inversemodel.diameter_baselinevalue[inversemodel.edge_param_eid]
 
         # get derivative of flow rate of all edges with a parameter with respect to alpha
         d_flowrate_d_alpha = self._get_d_flowrate_d_alpha(inversemodel, flownetwork)
@@ -424,7 +425,7 @@ class AdjointMethodImplementationsRelDiam(AdjointMethodImplementationsEdge):
         # Return the derivative
         return 4. / np.pi * hd_ht_ratio * (
                     d_flowrate_d_alpha / np.square(diam_param_es) - 2. * flowrate_param_es / (
-                        np.square(inversemodel.diameter_baselinevalue) * np.power(inversemodel.alpha, 3)))
+                        np.square(diam_baselinevalue_param_es) * np.power(inversemodel.alpha, 3)))
 
     def _get_d_transmiss_d_alpha(self, inversemodel, flownetwork):
         """
@@ -438,10 +439,11 @@ class AdjointMethodImplementationsRelDiam(AdjointMethodImplementationsEdge):
         """
         mu_plasma = self._PARAMETERS["mu_plasma"]
         # Lengths and mu_rel of edges that are parameters
+        diam_baselinevalue_param_es = inversemodel.diameter_baselinevalue[inversemodel.edge_param_eid]
         length_param_es = flownetwork.length[inversemodel.edge_param_eid]
         mu_rel_param_es = flownetwork.mu_rel[inversemodel.edge_param_eid]
 
-        return np.pi * np.power(inversemodel.diameter_baselinevalue, 4) / (
+        return np.pi * np.power(diam_baselinevalue_param_es, 4) / (
                     32. * length_param_es * mu_plasma * mu_rel_param_es) * np.power(inversemodel.alpha, 3)
 
 
