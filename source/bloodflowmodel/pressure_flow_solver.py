@@ -97,7 +97,6 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
                                          max_coarse=500,
                                          coarse_solver="pinv")
 
-        ##
         # Solve system
         tol_solver = np.abs(np.min(flownetwork.system_matrix)) * tol
         res = []
@@ -119,29 +118,3 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
         else:
             x0 = flownetwork.pressure
             flownetwork.pressure = ml.solve(b, x0=x0, tol=tol_solver, accel="cg", maxiter=600, cycle="V")
-
-        # solver_diagnostics.solver_diagnostics(csr_matrix(flownetwork.system_matrix), fname='iso_diff_diagnostic', cycle_list=['V'])
-        # sys.exit()
-
-        # ml = rootnode_solver(csr_matrix(flownetwork.system_matrix), smooth='energy')
-        # resvec = []
-        # flownetwork.pressure = ml.solve(flownetwork.rhs, tol=1e-50, residuals=resvec)
-
-        # for i, r in enumerate(resvec):
-        #     print("residual at iteration {0:2}: {1:^6.2e}".format(i, r))
-
-        # ml = smoothed_aggregation_solver(csr_matrix(flownetwork.system_matrix))  # AMG solver
-        # M = ml.aspreconditioner(cycle='V')  # preconditioner
-        # tol_solver = np.abs(np.min(flownetwork.system_matrix)) * tol
-        #
-        # if flownetwork.pressure is None:
-        #     boundary_inlet = np.max(flownetwork.boundary_val)
-        #     boundary_outlet = np.min(flownetwork.boundary_val)
-        #     random = np.random.rand(flownetwork.system_matrix.shape[0])
-        #     x0 = random * (boundary_inlet - boundary_outlet) + boundary_outlet
-        #     flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, x0=x0, tol=tol_solver, M=M)  # solve with CG
-        # else:
-        #     flownetwork.pressure, _ = cg(flownetwork.system_matrix, flownetwork.rhs, x0=flownetwork.pressure,
-        #                                  tol=tol_solver*tol, M=M)  # solve with CG
-                                         
-
