@@ -82,12 +82,9 @@ class InverseModel(object):
         self._imp_alphamapping = imp_alphamapping
 
         # Solution monitoring - Visualisation
-        self._current_iteration = 0
-        self._iteration_array = np.array([], dtype=np.int)
-        self._f_h_array = np.array([])
-        self._flow_rate_sim_array = np.array([])
-        self._rbc_velocity_sim_array = np.array([])
-
+        self.current_iteration = 0
+        self.iteration_array = None
+        self.f_h_array = None
 
     def initialise_inverse_model(self):
         """

@@ -16,7 +16,7 @@ import sys
 
 from source.flow_network import FlowNetwork
 from source.inverse_model import InverseModel
-from source.visualisation.solution_monitoring_inverseproblem import SolutionMonitoring
+from source.exportdata.solution_monitoring_inverseproblem import SolutionMonitoring
 from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
@@ -99,8 +99,8 @@ PARAMETERS = MappingProxyType(
         "phi": .5,
         "max_nr_of_iterations": 50,
         # Output
-        "png_path_solution_monitoring": "output/solution_monitoring_plots/",
         "csv_path_solution_monitoring": "output/solution_monitoring_csv/",
+        "png_path_solution_monitoring": "output/solution_monitoring_plots/",
         "pkl_path_solution_monitoring": "output/solution_monitoring_pkl/"
     }
 )
@@ -146,24 +146,19 @@ solution_monitoring.get_arrays_for_plots()
 nr_of_iterations = int(PARAMETERS["max_nr_of_iterations"])
 print("Solve the inverse problem and update the diameters: ...")
 for i in range(1,nr_of_iterations+1):
-    inverse_model._current_iteration = int(i)
+    inverse_model.current_iteration = int(i)
     inverse_model.update_state()
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
     flow_balance.check_flow_balance()
     inverse_model.update_cost()
 
-    if i % 5 == 0:
-        print(str(i) + " / " + str(nr_of_iterations) + " iterations done")
-        solution_monitoring.get_arrays_for_plots()
-
     if i % 10 == 0:
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
         print("Plot graphs and export data: ...")
+        solution_monitoring.get_arrays_for_plots()
         solution_monitoring.plot_cost_fuction_vs_iterations()
-        solution_monitoring.plot_sim_target_values_vs_iterations()
-        solution_monitoring.export_data_convergence_csv()
-        solution_monitoring.export_sim_data_vs_es_csv()
+        solution_monitoring.export_sim_data_node_edge_csv()
         print("Plot graphs and store data: DONE")
 print(str(nr_of_iterations)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
 print("Solve the inverse problem and update the diameters: DONE")
