@@ -64,18 +64,11 @@ class SolutionMonitoring(object):
 
         # Export a csv file for the current values with target value - precision measurements
         data_target = {}
-        if np.size(current_flow_rate) > 0 and np.size(current_rbc_velocity) == 0:
+        if np.size(current_flow_rate) > 0:
             data_target["eid_target_flow_rate"] = edge_id_target[is_target_type_1]
             data_target["current_flow_rate"] = current_flow_rate
             data_target["target_flow_rate"] = target_values_flow_rate
-        elif np.size(current_rbc_velocity) > 0 and np.size(current_flow_rate) == 0:
-            data_target["eid_target_rbc_velocity"] = edge_id_target[is_target_type_2]
-            data_target["current_rbc_velocity"] = current_rbc_velocity
-            data_target["target_rbc_velocity"] = target_values_rbc_velocity
-        else:
-            data_target["eid_target_flow_rate"] = edge_id_target[is_target_type_1]
-            data_target["current_flow_rate"] = current_flow_rate
-            data_target["target_flow_rate"] = target_values_flow_rate
+        elif np.size(current_rbc_velocity) > 0:
             data_target["eid_target_rbc_velocity"] = edge_id_target[is_target_type_2]
             data_target["current_rbc_velocity"] = current_rbc_velocity
             data_target["target_rbc_velocity"] = target_values_rbc_velocity
@@ -96,21 +89,12 @@ class SolutionMonitoring(object):
 
         # Export a csv file for the current values with target ranges
         data_range = {}
-        if np.size(current_flow_rate_range) > 0 and np.size(current_rbc_velocity_range) == 0:
+        if np.size(current_flow_rate_range) > 0:
             data_range["eid_range_flow_rate"] = edge_id_target[is_range_type_1]
             data_range["current_flow_rate"] = current_flow_rate_range
             data_range["mean_flow_rate"] = mean_values_flow_rate
             data_range["range_flow_rate"] = range_values_flow_rate
-        elif np.size(current_rbc_velocity_range) > 0 and np.size(current_flow_rate_range) == 0:
-            data_range["eid_range_rbc_velocity"] = edge_id_target[is_range_type_2]
-            data_range["current_rbc_velocity"] = current_rbc_velocity_range
-            data_range["mean_rbc_velocity"] = mean_values_rbc_velocity
-            data_range["range_rbc_velocity"] = range_values_rbc_velocity
-        else:
-            data_range["eid_range_flow_rate"] = edge_id_target[is_range_type_1]
-            data_range["current_flow_rate"] = current_flow_rate_range
-            data_range["mean_flow_rate"] = mean_values_flow_rate
-            data_range["range_flow_rate"] = range_values_flow_rate
+        elif np.size(current_rbc_velocity_range) > 0:
             data_range["eid_range_rbc_velocity"] = edge_id_target[is_range_type_2]
             data_range["current_rbc_velocity"] = current_rbc_velocity_range
             data_range["mean_rbc_velocity"] = mean_values_rbc_velocity
