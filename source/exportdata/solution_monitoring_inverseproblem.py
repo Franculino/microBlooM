@@ -62,13 +62,13 @@ class SolutionMonitoring(object):
         target_values_flow_rate = edge_constraint_value[is_target_type_1]
         target_values_rbc_velocity = edge_constraint_value[is_target_type_2]
 
-        # Export a csv file for the current values with precision measurements - target value
+        # Export a csv file for the current values with target value - precision measurements
         data_target = {}
-        if np.size(is_target_type_1) > 1 and np.size(is_target_type_2) == 0:
+        if np.size(current_flow_rate) > 0 and np.size(current_rbc_velocity) == 0:
             data_target["eid_target_flow_rate"] = edge_id_target[is_target_type_1]
             data_target["current_flow_rate"] = current_flow_rate
             data_target["target_flow_rate"] = target_values_flow_rate
-        elif np.size(is_target_type_2) > 1 and np.size(is_target_type_1) == 0:
+        elif np.size(current_rbc_velocity) > 0 and np.size(current_flow_rate) == 0:
             data_target["eid_target_rbc_velocity"] = edge_id_target[is_target_type_2]
             data_target["current_rbc_velocity"] = current_rbc_velocity
             data_target["target_rbc_velocity"] = target_values_rbc_velocity
@@ -84,30 +84,36 @@ class SolutionMonitoring(object):
         df_target = pd.concat(df_target, axis=1)
         df_target.to_csv(filepath_target, index=False)
 
-        # For the constraint edges with target ranges
+        # For the constraint edges with target ranges, so that the constraint range (edge_tar_range_pm) is not zero
         is_range_type_1 = np.logical_and(edge_constraint_type == 1, np.logical_not(edge_constraint_range == 0.))
         is_range_type_2 = np.logical_and(edge_constraint_type == 2, np.logical_not(edge_constraint_range == 0.))
         current_flow_rate_range = flow_rate[edge_id_target[is_range_type_1]]
         current_rbc_velocity_range = rbc_velocity[edge_id_target[is_range_type_2]]
-        range_values_flow_rate = edge_constraint_value[is_range_type_1]
-        range_values_rbc_velocity = edge_constraint_value[is_range_type_2]
+        mean_values_flow_rate = edge_constraint_value[is_range_type_1]
+        mean_values_rbc_velocity = edge_constraint_value[is_range_type_2]
+        range_values_flow_rate = edge_constraint_range[is_range_type_1]
+        range_values_rbc_velocity = edge_constraint_range[is_range_type_2]
 
         # Export a csv file for the current values with target ranges
         data_range = {}
-        if np.size(is_range_type_1) > 1 and np.size(is_range_type_2) == 0:
+        if np.size(current_flow_rate_range) > 0 and np.size(current_rbc_velocity_range) == 0:
             data_range["eid_range_flow_rate"] = edge_id_target[is_range_type_1]
-            data_range["current_flow_rate_range"] = current_flow_rate_range
+            data_range["current_flow_rate"] = current_flow_rate_range
+            data_range["mean_flow_rate"] = mean_values_flow_rate
             data_range["range_flow_rate"] = range_values_flow_rate
-        elif np.size(is_range_type_2) > 1 and np.size(is_range_type_1) == 0:
+        elif np.size(current_rbc_velocity_range) > 0 and np.size(current_flow_rate_range) == 0:
             data_range["eid_range_rbc_velocity"] = edge_id_target[is_range_type_2]
-            data_range["current_rbc_velocity_range"] = current_rbc_velocity_range
+            data_range["current_rbc_velocity"] = current_rbc_velocity_range
+            data_range["mean_rbc_velocity"] = mean_values_rbc_velocity
             data_range["range_rbc_velocity"] = range_values_rbc_velocity
         else:
             data_range["eid_range_flow_rate"] = edge_id_target[is_range_type_1]
-            data_range["current_flow_rate_range"] = current_flow_rate_range
+            data_range["current_flow_rate"] = current_flow_rate_range
+            data_range["mean_flow_rate"] = mean_values_flow_rate
             data_range["range_flow_rate"] = range_values_flow_rate
             data_range["eid_range_rbc_velocity"] = edge_id_target[is_range_type_2]
-            data_range["current_rbc_velocity_range"] = current_rbc_velocity_range
+            data_range["current_rbc_velocity"] = current_rbc_velocity_range
+            data_range["mean_rbc_velocity"] = mean_values_rbc_velocity
             data_range["range_rbc_velocity"] = range_values_rbc_velocity
 
         df_range = [pd.DataFrame({k: v}) for k, v in data_range.items()]
