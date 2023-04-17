@@ -6,8 +6,11 @@ A python script to simulate stationary blood flow in microvascular networks. Cap
 4. Save the results in a file
 """
 import sys
+import numpy as np
+import pandas as pd
 
 from source.flow_network import FlowNetwork
+from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
 
@@ -29,9 +32,10 @@ PARAMETERS = MappingProxyType(
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
                                        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 2,  # 1: No RBCs (hd=0)
+        "rbc_impact_option": 3,  # 1: No RBCs (hd=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-                                 # 3-...: todo: Other laws. in vivo?
+                                 # 3: Laws by Pries and Secomb (2005)
+                                 # 4-...: todo: Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
                              # 3-...: other solvers
@@ -80,6 +84,7 @@ imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, 
 #  the parameter file
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
                            imp_solver, imp_velocity, PARAMETERS)
+flow_balance = FlowBalance(flow_network)
 
 # Import or generate the network
 print("Read network: ...")
@@ -95,6 +100,10 @@ print("Update transmissibility: DONE")
 print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
+
+print("Check flow balance: ...")
+flow_balance.check_flow_balance()
+print("Check flow balance: DONE")
 
 # Write the results to file
 flow_network.write_network()

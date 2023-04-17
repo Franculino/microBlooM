@@ -225,10 +225,26 @@ class ReadNetworkIgraph(ReadNetwork):
 
         Vertex data: At least one attribute is required to describe the x, y and z coordinates of all vertices.
 
-        Edge data: At least two columns are required to describe the diameters and lengths of all edges.
+            one (3 x nv) array, where nv is the number of vertices:
+                    [[x0, y0, z0]
+                     [x1, y1, z1]
+                                :
+                                :
+                     [xnv, ynv, znv]]
+
+        Edge data: At least two attribute are required to describe the diameters and lengths of all edges.
+
+            two (1 x ne) arrays, where ne is number of edges:
+                    diameter: [d0, d1, ..., dne ]
+                    length: [l0, l1, ..., lne ]
 
         Boundary data: At least two vertex attributes are required to prescribe the boundary type
-        (1: pressure, 2: flow rate) and the boundary values (can be pressure or flow rate).
+        (1: pressure, 2: flow rate, None: otherwise) and the boundary values (can be pressure or flow rate,
+        None: otherwise).
+
+            two (1 x nv) arrays, where nv is number of vertices:
+                    boundary_type: [boundary_type_0, boundary_type_1, ..., boundary_type_nv]
+                    boundary_value: [boundary_value_0, boundary_value_1, ..., boundary_value_nv]
 
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork

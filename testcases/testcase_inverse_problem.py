@@ -12,9 +12,11 @@ on given flow rates and velocities in selected edges. Capabilities:
 9. Optimisation of diameters for a fixed number of iteration steps.
 10. Save the results in a file.
 """
+import sys
 
 from source.flow_network import FlowNetwork
 from source.inverse_model import InverseModel
+from source.exportdata.solution_monitoring_inverseproblem import SolutionMonitoring
 from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
@@ -35,9 +37,10 @@ PARAMETERS = MappingProxyType(
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
                                        # 4-xxx: todo: steady state RBC laws
-        "rbc_impact_option": 2,  # 1: hd = ht (makes only sense if tube_haematocrit_option:1, with ht=0)
+        "rbc_impact_option": 3,  # 1: hd = ht (makes only sense if tube_haematocrit_option:1, with ht=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-                                 # 3: todo Other laws. in vivo?
+                                 # 3: Laws by Pries and Secomb (2005)
+                                 # 4-...: todo: Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
                              # 3-...: other solvers (CG, AMG, ...)
@@ -46,7 +49,7 @@ PARAMETERS = MappingProxyType(
         "ht_constant": 0.3,
         "mu_plasma": 0.0012,
 
-        # Hexagonal network properties
+        # Hexagonal network properties - Only required for "read_network_option": 1
         "nr_of_hexagon_x": 3,
         "nr_of_hexagon_y": 3,
         "hexa_edge_length": 62.e-6,
@@ -55,7 +58,7 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_values": [2, 1],
         "hexa_boundary_types": [1, 1],  # 1: pressure, 2: flow rate
 
-        # Import network from csv options
+        # Import network from csv options - Only required for "read_network_option": 2
         "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
         "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
         "csv_path_boundary_data": "data/network/b6_B_pre_061/boundary_node_data.csv",
@@ -64,10 +67,10 @@ PARAMETERS = MappingProxyType(
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
-        # Import network from igraph option. Only required for "read_network_option" 3
+        # Import network from igraph option - Only required for "read_network_option": 3
         "pkl_path_igraph": "data/network/b6_B_pre_061/b6_B_initial.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
-        "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
+        "ig_boundary_type": "boundaryType",
         "ig_boundary_value": "boundaryValue",
 
         # Write options
@@ -94,7 +97,11 @@ PARAMETERS = MappingProxyType(
         # Gradient descent options:
         "gamma": .5,
         "phi": .5,
-        "max_nr_of_iterations": 50
+        "max_nr_of_iterations": 50,
+        # Output
+        "csv_path_solution_monitoring": "output/solution_monitoring_csv/",
+        "png_path_solution_monitoring": "output/solution_monitoring_plots/",
+        "pkl_path_solution_monitoring": "output/solution_monitoring_pkl/"
     }
 )
 
@@ -114,6 +121,7 @@ flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, im
 inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter,
                              imp_adjoint_solver, imp_alpha_mapping, PARAMETERS)
 flow_balance = FlowBalance(flow_network)
+solution_monitoring = SolutionMonitoring(flow_network, inverse_model, PARAMETERS)
 
 print("Read network: ...")
 flow_network.read_network()
@@ -133,19 +141,26 @@ print("Check flow balance: DONE")
 
 inverse_model.initialise_inverse_model()
 inverse_model.update_cost()
+solution_monitoring.get_arrays_for_plots()
 
 nr_of_iterations = int(PARAMETERS["max_nr_of_iterations"])
 print("Solve the inverse problem and update the diameters: ...")
-for i in range(nr_of_iterations):
+for i in range(1,nr_of_iterations+1):
+    inverse_model.current_iteration = int(i)
     inverse_model.update_state()
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
     flow_balance.check_flow_balance()
     inverse_model.update_cost()
 
-    if i % 5 == 0:
+    if i % 10 == 0:
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
-print(str(nr_of_iterations-1)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
+        print("Plot graphs and export data: ...")
+        solution_monitoring.get_arrays_for_plots()
+        solution_monitoring.plot_cost_fuction_vs_iterations()
+        solution_monitoring.export_sim_data_node_edge_csv()
+        print("Plot graphs and store data: DONE")
+print(str(nr_of_iterations)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
 print("Solve the inverse problem and update the diameters: DONE")
 
 flow_network.write_network()

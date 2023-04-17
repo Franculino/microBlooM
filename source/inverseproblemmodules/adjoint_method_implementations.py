@@ -309,8 +309,8 @@ class AdjointMethodImplementationsEdge(AdjointMethodImplementations, ABC):
 
         # Partial derivative with respect to parameters (all velocity terms). If a target velocity has no matching
         # edge parameter, derivative is zero)
-        inversemodel.d_f_d_alpha[is_current_parameter_u] = 2. * u_difference / np.square(sigma_u) * d_velocity_d_alpha[
-            is_current_parameter_u]
+        inversemodel.d_f_d_alpha[is_current_parameter_u] = 2. * u_difference / np.square(sigma_u) * \
+                                                           d_velocity_d_alpha[is_current_parameter_u]
 
     def _update_d_g_d_alpha(self, inversemodel, flownetwork):
         """
@@ -421,7 +421,6 @@ class AdjointMethodImplementationsRelDiam(AdjointMethodImplementationsEdge):
         # Ensure that ratio hd/ht is always valid (If ht=0 -> set ratio to 1)
         hd_ht_ratio = np.ones(np.size(hd_param_es))
         hd_ht_ratio[ht_param_es > 0.] = hd_param_es[ht_param_es > 0.] / ht_param_es[ht_param_es > 0.]
-
         # Return the derivative
         return 4. / np.pi * hd_ht_ratio * (
                     d_flowrate_d_alpha / np.square(diam_param_es) - 2. * flowrate_param_es / (
@@ -443,7 +442,7 @@ class AdjointMethodImplementationsRelDiam(AdjointMethodImplementationsEdge):
         mu_rel_param_es = flownetwork.mu_rel[inversemodel.edge_param_eid]
 
         return np.pi * np.power(inversemodel.diameter_baselinevalue, 4) / (
-                    32. * length_param_es * mu_plasma * mu_rel_param_es) * inversemodel.alpha
+                    32. * length_param_es * mu_plasma * mu_rel_param_es) * np.power(inversemodel.alpha, 3)
 
 
 class AdjointMethodImplementationsRelTransmiss(AdjointMethodImplementationsEdge):

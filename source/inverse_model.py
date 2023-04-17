@@ -6,6 +6,8 @@ import source.inverseproblemmodules.alpha_restriction as alpha_mapping
 import source.fileio.read_target_values as read_target_values
 import source.fileio.read_parameters as read_parameters
 
+import numpy as np
+
 
 class InverseModel(object):
     # todo docstring and explain all attributes
@@ -78,6 +80,11 @@ class InverseModel(object):
         self._imp_readparameters = imp_readparameters
         self._imp_adjointmethodsolver = imp_adjointmethodsolver
         self._imp_alphamapping = imp_alphamapping
+
+        # Solution monitoring - Visualisation
+        self.current_iteration = 0
+        self.iteration_array = None
+        self.f_h_array = None
 
     def initialise_inverse_model(self):
         """
