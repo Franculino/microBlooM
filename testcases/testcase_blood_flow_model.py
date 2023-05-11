@@ -27,7 +27,8 @@ PARAMETERS = MappingProxyType(
                                    # 4: todo import graph from edge_data and vertex_data pickle files
         "write_network_option": 1,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
-                                    # 3-...: todo other file formats.
+                                    # 3: write to vtp format
+                                    # 4: write to two csv files
         "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
