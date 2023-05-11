@@ -1,0 +1,8 @@
+source/__pycache__
+source/bloodflowmodel/__pycache__
+__pycache__
+.DS_Store
+.idea
+
+data/out
+util

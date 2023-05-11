@@ -64,3 +64,7 @@ class TubeHaematocritTracking(TubeHaematocrit):
         pass
         # todo implement with RBC tracking (need to have access to "cloud" class object). Count number of RBCs per edge
         #  and compute corresponding ht
+
+class TubeHaematocritIterative(TubeHaematocrit):
+    def update_ht(self, flownetwork):
+        pass

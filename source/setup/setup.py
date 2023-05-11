@@ -74,6 +74,8 @@ class SetupSimulation(Setup):
                 imp_ht = tube_haematocrit.TubeHaematocritNewtonian(PARAMETERS)  # Neglects the impact of RBCs (ht = 0)
             case 2:
                 imp_ht = tube_haematocrit.TubeHaematocritConstant(PARAMETERS)  # Constant ht for all edges
+            case 3:
+                imp_ht = tube_haematocrit.TubeHaematocritIterative(PARAMETERS)  # Constant ht for all edges
             case _:
                 sys.exit("Error: Choose valid option for the tube haematocrit (tube_haematocrit_option)")
 
@@ -91,6 +93,10 @@ class SetupSimulation(Setup):
                 imp_hd = discharge_haematocrit.DischargeHaematocritVitroPries2005(PARAMETERS)
                 imp_transmiss = transmissibility.TransmissibilityVitroPries2005(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
+            case 4:  # Takes RBCs into account based on the model of Pries (1996)
+                imp_hd = discharge_haematocrit.DischargeHaematocritLorthois2011(PARAMETERS)
+                imp_transmiss = transmissibility.TransmissibilityVivoPries1996(PARAMETERS)
+                imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS) # No Fahraeus effect (u_RBC = u_Bulk)
             case _:
                 sys.exit("Error: Choose valid option for the handling of RBCs (rbc_impact_option)")
 
