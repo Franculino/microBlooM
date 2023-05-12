@@ -65,6 +65,8 @@ class SetupSimulation(Setup):
                 imp_write = write_network.WriteNetworkIgraph(PARAMETERS)  # Writes the results into an igraph pkl file
             case 3:
                 imp_write = write_network.WriteNetworkVtp(PARAMETERS)  # Writes the results into an igraph pkl file
+            case 4:
+                imp_write = write_network.WriteNetworkCsv(PARAMETERS)  # Writes the results into two csv files
             case _:
                 sys.exit("Error: Choose valid option to write a network to file (write_network_option)")
 
