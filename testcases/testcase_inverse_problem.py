@@ -142,6 +142,7 @@ print("Check flow balance: DONE")
 inverse_model.initialise_inverse_model()
 inverse_model.update_cost()
 solution_monitoring.get_arrays_for_plots()
+print("initial f_H =", "%.2e" % inverse_model.f_h)
 
 nr_of_iterations = int(PARAMETERS["max_nr_of_iterations"])
 print("Solve the inverse problem and update the diameters: ...")
@@ -154,6 +155,9 @@ for i in range(1,nr_of_iterations+1):
     inverse_model.update_cost()
 
     if i % 10 == 0:
+        print(str(i)+" / " + str(nr_of_iterations))
+
+    if i % 100 == 0:
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
         print("Plot graphs and export data: ...")
         solution_monitoring.get_arrays_for_plots()
