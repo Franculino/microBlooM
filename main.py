@@ -9,4 +9,4 @@
 # import testcases.testcase_inverse_problem
 
 # Run test case with only the blood flow model
-import testcases.testcase_blood_flow_model
+import testcases.paper_lmc_solver.distensibility_test
