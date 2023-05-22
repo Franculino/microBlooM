@@ -13,9 +13,12 @@ class Distensibility(object):
         self._flow_network = flownetwork
 
         # Modelling constants
-        self.e_modulus = None  # E modulus for each vessel
+        self.nr_of_edge_distensibilities = None
+        self.e_modulus = None  # E modulus for each vessel with distensibility
         self.wall_thickness = None  # Vessel wall thickness
-        self.can_adapt = None  # True or False for each vessel
+        self.eid_vessel_distensibility = None  # Eids that have a vessel distensibility
+        self.nu = 0.5  # Poisson ratio of the vessel wall. nu = 0.5, if vessel walls are incompressible
+        self.pressure_external = None
 
         # Reference values
         self.pressure_ref = None
