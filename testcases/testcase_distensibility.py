@@ -77,9 +77,9 @@ PARAMETERS = MappingProxyType(
         ##########################
 
         # Set up distensibility model
-        "distensibility_model": 2,   # 0: No update of diameters due to vessel distensibility
-                                     # 1: Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
-                                     # 2: Passive diameter changes, linearised. p_ext=0, d_ref computed.
+        "distensibility_model": 3,   # 1: No update of diameters due to vessel distensibility
+                                     # 2: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = p_base, d_ref = d_base
+                                     # 3: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const, d_ref computed.
 
         # Distensibility edge properties
         "csv_path_distensibility": "data/distensibility/distensibility_parameters.csv",
@@ -110,13 +110,11 @@ print("Read network: DONE")
 # Baseline
 flow_network.update_transmissibility()
 flow_network.update_blood_flow()
-flow_rate_base = np.abs(flow_network.flow_rate)
-diameter_base = np.copy(flow_network.diameter)
-pressure_base = .5 * np.sum(flow_network.pressure[flow_network.edge_list], axis=1) / 133.3
 
 # Post stroke
 distensibility.initialise_distensibility()
-stroke_edges = np.array([0, 1])
+stroke_edges = np.array([0, 1])  # Example: Occlude 2 edges at inflow
+flow_network.diameter[stroke_edges] = .5e-6
 
 distensibility.diameter_ref = np.delete(distensibility.diameter_ref, stroke_edges)
 distensibility.e_modulus = np.delete(distensibility.e_modulus, stroke_edges)
@@ -124,103 +122,10 @@ distensibility.wall_thickness = np.delete(distensibility.wall_thickness, stroke_
 distensibility.eid_vessel_distensibility = np.delete(distensibility.eid_vessel_distensibility, stroke_edges)
 distensibility.nr_of_edge_distensibilities = np.size(distensibility.eid_vessel_distensibility)
 
-flow_network.diameter[stroke_edges] = .5e-6
-
+# Update diameters and iterate (has to be improved)
 for i in range(100):
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
     distensibility.update_vessel_diameters()
 
-flow_rate_stroke = np.abs(flow_network.flow_rate)
-diameter_stroke = np.copy(flow_network.diameter)
-pressure_stroke = .5 * np.sum(flow_network.pressure[flow_network.edge_list], axis=1) / 133.3
-
-import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-
-# Plot network
-
-flow_rates_rel_change = (flow_rate_stroke - flow_rate_base) / flow_rate_base
-
-xy = flow_network.xyz[:, :2]
-edgelist = flow_network.edge_list
-
-segments = xy[edgelist]
-
-fig, ax = plt.subplots()
-ax.set_aspect('equal')
-ax.set_xlim(xy[:, 0].min() - .5 * PARAMETERS['hexa_edge_length'], xy[:, 0].max() + PARAMETERS['hexa_edge_length'])
-ax.set_ylim(xy[:, 1].min() - .5 * PARAMETERS['hexa_edge_length'], xy[:, 1].max() + PARAMETERS['hexa_edge_length'])
-line_segments = LineCollection(segments, cmap=plt.get_cmap("viridis"),
-                               norm=plt.Normalize(vmin=-1, vmax=0))
-line_segments.set_array(flow_rates_rel_change)
-line_segments.set_linewidth(diameter_stroke * 1e5*2)
-ax.add_collection(line_segments)
-
-ax.set_title('Flow rate changes after stroke')
-
-ax.plot(xy[flow_network.boundary_vs, 0], xy[flow_network.boundary_vs, 1], 'o', color='r', markersize=10)
-
-cbar1 = plt.colorbar(line_segments)
-
-fig.savefig("output/flowrates_change.png", dpi=200)
-
-
-diameter_rel_change = (diameter_stroke-diameter_base)/diameter_base
-fig, ax = plt.subplots()
-ax.set_aspect('equal')
-ax.set_xlim(xy[:, 0].min() - .5 * PARAMETERS['hexa_edge_length'], xy[:, 0].max() + PARAMETERS['hexa_edge_length'])
-ax.set_ylim(xy[:, 1].min() - .5 * PARAMETERS['hexa_edge_length'], xy[:, 1].max() + PARAMETERS['hexa_edge_length'])
-line_segments = LineCollection(segments, cmap=plt.get_cmap("viridis"),
-                               norm=plt.Normalize(vmin=-.2, vmax=0))
-line_segments.set_array(diameter_rel_change)
-line_segments.set_linewidth(diameter_stroke * 1e5*2)
-ax.add_collection(line_segments)
-
-ax.set_title('Diameter changes after stroke')
-
-ax.plot(xy[flow_network.boundary_vs, 0], xy[flow_network.boundary_vs, 1], 'o', color='r', markersize=10)
-
-cbar1 = plt.colorbar(line_segments)
-
-fig.savefig("output/diameter_change.png", dpi=200)
-
-
-fig, ax = plt.subplots()
-ax.set_aspect('equal')
-ax.set_xlim(xy[:, 0].min() - .5 * PARAMETERS['hexa_edge_length'], xy[:, 0].max() + PARAMETERS['hexa_edge_length'])
-ax.set_ylim(xy[:, 1].min() - .5 * PARAMETERS['hexa_edge_length'], xy[:, 1].max() + PARAMETERS['hexa_edge_length'])
-line_segments = LineCollection(segments, cmap=plt.get_cmap("viridis"),
-                               norm=plt.Normalize(vmin=10, vmax=100))
-line_segments.set_array(pressure_stroke)
-line_segments.set_linewidth(diameter_stroke * 1e5*2)
-ax.add_collection(line_segments)
-
-ax.set_title('Pressure after stroke')
-
-ax.plot(xy[flow_network.boundary_vs, 0], xy[flow_network.boundary_vs, 1], 'o', color='r', markersize=10)
-
-cbar1 = plt.colorbar(line_segments)
-
-fig.savefig("output/pressure_stroke.png", dpi=200)
-
-
-fig, ax = plt.subplots()
-ax.set_aspect('equal')
-ax.set_xlim(xy[:, 0].min() - .5 * PARAMETERS['hexa_edge_length'], xy[:, 0].max() + PARAMETERS['hexa_edge_length'])
-ax.set_ylim(xy[:, 1].min() - .5 * PARAMETERS['hexa_edge_length'], xy[:, 1].max() + PARAMETERS['hexa_edge_length'])
-line_segments = LineCollection(segments, cmap=plt.get_cmap("viridis"),
-                               norm=plt.Normalize(vmin=10, vmax=100))
-line_segments.set_array(pressure_base)
-line_segments.set_linewidth(diameter_base * 1e5*2)
-ax.add_collection(line_segments)
-
-ax.set_title('Pressure baseline')
-
-ax.plot(xy[flow_network.boundary_vs, 0], xy[flow_network.boundary_vs, 1], 'o', color='r', markersize=10)
-
-cbar1 = plt.colorbar(line_segments)
-
-fig.savefig("output/pressure_base.png", dpi=200)
-
-
+flow_network.write_network()

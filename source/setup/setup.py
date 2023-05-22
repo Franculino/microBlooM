@@ -164,16 +164,16 @@ class SetupSimulation(Setup):
         """
 
         match PARAMETERS["distensibility_model"]:
-            case 0:  # No update of diameters due to vessel distensibility
+            case 1:  # No update of diameters due to vessel distensibility
                 imp_distensibility_law = distensibility_law.DistensibilityNothing(PARAMETERS)
                 imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersNothing(
                     PARAMETERS)
-            case 1:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
+            case 2:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
                 imp_distensibility_law = distensibility_law.DistensibilityLawPassiveLinearReferenceBaselinePressure(
                     PARAMETERS)
                 imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(
                     PARAMETERS)
-            case 2:  # Passive diameter changes, linearised. p_ext=0, d_ref computed.
+            case 3:  # Passive diameter changes, linearised. p_ext=0, d_ref computed.
                 imp_distensibility_law = distensibility_law.DistensibilityLawPassiveLinearReferenceConstantExternalPressure(
                     PARAMETERS)
                 imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(
