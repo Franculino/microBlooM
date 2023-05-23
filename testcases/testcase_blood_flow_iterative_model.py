@@ -28,11 +28,10 @@ PARAMETERS = MappingProxyType(
         "write_network_option": 2,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
                                     # 3-...: todo other file formats.
-        "tube_haematocrit_option": 1,  # 1: No RBCs (ht=0)
+        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
                                        # 2: Constant haematocrit
-                                       # 3: Iterative Model, with not constant Hematocrit
-                                       # 4: todo: RBC tracking
-                                       # 5-...: todo: steady state RBC laws
+                                       # 3: todo: RBC tracking
+                                       # 4-...: todo: steady state RBC laws
         "rbc_impact_option": 1,  # 1: No RBCs (hd=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: Laws by Pries and Secomb (2005)
@@ -40,19 +39,26 @@ PARAMETERS = MappingProxyType(
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
                              # 3-...: other solvers
+        "iterative_case": 1,  # 1 : nothing #TODO: to be tested
+                              # 2 : iterative option
 
         # Blood properties
-        "ht_constant": 0.3,  # only required if RBC impact is considered
+        "ht_constant": 0.5,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
-        "ht_initial": 0.45,  # only required if Iterative Model is considered
 
         # Hexagonal network properties. Only required for "read_network_option" 1
         "nr_of_hexagon_x": 3,
         "nr_of_hexagon_y": 3,
         "hexa_edge_length": 62.e-6,
-        "hexa_diameter": [5e-06, 5e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06],
+        "hexa_diameter":  [5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
+                           5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
+                           5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06],
 
-        #"hexa_diameter": [5.e-6, 4.e-6, 3.e-6, 6.e-6, 3.e-6],
+        # "hexa_diameter": [5e-06, 5e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06,
+        #                   6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06,
+
+        #                   4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06],
+        # "hexa_diameter": [5.e-6, 4.e-6, 3.e-6, 6.e-6, 3.e-6],
         "hexa_boundary_vertices": [0, 27],
         "hexa_boundary_values": [2, 1],
         "hexa_boundary_types": [1, 1],
@@ -104,6 +110,11 @@ print("Update transmissibility: DONE")
 print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
+
+# Iterative model that update the hematocrtit
+print("Update hematocrit with iterative approach: ...")
+#flow_network.update_linear_hematocrit()
+print("Update hematocrit with iterative approach: DONE")
 
 print("Check flow balance: ...")
 flow_balance.check_flow_balance()

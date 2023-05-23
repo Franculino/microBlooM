@@ -13,6 +13,7 @@ import source.fileio.read_parameters as read_parameters
 import source.inverseproblemmodules.adjoint_method_implementations as adjoint_method_parameters
 import source.inverseproblemmodules.adjoint_method_solver as adjoint_method_solver
 import source.inverseproblemmodules.alpha_restriction as alpha_mapping
+import source.bloodflowmodel.iterative_hematocrit as iterative_hematocrit
 import sys
 
 
@@ -75,8 +76,6 @@ class SetupSimulation(Setup):
                 imp_ht = tube_haematocrit.TubeHaematocritNewtonian(PARAMETERS)  # Neglects the impact of RBCs (ht = 0)
             case 2:
                 imp_ht = tube_haematocrit.TubeHaematocritConstant(PARAMETERS)  # Constant ht for all edges
-            case 3:
-                imp_ht = tube_haematocrit.TubeHaematocritIterative(PARAMETERS)  # Constant ht for all edges
             case _:
                 sys.exit("Error: Choose valid option for the tube haematocrit (tube_haematocrit_option)")
 
@@ -112,7 +111,15 @@ class SetupSimulation(Setup):
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
-        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
+        # match PARAMETERS["iterative_case"]:
+        #     case 1:
+        #         pass
+        #     case 2:
+        #         imp_iterative = iterative_hematocrit.IterativeLorthois2011(PARAMETERS)  # Fast approach to build the system
+        #     case _:
+        #         sys.exit("Error: Choose valid option for the iterative approach (iterative_case")
+
+        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver#, imp_iterative
 
     def setup_inverse_model(self, PARAMETERS):
         """

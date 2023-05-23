@@ -137,6 +137,7 @@ class TransmissibilityVivoPries1996(Transmissibility):
 
         # viscosity for discharging hematocrit of 0.45
         mu_rel_45 = 6 * np.exp(-0.085 * diameter_um) + 3.2 - 2.44 * np.exp(-0.06 * np.power(diameter_um, 0.645))
+
         # coefficent C
         C = (0.8 + np.exp(-0.075 * diameter_um)) * (-1 + 1. / (1. + 1e-10 * np.power(diameter_um, 12.))) \
             + 1. / (1. + 1.e-10 * np.power(diameter_um, 12.))
@@ -144,6 +145,8 @@ class TransmissibilityVivoPries1996(Transmissibility):
         mu_rel = mu_rel_45(1. + (mu_rel_45 - 1.) * ((np.power((1. - hd), C) - 1.) / (np.power((1. - 0.45), C) - 1.)) \
                            * (np.power((diameter_um / (diameter_um - 1.1)), 2)))
 
-        # trasmissability in the first node
+        # trasmissability
         flownetwork.mu_rel = mu_rel
+
+        # maybe here is necessary "/mu_rel"?
         flownetwork.transmiss = transmiss_poiseuille
