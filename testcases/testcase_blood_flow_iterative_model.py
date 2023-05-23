@@ -21,19 +21,19 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 3,  # 1: generate hexagonal graph
+        "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
-        "write_network_option": 1,  # 1: do not write anything
+        "write_network_option": 2,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
                                     # 3-...: todo other file formats.
-        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
+        "tube_haematocrit_option": 1,  # 1: No RBCs (ht=0)
                                        # 2: Constant haematocrit
                                        # 3: Iterative Model, with not constant Hematocrit
                                        # 4: todo: RBC tracking
                                        # 5-...: todo: steady state RBC laws
-        "rbc_impact_option": 0,  # 1: No RBCs (hd=0)
+        "rbc_impact_option": 1,  # 1: No RBCs (hd=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: Laws by Pries and Secomb (2005)
                                  # 4-...: todo: Other laws. in vivo?
@@ -50,7 +50,9 @@ PARAMETERS = MappingProxyType(
         "nr_of_hexagon_x": 3,
         "nr_of_hexagon_y": 3,
         "hexa_edge_length": 62.e-6,
-        "hexa_diameter": 4.e-6,
+        "hexa_diameter": [5e-06, 5e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06],
+
+        #"hexa_diameter": [5.e-6, 4.e-6, 3.e-6, 6.e-6, 3.e-6],
         "hexa_boundary_vertices": [0, 27],
         "hexa_boundary_values": [2, 1],
         "hexa_boundary_types": [1, 1],
@@ -65,14 +67,14 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "data/out/hexagonal.pkl",
+        "pkl_path_igraph": "/Users/cucciolo/Desktop/microBlooM/data/out/new_graph.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/hexagonal.pkl"  # only required for "write_network_option" 2
+        "write_path_igraph": "/Users/cucciolo/Desktop/microBlooM/data/out/new_graph_2.pkl"  # only required for "write_network_option" 2
     }
 )
 

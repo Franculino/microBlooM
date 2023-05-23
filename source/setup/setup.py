@@ -38,6 +38,7 @@ class SetupSimulation(Setup):
     """
     Class for setting up a simulation that only includes the blood flow model
     """
+
     def setup_bloodflow_model(self, PARAMETERS):
         """
         Set up the simulation and returns various implementations of the blood flow model
@@ -112,7 +113,6 @@ class SetupSimulation(Setup):
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
         return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
-
 
     def setup_inverse_model(self, PARAMETERS):
         """

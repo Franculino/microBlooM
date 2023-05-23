@@ -123,6 +123,9 @@ class TransmissibilityVivoPries1996(Transmissibility):
     """
 
     def update_transmiss(self, flownetwork):
+        """
+        Transmiss in the first node
+        """
         # Transmissibility without red blood cells.
         transmiss_poiseuille = self._get_transmiss_poiseuille(flownetwork)
 
@@ -141,6 +144,6 @@ class TransmissibilityVivoPries1996(Transmissibility):
         mu_rel = mu_rel_45(1. + (mu_rel_45 - 1.) * ((np.power((1. - hd), C) - 1.) / (np.power((1. - 0.45), C) - 1.)) \
                            * (np.power((diameter_um / (diameter_um - 1.1)), 2)))
 
-        # da rivedere 
+        # trasmissability in the first node
         flownetwork.mu_rel = mu_rel
-        flownetwork.transmiss = transmiss_poiseuille / mu_rel  # Update transmissibility.
+        flownetwork.transmiss = transmiss_poiseuille

@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
 import igraph
+import pandas as pd
 
 
 class ReadNetwork(ABC):
@@ -82,7 +83,7 @@ class ReadNetworkHexagonal(ReadNetwork):
             j = ii // nr_vs_x  # Current vertex index in y-direction.
 
             # For all existing horizontal edges, identify the corresponding vertex indices.
-            if (j % 2 == 0 and i % 2 == 0 and i < nr_vs_x-1) or (j % 2 == 1 and i % 2 == 1 and i < nr_vs_x-2):
+            if (j % 2 == 0 and i % 2 == 0 and i < nr_vs_x - 1) or (j % 2 == 1 and i % 2 == 1 and i < nr_vs_x - 2):
                 edge_list[eid, 0] = ii
                 edge_list[eid, 1] = ii + 1
                 eid += 1
@@ -119,23 +120,26 @@ class ReadNetworkHexagonal(ReadNetwork):
 
         # Edge attributes
         flownetwork.length = np.ones(nr_of_edges) * vessel_length
-        flownetwork.diameter = np.ones(nr_of_edges) * vessel_diameter
+        # MODIFIED FOR ITERATIVE
+        # flownetwork.diameter = np.ones(nr_of_edges) * vessel_diameter
+        flownetwork.diameter = [5e-06, 5e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06]
+
         flownetwork.edge_list = edge_list
 
         # Vertex attributes
         flownetwork.xyz = xyz_vs
 
         # Boundaries, sort according to ascending vertex ids
-        import pandas as pd
         df_boundaries = pd.DataFrame({'vs_ids': np.array(self._PARAMETERS["hexa_boundary_vertices"], dtype=np.int),
-                        'vals': np.array(self._PARAMETERS["hexa_boundary_values"], dtype=np.float),
-                        'types': np.array(self._PARAMETERS["hexa_boundary_types"], dtype=np.int)})
+                                      'vals': np.array(self._PARAMETERS["hexa_boundary_values"], dtype=np.float),
+                                      'types': np.array(self._PARAMETERS["hexa_boundary_types"], dtype=np.int)})
 
         df_boundaries = df_boundaries.sort_values('vs_ids')
 
         flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
         flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
         flownetwork.boundary_type = df_boundaries["types"].to_numpy()
+        print(flownetwork.diameter)
 
 
 class ReadNetworkCsv(ReadNetwork):
@@ -276,7 +280,8 @@ class ReadNetworkIgraph(ReadNetwork):
         flownetwork.boundary_type = boundary_types[np.logical_or(boundary_types == 1, boundary_types == 2)]
         boundary_values = np.array(graph.vs[self._PARAMETERS["ig_boundary_value"]])
         flownetwork.boundary_val = boundary_values[np.logical_or(boundary_types == 1, boundary_types == 2)]
-        flownetwork.boundary_vs = np.arange(flownetwork.nr_of_vs)[np.logical_or(boundary_types == 1, boundary_types == 2)]
+        flownetwork.boundary_vs = np.arange(flownetwork.nr_of_vs)[
+            np.logical_or(boundary_types == 1, boundary_types == 2)]
 
 
 class ReadNetworkPkl(ReadNetwork):
