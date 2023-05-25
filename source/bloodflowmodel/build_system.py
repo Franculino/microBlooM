@@ -43,6 +43,7 @@ class BuildSystemSparseCoo(BuildSystem):
         nr_of_vs = flownetwork.nr_of_vs
         transmiss = flownetwork.transmiss
         edge_list = flownetwork.edge_list
+
         # Generate row, col and data arrays required to build a coo_matrix.
         # In a first step, assume a symmetrical system matrix without accounting for boundary conditions.
         # Example: Network with 2 edges and 3 vertices. edge_list = [[v1, v2], [v2, v3]], transmiss = [T1, T2]

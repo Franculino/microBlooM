@@ -122,12 +122,10 @@ class ReadNetworkHexagonal(ReadNetwork):
         flownetwork.length = np.ones(nr_of_edges) * vessel_length
         # MODIFIED FOR ITERATIVE
         # flownetwork.diameter = np.ones(nr_of_edges) * vessel_diameter
-        flownetwork.diameter = self._PARAMETERS["hexa_diameter"]
-        # flownetwork.diameter = [5e-06, 5e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06,
-        #                         3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06,
-        #                         3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06]
+        flownetwork.diameter = [5e-06, 5e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06]
 
         flownetwork.edge_list = edge_list
+
         # Vertex attributes
         flownetwork.xyz = xyz_vs
 
@@ -141,6 +139,7 @@ class ReadNetworkHexagonal(ReadNetwork):
         flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
         flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
         flownetwork.boundary_type = df_boundaries["types"].to_numpy()
+        print(flownetwork.diameter)
 
 
 class ReadNetworkCsv(ReadNetwork):

@@ -119,7 +119,7 @@ class SetupSimulation(Setup):
         #     case _:
         #         sys.exit("Error: Choose valid option for the iterative approach (iterative_case")
 
-        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
+        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver#, imp_iterative
 
     def setup_inverse_model(self, PARAMETERS):
         """

@@ -75,8 +75,7 @@ class WriteNetworkIgraph(WriteNetwork):
 
         if flownetwork.ht is not None:
             graph.es["ht"] = flownetwork.ht
-        if flownetwork.hd is not None:
-            graph.es["hd"] = flownetwork.hd
+
         graph.vs["xyz"] = flownetwork.xyz.tolist()
 
         if flownetwork.pressure is not None:
@@ -249,7 +248,8 @@ class WriteNetworkVtp(WriteNetwork):
         f = open(fname, 'w')
 
         # Find unconnected vertices:
-        unconnected = np.nonzero([x == 0 for x in G.strength(weights = [1 for i in range(G.ecount())])])[0].tolist()
+        unconnected = np.nonzero([x == 0 for x in G.strength(weights=
+                                                             [1 for i in range(G.ecount())])])[0].tolist()
 
         # Header
         f.write('<?xml version="1.0"?>\n')
