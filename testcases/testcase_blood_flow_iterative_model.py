@@ -9,6 +9,7 @@ import sys
 import numpy as np
 import pandas as pd
 
+import util
 from source.flow_network import FlowNetwork
 from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
@@ -28,22 +29,22 @@ PARAMETERS = MappingProxyType(
         "write_network_option": 2,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
                                     # 3-...: todo other file formats.
-        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
+        "tube_haematocrit_option": 1,  # 1: No RBCs (ht=0)
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
                                        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 1,  # 1: No RBCs (hd=0)
+        "rbc_impact_option": 4,  # 1: No RBCs (hd=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: Laws by Pries and Secomb (2005)
-                                 # 4-...: todo: Other laws. in vivo?
+                                 # 4: Laws by Preis (1996)
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
                              # 3-...: other solvers
-        "iterative_case": 1,  # 1 : nothing #TODO: to be tested
-                              # 2 : iterative option
+        # "iterative_case": 2,  # 1 : nothing #TODO: to be tested
+        #                       # 2 : iterative option
 
         # Blood properties
-        "ht_constant": 0.5,  # only required if RBC impact is considered
+        "ht_constant": 1,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
 
         # Hexagonal network properties. Only required for "read_network_option" 1
@@ -54,11 +55,6 @@ PARAMETERS = MappingProxyType(
                            5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
                            5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06],
 
-        # "hexa_diameter": [5e-06, 5e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06,
-        #                   6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06,
-
-        #                   4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06],
-        # "hexa_diameter": [5.e-6, 4.e-6, 3.e-6, 6.e-6, 3.e-6],
         "hexa_boundary_vertices": [0, 27],
         "hexa_boundary_values": [2, 1],
         "hexa_boundary_types": [1, 1],
@@ -79,16 +75,15 @@ PARAMETERS = MappingProxyType(
         "ig_boundary_value": "boundaryValue",
 
         # Write options
-        "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "/Users/cucciolo/Desktop/microBlooM/data/out/new_graph_2.pkl"  # only required for "write_network_option" 2
+        "write_override_initial_graph": True,  # todo: currently does not do anything
+        "write_path_igraph": "/Users/cucciolo/Desktop/microBlooM/data/out/hematocrit.pkl"  # only required for "write_network_option" 2
     }
 )
 
 # Create object to set up the simulation and initialise the simulation
 setup_blood_flow = setup.SetupSimulation()
 # Initialise the implementations based on the parameters specified
-imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
+imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file
@@ -111,14 +106,11 @@ print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
-# Iterative model that update the hematocrtit
-print("Update hematocrit with iterative approach: ...")
-#flow_network.update_linear_hematocrit()
-print("Update hematocrit with iterative approach: DONE")
-
+flow_network.update_transmissibility()
 print("Check flow balance: ...")
 flow_balance.check_flow_balance()
 print("Check flow balance: DONE")
 
 # Write the results to file
 flow_network.write_network()
+
