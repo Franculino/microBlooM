@@ -123,30 +123,27 @@ class TransmissibilityVivoPries1996(Transmissibility):
     """
 
     def update_transmiss(self, flownetwork):
-        """
-        Transmiss in the first node
-        """
-        # Transmissibility without red blood cells.
-        transmiss_poiseuille = self._get_transmiss_poiseuille(flownetwork)
-
+        mu_plasma = 0.0012
         # Diameter in micro meters
-        diameter_um = 1.e6 * flownetwork.diameter
-
+        diameter_um = flownetwork.diameter
+        # diameter_um = [i * 1.e6 for i in flownetwork.diameter]
         # discharging hematocrit
+        length = flownetwork.length
         hd = flownetwork.hd
+        i = 0
 
-        # viscosity for discharging hematocrit of 0.45
-        mu_rel_45 = 6 * np.exp(-0.085 * diameter_um) + 3.2 - 2.44 * np.exp(-0.06 * np.power(diameter_um, 0.645))
+        for diameter in diameter_um:
+            if flownetwork.transmiss is None:
+                flownetwork.transmiss = np.zeros(flownetwork.nr_of_es)
+            # viscosity for discharging hematocrit of 0.45
+            mu_rel_45 = 6 * np.exp(-0.085 * diameter) + 3.2 - 2.44 * np.exp(-0.06 * np.power(diameter, 0.645))
+            # coefficient C
+            C = (0.8 + np.exp(-0.075 * diameter)) * (-1 + 1. / (1. + 1e-10 * np.power(diameter, 12.))) \
+                + 1. / (1. + 1.e-10 * np.power(diameter, 12.))
+            # variation of apparent viscosity, mu_rel = mu relative to this vessel
+            mu_rel = mu_plasma * (
+                    1. + (mu_rel_45 - 1.) * ((np.power((1. - hd[i]), C) - 1.) / (np.power((1. - 0.45), C) - 1.)) * (
+                np.power((diameter / (diameter - 1.1)), 2)))
 
-        # coefficent C
-        C = (0.8 + np.exp(-0.075 * diameter_um)) * (-1 + 1. / (1. + 1e-10 * np.power(diameter_um, 12.))) \
-            + 1. / (1. + 1.e-10 * np.power(diameter_um, 12.))
-        # variation of apparent viscosity, mu_rel = mu relative to this vessel
-        mu_rel = mu_rel_45(1. + (mu_rel_45 - 1.) * ((np.power((1. - hd), C) - 1.) / (np.power((1. - 0.45), C) - 1.)) \
-                           * (np.power((diameter_um / (diameter_um - 1.1)), 2)))
-
-        # trasmissability
-        flownetwork.mu_rel = mu_rel
-
-        # maybe here is necessary "/mu_rel"?
-        flownetwork.transmiss = transmiss_poiseuille
+            flownetwork.transmiss[i] = np.pi * np.power(diameter, 4) / (128 * mu_rel * flownetwork.length[i])
+            i += 1
