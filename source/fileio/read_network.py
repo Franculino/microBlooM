@@ -143,7 +143,6 @@ class ReadNetworkHexagonal(ReadNetwork):
         flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
         flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
         flownetwork.boundary_type = df_boundaries["types"].to_numpy()
-        print(flownetwork.diameter)
 
 
 class ReadNetworkCsv(ReadNetwork):

@@ -42,12 +42,12 @@ PARAMETERS = MappingProxyType(
         # 3-...: other solvers
 
         # Blood properties
-        "ht_constant": 0.3,  # only required if RBC impact is considered
+        "ht_constant": 0.003,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
 
         # alpha
         "alpha": 0.3,
-        "epsilon": 1e-5,
+        "epsilon": 1e-35,
         # Hexagonal network properties. Only required for "read_network_option" 1
         "nr_of_hexagon_x": 3,
         "nr_of_hexagon_y": 3,

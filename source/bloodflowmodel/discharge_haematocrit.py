@@ -214,7 +214,7 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
     def update_hd(self, flownetwork):
 
         # initial supposed hematocrit
-        ht_init = self._PARAMETERS["ht_constant"]
+
         # diameter
         diameter = flownetwork.diameter
         # solved by the system
@@ -223,6 +223,7 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
         nr_of_vs = flownetwork.nr_of_vs
         # hematocrit
         hematocrit = flownetwork.hd
+
         # edge list
         edge_list = flownetwork.edge_list
         # flow
@@ -238,7 +239,7 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
 
         if pressure is None:
             flownetwork.hd = flownetwork.ht
-
+            flownetwork.ht_init = self._PARAMETERS["ht_constant"]
         else:
             # [pressure][node] in a single array
             for pres in range(0, nr_of_vs):
@@ -292,8 +293,9 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
 
                 # no parent and two daughter (-<)
                 if parent is None:
+
                     flownetwork.hd[daughter_a], flownetwork.hd[daughter_b] = self.get_erythrocyte_fraction(
-                        ht_init,
+                        flownetwork.ht_init,
                         5e-06,
                         diameter[daughter_a],
                         diameter[daughter_b],
@@ -340,4 +342,3 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
                 sys.exit("Check RBCs balance: FAIL -->", rbc_balance)
             else:
                 print("Check RBCs balance: DONE")
-
