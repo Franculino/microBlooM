@@ -22,38 +22,38 @@ from util_methods.util_iterative import util_iterative_method
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,  # 1: generate hexagonal graph
-        # 2: import graph from csv files
-        # 3: import graph from igraph file (pickle file)
-        # 4: todo import graph from edge_data and vertex_data pickle files
+        "read_network_option": 1,   # 1: generate hexagonal graph
+                                    # 2: import graph from csv files
+                                    # 3: import graph from igraph file (pickle file)
+                                    # 4: todo import graph from edge_data and vertex_data pickle files
         "write_network_option": 2,  # 1: do not write anything
-        # 2: write to igraph format # todo: handle overwriting data from import file
-        # 3-...: todo other file formats.
-        "tube_haematocrit_option": 1,  # 1: No RBCs (ht=0)
-        # 2: Constant haematocrit
-        # 3: todo: RBC tracking
-        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 4,  # 1: No RBCs (hd=0)
-        # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-        # 3: Laws by Pries and Secomb (2005)
-        # 4: Laws by Preis (1996)
-        "solver_option": 1,  # 1: Direct solver
-        # 2: PyAMG solver
-        # 3-...: other solvers
+                                    # 2: write to igraph format # todo: handle overwriting data from import file
+                                    # 3-...: todo other file formats.
+        "tube_haematocrit_option": 2,   # 1: No RBCs (ht=0)
+                                        # 2: Constant haematocrit
+                                        # 3: todo: RBC tracking
+                                        # 4-...: todo: steady state RBC laws
+        "rbc_impact_option": 4,     # 1: No RBCs (hd=0)
+                                    # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
+                                    # 3: Laws by Pries and Secomb (2005)
+                                    # 4: Laws by Preis (1996)
+        "solver_option": 1,     # 1: Direct solver
+                                # 2: PyAMG solver
+                                # 3-...: other solvers
 
         # Blood properties
-        "ht_constant": 0.003,  # only required if RBC impact is considered
+        "ht_constant": 1,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
 
         # alpha
-        "alpha": 0.3,
+        "alpha": 0.02,
         "epsilon": 1e-35,
         # Hexagonal network properties. Only required for "read_network_option" 1
         "nr_of_hexagon_x": 3,
         "nr_of_hexagon_y": 3,
         "hexa_edge_length": 62.e-6,
-        "hexa_diameter": [5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
-                          5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
+        "hexa_diameter": [5e-06, 5e-06, 6e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
+                          5e-06, 5e-06, 7e-06, 4e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
                           5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06],
 
         "hexa_boundary_vertices": [0, 27],

@@ -3,6 +3,7 @@ from types import MappingProxyType
 import sys
 import numpy as np
 from math import e
+import copy
 import source.bloodflowmodel.transmissibility as transmissibility
 import source.bloodflowmodel.pressure_flow_solver as pressureflowsolver
 import source.bloodflowmodel.build_system as buildsystem
@@ -43,7 +44,6 @@ class DischargeHaematocrit(ABC):
         q_p1 + q_p2 = q_d,
         qRBC_p1 + qRBC_p2 = qRBC_d1,
         """
-
 
     def _logit(self, x):
         return np.log(x / (1 - x))
@@ -175,6 +175,7 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
 
             case _:  # no daughter
                 print("pass case")
+                RBCbalance = 0
                 pass
         return RBCbalance
 
@@ -216,30 +217,27 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
         # initial supposed hematocrit
 
         # diameter
-        diameter = flownetwork.diameter
+        diameter = copy.deepcopy(flownetwork.diameter)
         # solved by the system
-        pressure = flownetwork.pressure
+        pressure = copy.deepcopy(flownetwork.pressure)
         # number of nodes
-        nr_of_vs = flownetwork.nr_of_vs
+        nr_of_vs = copy.deepcopy(flownetwork.nr_of_vs)
         # hematocrit
-        hematocrit = flownetwork.hd
+        hematocrit = copy.deepcopy(flownetwork.hd)
 
         # edge list
-        edge_list = flownetwork.edge_list
+        edge_list = copy.deepcopy(flownetwork.edge_list)
         # flow
-        flow = flownetwork.flow_rate
+        flow = copy.deepcopy(flownetwork.flow_rate)
         # base of arrays
         pressure_node = np.zeros((nr_of_vs, 2))
         # pressure_node[0] = np.array([pressure[0], pressure.index(max(pressure))])
 
         rbc_balance = 0
-        # TODO hidden
-        diameter_hidden = 5e-6
-        hematocrit_hidden = 5e-6
 
         if pressure is None:
-            flownetwork.hd = flownetwork.ht
-            flownetwork.ht_init = self._PARAMETERS["ht_constant"]
+            flownetwork.hd = copy.deepcopy(flownetwork.ht)
+            flownetwork.ht_init = copy.deepcopy(self._PARAMETERS["ht_constant"])
         else:
             # [pressure][node] in a single array
             for pres in range(0, nr_of_vs):
@@ -328,7 +326,10 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
 
                 elif single_daughter is None:
                     pass
-
+                #     # check if the initial RBCs is the same as the first ones
+                #     rbc_balance += self.qRCS(flownetwork, 5, None, flow[parent_a], flow[parent_b],
+                #                              None, flownetwork.hd[parent_a],
+                #                              flownetwork.hd[parent_b])
                 # two parent and one daughter (>-)
                 else:
                     flownetwork.hd[single_daughter] = ((flow[parent_a] * flownetwork.hd[parent_a]) + (

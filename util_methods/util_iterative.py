@@ -6,19 +6,21 @@ import copy
 import matplotlib.pyplot as plt
 
 
-def predictor_corrector_scheme(flownetwork, alpha):
+def predictor_corrector_scheme(PARAMETERS, flownetwork, alpha):
     """
 
     """
-    hematocrit = flownetwork.hd
+    hematocrit = copy.deepcopy(flownetwork.hd)
     new_hematocrit = np.zeros(len(hematocrit))
-
+    alpha = copy.deepcopy(PARAMETERS["alpha"])
+    init = copy.deepcopy(flownetwork.ht_init)
     for hemat in range(0, (len(hematocrit))):
         new_hematocrit[hemat] = (alpha * hematocrit[hemat]) + (
                 (1 - alpha) * hematocrit[hemat])
-    new_start = (alpha * flownetwork.ht_init) + (
-            (1 - alpha) * flownetwork.ht_init)
-    return new_hematocrit, new_start
+    flownetwork.ht_init = (alpha * init) + (
+            (1 - alpha) * init)
+
+    return new_hematocrit
 
 
 def util_iterative_method(PARAMETERS, flownetwork):
@@ -58,19 +60,17 @@ def util_iterative_method(PARAMETERS, flownetwork):
                 break
         if convergence_init >= PARAMETERS["epsilon"]:
             flownetwork.convergence_check = False
-        if iteration == 3:
-            flownetwork.convergence_check = True
 
         if flownetwork.convergence_check is False:
             iteration += 1
-            flownetwork.hd, flownetwork.ht_init = predictor_corrector_scheme(flownetwork, alpha)
-            flownetwork.iterative()
+            flownetwork.hd = predictor_corrector_scheme(PARAMETERS, flownetwork, alpha)
+
     iteration_plot = np.append(iteration_plot, 0)
     print("Convergence: DONE in -> " + str(iteration))
     plt.style.use('seaborn-whitegrid')
     print(iteration_plot)
     # convergence plot
-    plt.plot(range(0, iteration), iteration_plot,'-ok')
+    plt.plot(range(0, iteration), iteration_plot, '-ok')
     plt.title("Convergence plot")
     plt.xlabel("Iteration")
     plt.ylabel("Error difference")

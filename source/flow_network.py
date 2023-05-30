@@ -92,7 +92,7 @@ class FlowNetwork(object):
         """
         Update the hematocrit with iterative method, after a first normal first iteration
         """
-
+        self._imp_ht.update_ht(self)
         self._imp_hd.update_hd(self)
         self._imp_transmiss.update_transmiss(self)
         self._imp_buildsystem.build_linear_system(self)
