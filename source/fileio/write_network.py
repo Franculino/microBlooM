@@ -75,6 +75,8 @@ class WriteNetworkIgraph(WriteNetwork):
 
         if flownetwork.ht is not None:
             graph.es["ht"] = flownetwork.ht
+        if flownetwork.hd is not None:
+            graph.es["hd"] = flownetwork.hd
 
         graph.vs["xyz"] = flownetwork.xyz.tolist()
 
@@ -225,6 +227,9 @@ class WriteNetworkVtp(WriteNetwork):
         if flownetwork.ht is not None:
             graph.es["ht"] = flownetwork.ht
 
+        if flownetwork.hd is not None:
+            graph.es["hd"] = flownetwork.hd
+
         graph.vs["xyz"] = flownetwork.xyz.tolist()
 
         if flownetwork.pressure is not None:
@@ -272,12 +277,12 @@ class WriteNetworkVtp(WriteNetwork):
         f.write('{}<PointData Scalars="Scalars_p">\n'.format(3 * tab))
 
         for key in keys:
-            self._write_array(f, G.vs[key], key, verbose=True) # verbose = verbose
+            self._write_array(f, G.vs[key], key, verbose=True)  # verbose = verbose
         f.write('{}</PointData>\n'.format(3 * tab))
 
         # Edge data
         keys = G.es.attribute_names()
-        keysToRemove = [] # Currently no keys are removed. May be changed later.
+        keysToRemove = []  # Currently no keys are removed. May be changed later.
         # keysToRemove = ['diameters', 'lengths', 'points', 'rRBC', 'tRBC', 'connectivity']
         for key in keysToRemove:
             if key in keys:
@@ -285,12 +290,12 @@ class WriteNetworkVtp(WriteNetwork):
         f.write('{}<CellData Scalars="diameter">\n'.format(3 * tab))
 
         for key in keys:
-            self._write_array(f, G.es[key], key, zeros=len(unconnected), verbose=True) # verbose = verbose
+            self._write_array(f, G.es[key], key, zeros=len(unconnected), verbose=True)  # verbose = verbose
         f.write('{}</CellData>\n'.format(3 * tab))
 
         # Vertices
         f.write('{}<Points>\n'.format(3 * tab))
-        self._write_array(f, np.vstack(G.vs["xyz"]), "xyz", verbose=True) # verbose = verbose
+        self._write_array(f, np.vstack(G.vs["xyz"]), "xyz", verbose=True)  # verbose = verbose
         f.write('{}</Points>\n'.format(3 * tab))
 
         # Unconnected vertices

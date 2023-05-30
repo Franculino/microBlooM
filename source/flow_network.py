@@ -37,13 +37,13 @@ class FlowNetwork(object):
         self.rbc_velocity = None
 
         # Network boundaries
-        self.boundary_vs = None # vertex ids of boundaries (1d np.array)
-        self.boundary_val =  None # boundary values (1d np.array)
-        self.boundary_type = None # boundary type (1: pressure, 2: flow rate)
+        self.boundary_vs = None  # vertex ids of boundaries (1d np.array)
+        self.boundary_val = None  # boundary values (1d np.array)
+        self.boundary_type = None  # boundary type (1: pressure, 2: flow rate)
 
         # Solver
-        self.system_matrix = None # system matrix of linear system of equations
-        self.rhs = None # right hand side of linear system of equations
+        self.system_matrix = None  # system matrix of linear system of equations
+        self.rhs = None  # right hand side of linear system of equations
 
         # "References" to implementations
         self._imp_readnetwork = imp_readnetwork
@@ -54,6 +54,7 @@ class FlowNetwork(object):
         self._imp_buildsystem = imp_buildsystem
         self._imp_solver = imp_solver
         self._imp_rbcvelocity = imp_rbcvelocity
+
 
         # "Reference" to parameter dict
         self._PARAMETERS = PARAMETERS
@@ -87,4 +88,14 @@ class FlowNetwork(object):
         self._imp_solver.update_pressure_flow(self)
         self._imp_rbcvelocity.update_velocity(self)
 
+    def iterative(self):
+        """
+        Update the hematocrit with iterative method, after a first normal first iteration
+        """
+
+        self._imp_hd.update_hd(self)
+        self._imp_transmiss.update_transmiss(self)
+        self._imp_buildsystem.build_linear_system(self)
+        self._imp_solver.update_pressure_flow(self)
+        self._imp_rbcvelocity.update_velocity(self)
 

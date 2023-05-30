@@ -96,7 +96,7 @@ class SetupSimulation(Setup):
             case 4:  # Takes RBCs into account based on the model of Pries (1996)
                 imp_hd = discharge_haematocrit.DischargeHaematocritLorthois2011(PARAMETERS)
                 imp_transmiss = transmissibility.TransmissibilityVivoPries1996(PARAMETERS)
-                imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS) # No Fahraeus effect (u_RBC = u_Bulk)
+                imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS)  # No Fahraeus effect (u_RBC = u_Bulk)
             case _:
                 sys.exit("Error: Choose valid option for the handling of RBCs (rbc_impact_option)")
 
@@ -111,15 +111,7 @@ class SetupSimulation(Setup):
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
-        # match PARAMETERS["iterative_case"]:
-        #     case 1:
-        #         pass
-        #     case 2:
-        #         imp_iterative = iterative_hematocrit.IterativeLorthois2011(PARAMETERS)  # Fast approach to build the system
-        #     case _:
-        #         sys.exit("Error: Choose valid option for the iterative approach (iterative_case")
-
-        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver#, imp_iterative
+        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
 
     def setup_inverse_model(self, PARAMETERS):
         """

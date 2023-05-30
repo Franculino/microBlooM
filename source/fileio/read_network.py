@@ -106,7 +106,9 @@ class ReadNetworkHexagonal(ReadNetwork):
                     edge_list[eid, 0] = ii
                     edge_list[eid, 1] = ii_br
                     eid += 1
-
+        # edge_list = np.append(edge_list, [[-1, 0]], axis=0)
+        # edge_list = np.append(edge_list, [[27, 28]], axis=0)
+        # edge_list += 1
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)
 
@@ -115,15 +117,17 @@ class ReadNetworkHexagonal(ReadNetwork):
 
         # Assign data to flownetwork class
         # Network attributes
-        flownetwork.nr_of_vs = nr_vs_x * nr_vs_y
-        flownetwork.nr_of_es = nr_of_edges
+        # nr_vs_x += 1
+        # nr_vs_y +=1
+        # nr_of_edges +=2
+        flownetwork.nr_of_vs = (nr_vs_x) * (nr_vs_y)
+        flownetwork.nr_of_es = (nr_of_edges)
 
         # Edge attributes
         flownetwork.length = np.ones(nr_of_edges) * vessel_length
         # MODIFIED FOR ITERATIVE
         # flownetwork.diameter = np.ones(nr_of_edges) * vessel_diameter
-        flownetwork.diameter = [5e-06, 5e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06, 5e-06, 4e-06, 3e-06, 6e-06, 3e-06]
-
+        flownetwork.diameter = self._PARAMETERS["hexa_diameter"]
         flownetwork.edge_list = edge_list
 
         # Vertex attributes
