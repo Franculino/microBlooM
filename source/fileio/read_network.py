@@ -109,6 +109,7 @@ class ReadNetworkHexagonal(ReadNetwork):
         # edge_list = np.append(edge_list, [[-1, 0]], axis=0)
         # edge_list = np.append(edge_list, [[27, 28]], axis=0)
         # edge_list += 1
+
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)
 
@@ -120,8 +121,8 @@ class ReadNetworkHexagonal(ReadNetwork):
         # nr_vs_x += 1
         # nr_vs_y +=1
         # nr_of_edges +=2
-        flownetwork.nr_of_vs = (nr_vs_x) * (nr_vs_y)
-        flownetwork.nr_of_es = (nr_of_edges)
+        flownetwork.nr_of_vs = nr_vs_x * nr_vs_y
+        flownetwork.nr_of_es = nr_of_edges
 
         # Edge attributes
         flownetwork.length = np.ones(nr_of_edges) * vessel_length

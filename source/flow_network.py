@@ -95,6 +95,7 @@ class FlowNetwork(object):
         self._imp_ht.update_ht(self)
         self._imp_hd.update_hd(self)
         self._imp_transmiss.update_transmiss(self)
+
         self._imp_buildsystem.build_linear_system(self)
         self._imp_solver.update_pressure_flow(self)
         self._imp_rbcvelocity.update_velocity(self)

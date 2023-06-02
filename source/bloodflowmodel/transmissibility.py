@@ -2,6 +2,7 @@ import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
+import copy
 
 
 class Transmissibility(ABC):
@@ -128,8 +129,8 @@ class TransmissibilityVivoPries1996(Transmissibility):
         diameter_um = flownetwork.diameter
         # diameter_um = [i * 1.e6 for i in flownetwork.diameter]
         # discharging hematocrit
-        length = flownetwork.length
-        hd = flownetwork.hd
+        length = copy.deepcopy(flownetwork.length)
+        hd = copy.deepcopy(flownetwork.hd)
         i = 0
 
         for diameter in diameter_um:
@@ -145,5 +146,5 @@ class TransmissibilityVivoPries1996(Transmissibility):
                     1. + (mu_rel_45 - 1.) * ((np.power((1. - hd[i]), C) - 1.) / (np.power((1. - 0.45), C) - 1.)) * (
                 np.power((diameter / (diameter - 1.1)), 2)))
 
-            flownetwork.transmiss[i] = np.pi * np.power(diameter, 4) / (128 * mu_rel * flownetwork.length[i])
+            flownetwork.transmiss[i] = (np.pi * np.power(diameter, 4) / (128 * mu_rel * length[i])) #/ mu_rel
             i += 1

@@ -76,7 +76,7 @@ class BuildSystemSparseCoo(BuildSystem):
         # Assign pressure boundary value to right hand side vector.
         rhs[boundary_vertices[boundary_types == 1]] = boundary_values[boundary_types == 1]
         # Assign flow rate boundary value to right hand side vector.
-        rhs[boundary_vertices[boundary_types == 2]]  = boundary_values[boundary_types == 2]  # assign flow source term to rhs
+        rhs[boundary_vertices[boundary_types == 2]] = boundary_values[boundary_types == 2]  # assign flow source term to rhs
 
         # Build the system matrix and assign the right hand side vector.
         flownetwork.system_matrix = coo_matrix((data, (row, col)), shape=(nr_of_vs, nr_of_vs))
