@@ -209,42 +209,42 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
         if flow_a < flow_b:
             flow = flow_a
             if flow <= x_0:
-                qRBCa = 0
-                qRBCb = qRBCp
+                qRBCa, qRBCb = 0, qRBCp
 
             elif flow >= (1 - x_0):
-                qRBCa = qRBCp
-                qRBCb = 0
+                qRBCa, qRBCb = qRBCp, 0
             else:
                 logit_F_Q_a_e = A + B * self._logit((flow - x_0) / (1 - x_0))
                 qRBCa = (pow(e, logit_F_Q_a_e) / (1 + pow(e, logit_F_Q_a_e)))
                 qRBCb = 1 - qRBCa
         else:
-                flow = flow_b
-                if flow <= x_0:
-                    qRBCb = 0
-                    qRBCa = qRBCp
+            flow = flow_b
+            if flow <= x_0:
+                qRBCa, qRBCb = qRBCp, 0
 
-                elif flow >= (1 - x_0):
-                    qRBCb = qRBCp
-                    qRBCa = 0
-                else:
-                    logit_F_Q_a_e = A + B * self._logit((flow - x_0) / (1 - x_0))
-                    qRBCb = (pow(e, logit_F_Q_a_e) / (1 + pow(e, logit_F_Q_a_e)))
-                    qRBCa = 1 - qRBCb
+            elif flow >= (1 - x_0):
+                qRBCa, qRBCb = 0, qRBCp
+
+            else:
+                logit_F_Q_a_e = A + B * self._logit((flow - x_0) / (1 - x_0))
+                qRBCb = (pow(e, logit_F_Q_a_e) / (1 + pow(e, logit_F_Q_a_e)))
+                qRBCa = 1 - qRBCb
 
         if qRBCa < 0 or qRBCb < 0:
             sys.exit()
 
         hemat_a = qRBCa / flow_a
         hemat_b = qRBCb / flow_b
-
-        if hemat_b >= 0.8:
-            hemat_a = 0.8 * hemat_par
-            hemat_b = 0.2 * hemat_par
-        elif hemat_a >= 0.8:
-            hemat_b = 0.8 * hemat_par
-            hemat_a = 0.2 * hemat_par
+        
+        threshold, one_minus_threshold = 0.8, 0.2
+        if hemat_b >= threshold:
+            hemat_surplus = hemat_b - threshold
+            hemat_b = threshold
+            hemat_a = one_minus_threshold + hemat_surplus
+        elif hemat_a >= threshold:
+            hemat_surplus = hemat_a - threshold
+            hemat_a = threshold
+            hemat_b = one_minus_threshold + hemat_surplus
 
         if hemat_a >= 1 or hemat_b >= 1:
             print(hemat_a)

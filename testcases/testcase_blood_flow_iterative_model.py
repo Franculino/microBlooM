@@ -43,7 +43,7 @@ PARAMETERS = MappingProxyType(
         # 3-...: other solvers
 
         # Blood properties
-        "ht_constant": 0.3,  # only required if RBC impact is considered
+        "ht_constant": 3e-01,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
 
         # alpha
