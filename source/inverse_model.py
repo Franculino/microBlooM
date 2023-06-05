@@ -83,8 +83,8 @@ class InverseModel(object):
 
         # Solution monitoring - Visualisation
         self.current_iteration = 0
-        self.iteration_array = None
-        self.f_h_array = None
+        self.iteration_array = np.array([])
+        self.f_h_array = np.array([])
 
     def initialise_inverse_model(self):
         """

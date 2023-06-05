@@ -142,6 +142,7 @@ print("Check flow balance: DONE")
 inverse_model.initialise_inverse_model()
 inverse_model.update_cost()
 solution_monitoring.get_arrays_for_plots()
+print("initial f_H =", "%.2e" % inverse_model.f_h)
 
 nr_of_iterations = int(PARAMETERS["max_nr_of_iterations"])
 print("Solve the inverse problem and update the diameters: ...")

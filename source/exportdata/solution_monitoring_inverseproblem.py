@@ -37,7 +37,7 @@ class SolutionMonitoring(object):
 
         filepath_target = csv_path + "data_convergence_target_" + str(current_iteration) + ".csv"
         filepath_range = csv_path + "data_convergence_range_" + str(current_iteration) + ".csv"
-        filepath_cost_funtion = csv_path + "cost_funtion_" + str(current_iteration) + ".csv"
+        filepath_cost_function = csv_path + "cost_function_" + str(current_iteration) + ".csv"
 
         # Create arrays for plotting cost function vs iterations
         f_h = self.inversemodel.f_h
@@ -110,7 +110,7 @@ class SolutionMonitoring(object):
         data["cost_function"] = self.inversemodel.f_h_array
         df = [pd.DataFrame({k: v}) for k, v in data.items()]
         df = pd.concat(df, axis=1)
-        df.to_csv(filepath_cost_funtion, index=False)
+        df.to_csv(filepath_cost_function, index=False)
 
         return
 
@@ -158,7 +158,7 @@ class SolutionMonitoring(object):
         data_vs["coord_x"] = self.flownetwork.xyz[:, 0].transpose()
         data_vs["coord_y"] = self.flownetwork.xyz[:, 1].transpose()
         data_vs["coord_z"] = self.flownetwork.xyz[:, 2].transpose()
-        data_vs["sim_pressure"] = self.flownetwork.pressure
+        data_vs["pressure"] = self.flownetwork.pressure
         df_vs = [pd.DataFrame({k: v}) for k, v in data_vs.items()]
         df_vs = pd.concat(df_vs, axis=1)
         df_vs.to_csv(filepath_vs, index=False)
@@ -184,8 +184,8 @@ class SolutionMonitoring(object):
         data_es[labels[0]] = parameter_baseline_value
         data_es[labels[1]] = tuned_parameter
         data_es["length"] = self.flownetwork.length
-        data_es["sim_flow_rate"] = self.flownetwork.flow_rate
-        data_es["sim_rbc_velocity"] = self.flownetwork.rbc_velocity
+        data_es["flow_rate"] = self.flownetwork.flow_rate
+        data_es["rbc_velocity"] = self.flownetwork.rbc_velocity
         df_es = [pd.DataFrame({k: v}) for k, v in data_es.items()]
         df_es = pd.concat(df_es, axis=1)
         df_es.to_csv(filepath_es, index=False)
