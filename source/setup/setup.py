@@ -13,6 +13,8 @@ import source.fileio.read_parameters as read_parameters
 import source.inverseproblemmodules.adjoint_method_implementations as adjoint_method_parameters
 import source.inverseproblemmodules.adjoint_method_solver as adjoint_method_solver
 import source.inverseproblemmodules.alpha_restriction as alpha_mapping
+import source.fileio.read_distensibility_parameters as read_distensibility_parameters
+import source.distensibilitymodules.distensibility_law as distensibility_law
 import sys
 
 
@@ -65,6 +67,8 @@ class SetupSimulation(Setup):
                 imp_write = write_network.WriteNetworkIgraph(PARAMETERS)  # Writes the results into an igraph pkl file
             case 3:
                 imp_write = write_network.WriteNetworkVtp(PARAMETERS)  # Writes the results into an igraph pkl file
+            case 4:
+                imp_write = write_network.WriteNetworkCsv(PARAMETERS)  # Writes the results into two csv files
             case _:
                 sys.exit("Error: Choose valid option to write a network to file (write_network_option)")
 
@@ -150,3 +154,31 @@ class SetupSimulation(Setup):
                 sys.exit("Error: Choose valid option for the solver of the inverse model (inverse_model_solver)")
 
         return imp_readtargetvalues, imp_readparameters, imp_adjointparameter, imp_adjointsolver, imp_alphamapping
+
+    def setup_distensibility_model(self, PARAMETERS):
+        """
+        Set up the inverse model and returns various implementations of the inverse model
+        :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
+        :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
+        :returns: the implementation objects. Error if invalid option is chosen.
+        """
+
+        match PARAMETERS["distensibility_model"]:
+            case 1:  # No update of diameters due to vessel distensibility
+                imp_distensibility_law = distensibility_law.DistensibilityNothing(PARAMETERS)
+                imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersNothing(
+                    PARAMETERS)
+            case 2:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
+                imp_distensibility_law = distensibility_law.DistensibilityLawPassiveLinearReferenceBaselinePressure(
+                    PARAMETERS)
+                imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(
+                    PARAMETERS)
+            case 3:  # Passive diameter changes, linearised. p_ext=0, d_ref computed.
+                imp_distensibility_law = distensibility_law.DistensibilityLawPassiveLinearReferenceConstantExternalPressure(
+                    PARAMETERS)
+                imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(
+                    PARAMETERS)
+            case _:
+                sys.exit("Error: Choose valid option for distensibility law (distensibility_solver)")
+
+        return imp_distensibility_law, imp_read_distensibility_parameters

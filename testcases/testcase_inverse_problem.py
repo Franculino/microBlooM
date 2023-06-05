@@ -155,9 +155,6 @@ for i in range(1,nr_of_iterations+1):
     inverse_model.update_cost()
 
     if i % 10 == 0:
-        print(str(i)+" / " + str(nr_of_iterations))
-
-    if i % 100 == 0:
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
         print("Plot graphs and export data: ...")
         solution_monitoring.get_arrays_for_plots()
