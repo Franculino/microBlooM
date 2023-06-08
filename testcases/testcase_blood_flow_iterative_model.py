@@ -5,6 +5,7 @@ A python script to simulate stationary blood flow in microvascular networks. Cap
 3. Solve for flow rates, pressures and RBC velocities
 4. Save the results in a file
 """
+import copy
 import sys
 import numpy as np
 import pandas as pd
@@ -41,25 +42,28 @@ PARAMETERS = MappingProxyType(
         "solver_option": 1,  # 1: Direct solver
         # 2: PyAMG solver
         # 3-...: other solvers
+        "convergence_case": 2,
+        # 1: Difference between two iteration of the qRBCs
+        # 2: Normalized mean absolute error
 
         # Blood properties
-        "ht_constant": 3e-01,  # only required if RBC impact is considered
+        "ht_constant": 3E-01,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
 
         # alpha
         "alpha": 0.2,
-        "epsilon": 1e-30,
+        "epsilon": 1E-20,
+        # 1E-30: paper case
+        # 1E-6: MAE case
         # Hexagonal network properties. Only required for "read_network_option" 1
         "nr_of_hexagon_x": 3,
         "nr_of_hexagon_y": 3,
-        "hexa_edge_length": 62.e-6,
+        "hexa_edge_length": 62.E-6,
 
-        "hexa_diameter": [5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
-                          5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
-                          5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06],
+        "hexa_diameter": 5e-6,
 
         "hexa_boundary_vertices": [0, 27],
-        "hexa_boundary_values": [2, 1],
+        "hexa_boundary_values": [3, 1],
         "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
@@ -109,20 +113,21 @@ flow_network.edge_list = np.append(flow_network.edge_list, [[-1, 0]], axis=0)
 flow_network.edge_list = np.append(flow_network.edge_list, [[27, 28]], axis=0)
 flow_network.edge_list += 1
 flow_network.edge_list = flow_network.edge_list[flow_network.edge_list[:, 0].argsort()]
-flow_network.diameter = [5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
-                         5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06,
-                         5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06, 5e-06]
-flow_network.length = [6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05,
-                       6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05,
-                       6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05,
-                       6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05, 6.2e-05]
 
+flow_network.diameter = np.array(
+    [5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06,
+     5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06,
+     5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06])
+flow_network.length = np.array([6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05,
+                                6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05,
+                                6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05,
+                                6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05,
+                                6.2E-05])
 
 # Update the transmissibility
 print("Update transmissibility: ...")
 flow_network.update_transmissibility()
 print("Update transmissibility: DONE")
-
 
 # Update flow rate, pressure and RBC velocity
 print("Update flow, pressure and velocity: ...")
@@ -137,8 +142,7 @@ print("Check flow balance: ...")
 flow_balance.check_flow_balance()
 print("Check flow balance: DONE")
 
-
 # Write the results to file
 flow_network.write_network()
 
-display_graph_util()
+# display_graph_util()

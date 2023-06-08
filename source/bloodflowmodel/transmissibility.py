@@ -74,7 +74,7 @@ class TransmissibilityVitroPries1992(Transmissibility):
         transmiss_poiseuille = self._get_transmiss_poiseuille(flownetwork)  # Transmissibility without red blood cells.
 
         # Relative viscosity based on Pries, Neuhaus, Gaehtgens (1992)
-        diameter_um = 1.e6 * flownetwork.diameter  # Diameter in micro meters
+        diameter_um = flownetwork.diameter * 1E06  # Diameter in micro meters
         hd = flownetwork.hd
 
         C = (0.8 + np.exp(-0.075 * diameter_um)) * (-1. + 1. / (1. + 1.e-11 * np.power(diameter_um, 12.))) + 1. / (
@@ -124,27 +124,24 @@ class TransmissibilityVivoPries1996(Transmissibility):
     """
 
     def update_transmiss(self, flownetwork):
-        mu_plasma = 0.0012
+        mu_plasma = self._PARAMETERS["mu_plasma"]
         # Diameter in micro meters
-        diameter_um = flownetwork.diameter
+        diameter = flownetwork.diameter * 1E-6
         # diameter_um = [i * 1.e6 for i in flownetwork.diameter]
         # discharging hematocrit
-        length = copy.deepcopy(flownetwork.length)
-        hd = copy.deepcopy(flownetwork.hd)
-        i = 0
+        length = flownetwork.length #* 1E-5
+        hd = flownetwork.hd
 
-        for diameter in diameter_um:
-            if flownetwork.transmiss is None:
-                flownetwork.transmiss = np.zeros(flownetwork.nr_of_es)
-            # viscosity for discharging hematocrit of 0.45
-            mu_rel_45 = 6 * np.exp(-0.085 * diameter) + 3.2 - 2.44 * np.exp(-0.06 * np.power(diameter, 0.645))
-            # coefficient C
-            C = (0.8 + np.exp(-0.075 * diameter)) * (-1 + 1. / (1. + 1e-10 * np.power(diameter, 12.))) \
-                + 1. / (1. + 1.e-10 * np.power(diameter, 12.))
-            # variation of apparent viscosity, mu_rel = mu relative to this vessel
-            mu_rel = mu_plasma * (
-                    1. + (mu_rel_45 - 1.) * ((np.power((1. - hd[i]), C) - 1.) / (np.power((1. - 0.45), C) - 1.)) * (
-                np.power((diameter / (diameter - 1.1)), 2)))
-
-            flownetwork.transmiss[i] = (np.pi * np.power(diameter, 4) / (128 * mu_rel * length[i])) #/ mu_rel
-            i += 1
+        # if flownetwork.transmiss is None:
+        #     flownetwork.transmiss = np.zeros(flownetwork.nr_of_es)
+        # viscosity for discharging hematocrit of 0.45
+        mu_rel_45 = 6 * np.exp(-0.085 * diameter) + 3.2 - 2.44 * np.exp(-0.06 * np.power(diameter, 0.645))
+        # coefficient C
+        C = (0.8 + np.exp(-0.075 * diameter)) * (-1 + 1. / (1. + 1e-10 * np.power(diameter, 12.))) \
+            + 1. / (1. + 1.e-10 * np.power(diameter, 12.))
+        # variation of apparent viscosity, mu_rel = mu relative to this vessel
+        mu_rel = mu_plasma * (
+                1. + (mu_rel_45 - 1.) * ((np.power((1. - hd), C) - 1.) / (np.power((1. - 0.45), C) - 1.)) * (
+            np.power((diameter / (diameter - 1.1)), 2)))
+        flownetwork.mu_rel = mu_rel
+        flownetwork.transmiss = (np.pi * np.power(diameter, 4) / (128 * mu_rel * length))

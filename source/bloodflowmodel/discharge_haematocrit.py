@@ -4,10 +4,15 @@ import sys
 import numpy as np
 from math import e
 import copy
+
+from matplotlib import pyplot as plt
+from scipy.special import expit as logistic
+
 import source.bloodflowmodel.transmissibility as transmissibility
 import source.bloodflowmodel.pressure_flow_solver as pressureflowsolver
 import source.bloodflowmodel.build_system as buildsystem
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
+from util_methods.util_plot import util_display_graph, graph_creation
 
 
 class DischargeHaematocrit(ABC):
@@ -22,9 +27,9 @@ class DischargeHaematocrit(ABC):
         :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
         """
         self._PARAMETERS = PARAMETERS
-        self.x_o_init = 1.12e-6  # micrometers
-        self.A_o_init = 15.47e-6  # micrometers
-        self.B_o_init = 8.13e-6  # micrometers
+        self.x_o_init = 1.12  # micrometers
+        self.A_o_init = 15.47  # micrometers
+        self.B_o_init = 8.13  # micrometers
 
     @abstractmethod
     def update_hd(self, flownetwork):
@@ -171,81 +176,100 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
                     if np.abs(qRBC_d - qRBC_d_to_check) <= tollerance:
                         RBCbalance = 0
                     else:
-                        # print(">-", qRBC_d, qRBC_d_to_check)
                         RBCbalance = 1
                 else:
-                    # print(">-", flow_single, flow_daughter_to_check)
-                    #   print(flow_single==flow_daughter_to_check)
+
                     RBCbalance = 1
 
             case _:  # no daughter
-                print("pass case")
                 RBCbalance = 0
                 pass
         if RBCbalance == 1:
-            print("ziopera")
+            print("NOT BALANCED")
         return RBCbalance
 
-    def get_erythrocyte_fraction(self, hemat_par, diam_par, diam_dgt_a, diam_dgt_b, flow_a, flow_parent, flow_b):
+    def non_dimentional_param(self, hemat_par, diam_par, diam_dgt_a, diam_dgt_b):
+        x_0 = (self.x_o_init * (1 - hemat_par)) / (diam_par * 1E6)
+        A = (- self.A_o_init) * (
+                (pow((diam_dgt_a * 1E6), 2) - pow((diam_dgt_b * 1E6), 2)) / (
+                    pow((diam_dgt_a * 1E6), 2) + pow((diam_dgt_b * 1E6), 2))) * (
+                    1 - hemat_par) / (diam_par * 1E6)
+
+        B = 1 + ((self.B_o_init * (1 - hemat_par)) / (diam_par * 1E6))
+
+        return x_0, A, B
+
+    def get_erythrocyte_fraction(self, hemat_par, diam_par, diam_dgt_a, diam_dgt_b, flow_a, flow_parent, flow_b,
+                                 fractional_a_qRBCs, fractional_b_qRBCs, fractional_a_blood, fractional_b_blood):
         """
         to calculate the fraction of erythrocyte that goes in each daugheter vessel
         """
-        flow_a = np.abs(flow_a)
-        flow_b = np.abs(flow_b)
+        fractional_flow_a = flow_a / (flow_a + flow_b)
+        fractional_flow_b = flow_b / (flow_a + flow_b)
         flow_parent = np.abs(flow_parent)
-        x_0 = (self.x_o_init * (1 - hemat_par)) / diam_par
-        log_minchia = 1 - x_0
-        A = (- self.A_o_init) * (
-                (pow(diam_dgt_a, 2) - pow(diam_dgt_b, 2)) / (pow(diam_dgt_a, 2) + pow(diam_dgt_b, 2))) * (
-                    1 - hemat_par) / diam_par
 
-        B = 1 + ((self.B_o_init * (1 - hemat_par)) / diam_par)
+        x_0, A, B = self.non_dimentional_param(hemat_par, diam_par, diam_dgt_a, diam_dgt_b)
 
         qRBCp = hemat_par * flow_parent
         # relationship used to calculate the fraction of erythrocyte
 
-        if (flow_a or flow_b) <= 0:
-            sys.exit()
-        if flow_a < flow_b:
-            flow = flow_a
-            if flow <= x_0:
-                qRBCa, qRBCb = 0, qRBCp
+        # if fractional_flow_a < fractional_flow_b:
+        if fractional_flow_a <= x_0:
+            fractional_qRBCa, fractional_qRBCb = 0, 1
 
-            elif flow >= (1 - x_0):
-                qRBCa, qRBCb = qRBCp, 0
-            else:
-                logit_F_Q_a_e = A + B * self._logit((flow - x_0) / (1 - x_0))
-                qRBCa = (pow(e, logit_F_Q_a_e) / (1 + pow(e, logit_F_Q_a_e)))
-                qRBCb = 1 - qRBCa
-        else:
-            flow = flow_b
-            if flow <= x_0:
-                qRBCa, qRBCb = qRBCp, 0
+        elif x_0 < fractional_flow_a < (1 - x_0):
+            logit_F_Q_a_e = A + B * self._logit((fractional_flow_a - x_0) / (1 - x_0))
+            fractional_qRBCa = (pow(e, logit_F_Q_a_e) / (1 + pow(e, logit_F_Q_a_e)))
+            fractional_qRBCb = 1 - fractional_qRBCa
 
-            elif flow >= (1 - x_0):
-                qRBCa, qRBCb = 0, qRBCp
+        elif fractional_flow_a >= (1 - x_0):
+            fractional_qRBCa, fractional_qRBCb = 1, 0
+        # else:
+        #     if fractional_flow_b <= x_0:
+        #         fractional_qRBCa, fractional_qRBCb = 1, 0
+        #     elif fractional_flow_b >= (1 - x_0):
+        #         fractional_qRBCa, fractional_qRBCb = 0, 1
+        #
+        #     else:
+        #         logit_F_Q_a_e = A + B * self._logit((fractional_flow_b - x_0) / (1 - x_0))
+        #         fractional_qRBCb = (pow(e, logit_F_Q_a_e) / (1 + pow(e, logit_F_Q_a_e)))
+        #         fractional_qRBCa = 1 - fractional_qRBCb
+        # qRBCs
 
-            else:
-                logit_F_Q_a_e = A + B * self._logit((flow - x_0) / (1 - x_0))
-                qRBCb = (pow(e, logit_F_Q_a_e) / (1 + pow(e, logit_F_Q_a_e)))
-                qRBCa = 1 - qRBCb
+        hemat_a = (fractional_qRBCa * qRBCp) / flow_a
+        hemat_b = (fractional_qRBCb * qRBCp) / flow_b
 
-        if qRBCa < 0 or qRBCb < 0:
-            sys.exit()
-
-        hemat_a = qRBCa / flow_a
-        hemat_b = qRBCb / flow_b
-        
-        threshold, one_minus_threshold = 0.8, 0.2
+        threshold = 0.99
         if hemat_b >= threshold:
             hemat_surplus = hemat_b - threshold
+            fractional_RBCs_suprlus = (hemat_surplus * flow_b) / qRBCp
+            hemat_a = ((fractional_qRBCa + fractional_RBCs_suprlus) * qRBCp) / flow_a
             hemat_b = threshold
-            hemat_a = one_minus_threshold + hemat_surplus
+            fractional_qRBCb = fractional_qRBCb - fractional_RBCs_suprlus
+            fractional_qRBCa = fractional_qRBCa + fractional_RBCs_suprlus
+            fractional_a_qRBCs.append(fractional_qRBCa)
+            fractional_b_qRBCs.append(fractional_qRBCb)
+            # blood
+            fractional_a_blood.append(fractional_flow_a)
+            fractional_b_blood.append(fractional_flow_b)
         elif hemat_a >= threshold:
             hemat_surplus = hemat_a - threshold
+            fractional_RBCs_suprlus = (hemat_surplus * flow_a) / qRBCp
+            hemat_b = ((fractional_qRBCb + fractional_RBCs_suprlus) * qRBCp) / flow_b
             hemat_a = threshold
-            hemat_b = one_minus_threshold + hemat_surplus
+            fractional_qRBCb = fractional_qRBCb + fractional_RBCs_suprlus
+            fractional_qRBCa = fractional_qRBCa - fractional_RBCs_suprlus
+            fractional_a_qRBCs.append(fractional_qRBCa)
+            fractional_b_qRBCs.append(fractional_qRBCb)
+            # blood
+            fractional_a_blood.append(fractional_flow_a)
+            fractional_b_blood.append(fractional_flow_b)
 
+        fractional_a_qRBCs.append(fractional_qRBCa)
+        fractional_b_qRBCs.append(fractional_qRBCb)
+        # blood
+        fractional_a_blood.append(fractional_flow_a)
+        fractional_b_blood.append(fractional_flow_b)
         if hemat_a >= 1 or hemat_b >= 1:
             print(hemat_a)
             print(hemat_b)
@@ -253,32 +277,35 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
         return hemat_a, hemat_b
 
     def update_hd(self, flownetwork):
+        """
 
-        # initial supposed hematocrit
-
+        """
+        flownetwork.fractional_a_qRBCs = []
+        flownetwork.fractional_b_qRBCs = []
+        flownetwork.fractional_a_blood = []
+        flownetwork.fractional_b_blood = []
+        fractional_a_qRBCs = flownetwork.fractional_a_qRBCs
+        fractional_b_qRBCs = flownetwork.fractional_b_qRBCs
+        fractional_a_blood = flownetwork.fractional_a_blood
+        fractional_b_blood = flownetwork.fractional_b_blood
         # diameter
-        diameter = copy.deepcopy(flownetwork.diameter)
+        diameter = copy.copy(flownetwork.diameter)
         # solved by the system
-        pressure = copy.deepcopy(flownetwork.pressure)
+        pressure = copy.copy(flownetwork.pressure)
         # number of nodes
-        nr_of_vs = copy.deepcopy(flownetwork.nr_of_vs)
-        # hematocrit
-        hematocrit = copy.deepcopy(flownetwork.hd)
-
+        nr_of_vs = copy.copy(flownetwork.nr_of_vs)
         # edge list
-        edge_list = copy.deepcopy(flownetwork.edge_list)
-        # flow
-        flow = copy.deepcopy(flownetwork.flow_rate)
+        edge_list = copy.copy(flownetwork.edge_list)
         # base of arrays
         pressure_node = np.zeros((nr_of_vs, 2))
-        # pressure_node[0] = np.array([pressure[0], pressure.index(max(pressure))])
 
         rbc_balance = 0
         # print(flownetwork.flow_rate)
         if pressure is None:
-            flownetwork.hd = copy.deepcopy(flownetwork.ht)
+            flownetwork.hd = copy.copy(flownetwork.ht)
         else:
-            flow = np.abs(flow)
+            flow = np.abs(copy.copy(flownetwork.flow_rate))
+
             # [pressure][node] in a single array
             for pres in range(0, nr_of_vs):
                 pressure_node[pres] = np.array([pressure[pres], pres])
@@ -289,13 +316,8 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
             # iterate over the nodes, ordered by pressure
             for node in pressure_node:
                 if node[1] == 0:
-                    print("pass")
+                    flownetwork.hd[0] = self._PARAMETERS["ht_constant"]  # = flownetwork.RBCs / flownetwork.flow_rate[0]
                 else:
-                    # True: one parent
-                    n_parent = 0
-                    # True: two daughters
-                    n_daughter = 0
-
                     # position of the node connected
                     edge_connected_position = []
                     # node connceted
@@ -341,6 +363,8 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
                     match len(edge_daughter):
                         case 2:  # bifurcation (ø<)
                             daughter_a, daughter_b = edge_daughter[0], edge_daughter[1]
+                            # if flow[daughter_b] < flow[daughter_a]:
+                            #     daughter_a, daughter_b = copy.copy(edge_daughter[1]), copy.copy(edge_daughter[0])
                             n_daughter = 2
                         case 1:  # one daughter (ø-)
                             single_daughter = edge_daughter[0]
@@ -356,6 +380,8 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
                             n_parent = 1
                         case 2:  # two parents (>ø)
                             parent_a, parent_b = parent_edge[0], parent_edge[1]
+                            #  if flow[parent_b] > flow[parent_a]:
+                            #     parent_a, parent_b = copy.copy(parent_edge[1]), copy.copy(parent_edge[0])
                             n_parent = 2
                         case _:
                             n_parent = 0
@@ -371,7 +397,9 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
                             diameter[parent],
                             diameter[daughter_a],
                             diameter[daughter_b],
-                            np.abs(flow[daughter_a]), np.abs(flow[parent]), np.abs(flow[daughter_b]))
+                            np.abs(flow[daughter_a]), np.abs(flow[parent]), np.abs(flow[daughter_b]),
+                            fractional_a_qRBCs,
+                            fractional_b_qRBCs, fractional_a_blood, fractional_b_blood)
                         rbc_balance += self.qRCS(flownetwork, 2, np.abs(flow[parent]), np.abs(flow[daughter_a]),
                                                  np.abs(flow[daughter_b]),
                                                  flownetwork.hd[parent],
@@ -379,10 +407,22 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
 
                     #  one parent and one daughter (-ø-)
                     elif n_parent == 1 and n_daughter == 1:
-                        flownetwork.hd[single_daughter] = flownetwork.hd[parent]
-                        rbc_balance += self.qRCS(flownetwork, 3, np.abs(flow[parent]), np.abs(flow[single_daughter]),
-                                                 None,
-                                                 flownetwork.hd[parent], flownetwork.hd[single_daughter], None)
+                        # in case the flows are not the same
+                        if flow[parent] != flow[single_daughter]:
+                            # extract the RBCs in the parent
+                            qRBCp = flownetwork.hd[parent] * flow[parent]
+                            flownetwork.hd[single_daughter] = qRBCp / flow[single_daughter]
+                            rbc_balance += self.qRCS(flownetwork, 3, np.abs(flow[parent]),
+                                                     np.abs(flow[single_daughter]),
+                                                     None,
+                                                     flownetwork.hd[parent], flownetwork.hd[single_daughter], None)
+                            # same flows
+                        else:
+                            flownetwork.hd[single_daughter] = flownetwork.hd[parent]
+                            rbc_balance += self.qRCS(flownetwork, 3, np.abs(flow[parent]),
+                                                     np.abs(flow[single_daughter]),
+                                                     None,
+                                                     flownetwork.hd[parent], flownetwork.hd[single_daughter], None)
 
                     # two parent and one daughter (>-)
                     elif n_parent == 2 and n_daughter == 1:
@@ -396,11 +436,12 @@ class DischargeHaematocritLorthois2011(DischargeHaematocrit):
                                                  flownetwork.hd[parent_b])
 
                     else:
-                        print(str("here") + str(node))
                         pass
 
             print("Check RBCs balance: ...")
             if rbc_balance > 0:
                 sys.exit("Check RBCs balance: FAIL -->", rbc_balance)
+
             else:
                 print("Check RBCs balance: DONE")
+                util_display_graph(graph_creation(flownetwork))

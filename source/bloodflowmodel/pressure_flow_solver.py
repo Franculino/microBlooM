@@ -1,3 +1,4 @@
+import copy
 import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
