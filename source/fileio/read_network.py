@@ -106,9 +106,6 @@ class ReadNetworkHexagonal(ReadNetwork):
                     edge_list[eid, 0] = ii
                     edge_list[eid, 1] = ii_br
                     eid += 1
-        # edge_list = np.append(edge_list, [[-1, 0]], axis=0)
-        # edge_list = np.append(edge_list, [[27, 28]], axis=0)
-        # edge_list += 1
 
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)
@@ -118,17 +115,12 @@ class ReadNetworkHexagonal(ReadNetwork):
 
         # Assign data to flownetwork class
         # Network attributes
-        # nr_vs_x += 1
-        # nr_vs_y +=1
-        # nr_of_edges +=2
         flownetwork.nr_of_vs = nr_vs_x * nr_vs_y
         flownetwork.nr_of_es = nr_of_edges
 
         # Edge attributes
         flownetwork.length = np.ones(nr_of_edges) * vessel_length
-        # MODIFIED FOR ITERATIVE
-        # flownetwork.diameter = np.ones(nr_of_edges) * vessel_diameter
-        flownetwork.diameter = self._PARAMETERS["hexa_diameter"]
+        flownetwork.diameter = np.ones(nr_of_edges) * vessel_diameter
         flownetwork.edge_list = edge_list
 
         # Vertex attributes
@@ -297,3 +289,28 @@ class ReadNetworkPkl(ReadNetwork):
         # with open(path_vs_dict, "rb") as f:
         #     data_vertex = pickle.load(f, encoding="latin1")
         pass
+
+
+class ReadNetworkSingleHexagon(ReadNetwork):
+    """
+    Generate a hexagonal network consisting of a single hexagonal with constant vessel diameters and lengths.
+    The network has one inflow and two outflows.
+    """
+
+    def read(self, flownetwork):
+
+        vessel_diameter = self._PARAMETERS["hexa_diameter"]
+        vessel_length = self._PARAMETERS["hexa_edge_length"]
+        nr_of_edges = 6
+        
+        # EDGE LIST
+        edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 0)])
+        # Sort edge_list such that always lower index is in first column.
+        edge_list = np.sort(edge_list, axis=1)
+        # Sort edge_list based on first column.
+        edge_list = edge_list[edge_list[:, 0].argsort()]
+
+        # Edge attributes
+        flownetwork.length = np.ones(nr_of_edges) * vessel_length
+        flownetwork.diameter = np.ones(nr_of_edges) * vessel_diameter
+        flownetwork.edge_list = edge_list

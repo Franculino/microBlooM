@@ -56,6 +56,8 @@ class SetupSimulation(Setup):
                 imp_read = read_network.ReadNetworkCsv(PARAMETERS)  # Imports an arbitrary network from csv files
             case 3:
                 imp_read = read_network.ReadNetworkIgraph(PARAMETERS)  # Imports a graph from igraph file (pickle file)
+            case 4:
+                imp_read = read_network.ReadNetworkSingleHexagon(PARAMETERS) # Initialises a single hexagonal 2D network
             case _:
                 sys.exit("Error: Choose valid option to generate or import a network (read_network_option)")
 
@@ -93,8 +95,8 @@ class SetupSimulation(Setup):
                 imp_hd = discharge_haematocrit.DischargeHaematocritVitroPries2005(PARAMETERS)
                 imp_transmiss = transmissibility.TransmissibilityVitroPries2005(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
-            case 4:  # Takes RBCs into account based on the model of Pries (1996)
-                imp_hd = discharge_haematocrit.DischargeHaematocritLorthois2011(PARAMETERS)
+            case 4:  # Discharging Hematocrit based on the empirical laws by Pries (1990)
+                imp_hd = discharge_haematocrit.DischargeHaematocritPries1990(PARAMETERS)
                 imp_transmiss = transmissibility.TransmissibilityVitroPries1992(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS)  # No Fahraeus effect (u_RBC = u_Bulk)
             case _:
