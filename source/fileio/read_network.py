@@ -298,19 +298,63 @@ class ReadNetworkSingleHexagon(ReadNetwork):
     """
 
     def read(self, flownetwork):
-
         vessel_diameter = self._PARAMETERS["hexa_diameter"]
         vessel_length = self._PARAMETERS["hexa_edge_length"]
-        nr_of_edges = 6
-        
+
+        flownetwork.nr_of_vs = 8
+
         # EDGE LIST
-        edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 0)])
+        edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (2, 6), (4, 7)])
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)
         # Sort edge_list based on first column.
         edge_list = edge_list[edge_list[:, 0].argsort()]
-
+        flownetwork.nr_of_es = len(edge_list)
         # Edge attributes
-        flownetwork.length = np.ones(nr_of_edges) * vessel_length
-        flownetwork.diameter = np.ones(nr_of_edges) * vessel_diameter
+        flownetwork.length = np.ones(flownetwork.nr_of_es) * vessel_length
+        flownetwork.diameter = np.ones(flownetwork.nr_of_es) * vessel_diameter
         flownetwork.edge_list = edge_list
+
+        df_boundaries = pd.DataFrame(
+            {'vs_ids': np.array(self._PARAMETERS["hexa_boundary_vertices"], dtype=np.int),
+             'vals': np.array(self._PARAMETERS["hexa_boundary_values"], dtype=np.float),
+             'types': np.array(self._PARAMETERS["hexa_boundary_types"], dtype=np.int)})
+
+        df_boundaries = df_boundaries.sort_values('vs_ids')
+
+        flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
+        flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
+        flownetwork.boundary_type = df_boundaries["types"].to_numpy()
+
+
+class ReadNetworkSingleHexagonTrifurcation(ReadNetwork):
+
+    def read(self, flownetwork):
+        vessel_diameter = self._PARAMETERS["hexa_diameter"]
+        vessel_length = self._PARAMETERS["hexa_edge_length"]
+
+        # EDGE LIST
+        # edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (2, 6), (4, 7), (0, 3)])
+        edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (2, 6), (4, 7), (0, 4)])
+
+        # Sort edge_list such that always lower index is in first column.
+        edge_list = np.sort(edge_list, axis=1)
+        flownetwork.nr_of_vs = 8
+        # Sort edge_list based on first column.
+        edge_list = edge_list[edge_list[:, 0].argsort()]
+        flownetwork.nr_of_es = len(edge_list)
+        # Edge attributes
+        flownetwork.length = np.ones(flownetwork.nr_of_es) * vessel_length
+        flownetwork.diameter = np.ones(flownetwork.nr_of_es) * vessel_diameter
+        flownetwork.edge_list = edge_list
+
+        df_boundaries = pd.DataFrame(
+            {'vs_ids': np.array(self._PARAMETERS["hexa_boundary_vertices"], dtype=np.int),
+             'vals': np.array(self._PARAMETERS["hexa_boundary_values"], dtype=np.float),
+             'types': np.array(self._PARAMETERS["hexa_boundary_types"], dtype=np.int)})
+
+        df_boundaries = df_boundaries.sort_values('vs_ids')
+
+        flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
+        flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
+        flownetwork.boundary_type = df_boundaries["types"].to_numpy()

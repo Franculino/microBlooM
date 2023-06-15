@@ -5,5 +5,10 @@ __pycache__
 .idea
 
 data/out
-util_methods
 
+
+different_diameters
+fixed_diameters
+util_methods/create_graph.py
+util_methods/display_graph.py
+util_methods/old_code.py

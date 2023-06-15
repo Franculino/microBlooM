@@ -27,7 +27,9 @@ PARAMETERS = MappingProxyType(
         "read_network_option": 1,  # 1: generate hexagonal graph
         # 2: import graph from csv files
         # 3: import graph from igraph file (pickle file)
-        # 4: todo import graph from edge_data and vertex_data pickle files
+        # 4: generete hexagonal graph composed of a single hexagon
+        # 5: generete hexagonal graph composed of a single hexagon for trifurcation
+        # 6: todo import graph from edge_data and vertex_data pickle files
         "write_network_option": 2,  # 1: do not write anything
         # 2: write to igraph format # todo: handle overwriting data from import file
         # 3-...: todo other file formats.
@@ -47,25 +49,26 @@ PARAMETERS = MappingProxyType(
         # 2: Normalized mean absolute error
 
         # Blood properties
-        "ht_constant": 3E-01,  # only required if RBC impact is considered
+        "ht_constant": 5E-01,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
-
+        "boundary_hematocrit": 3E-01,
         # alpha
         "alpha": 0.2,
-        "epsilon": 1E-20,
-        # 1E-30: paper case
-        # 1E-6: MAE case
+        "epsilon": 5E-25,
+        "epsilon_second_method": 1E-6,
+
         # Hexagonal network properties. Only required for "read_network_option" 1
         "nr_of_hexagon_x": 3,
         "nr_of_hexagon_y": 3,
         "hexa_edge_length": 62.E-6,
-
         "hexa_diameter": 5e-6,
+        "hexa_boundary_vertices": [0, 6, 27],
+        "hexa_boundary_values": [4, 3, 1],
+        "hexa_boundary_types": [1, 1, 1],
 
-        "hexa_boundary_vertices": [0, 27],
-        "hexa_boundary_values": [3, 1],
-        "hexa_boundary_types": [1, 1],
-
+        # implementation for multiple inflows
+        "boundary_vertices_in_out": [0, 0, 1],  # 0 for in 1 for out
+        "boundary_vertices_in_hem": [5E-01, 3E-01],
         # Import network from csv options. Only required for "read_network_option" 2
         "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
         "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
@@ -83,8 +86,10 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "/Users/cucciolo/Desktop/microBlooM/data/out/hematocrit.pkl"
+        "write_path_igraph": "/Users/cucciolo/Desktop/microBlooM/data/out/hematocrit.pkl",
         # only required for "write_network_option" 2
+        "save": False,
+        "path_for_graph": "/Users/cucciolo/Desktop/microBlooM/data/out",
     }
 )
 
@@ -104,25 +109,6 @@ flow_balance = FlowBalance(flow_network)
 print("Read network: ...")
 flow_network.read_network()
 print("Read network: DONE")
-
-flow_network.boundary_vs = np.array([0, 29])
-
-flow_network.nr_of_vs = 30
-flow_network.nr_of_es = flow_network.nr_of_es + 2
-flow_network.edge_list = np.append(flow_network.edge_list, [[-1, 0]], axis=0)
-flow_network.edge_list = np.append(flow_network.edge_list, [[27, 28]], axis=0)
-flow_network.edge_list += 1
-flow_network.edge_list = flow_network.edge_list[flow_network.edge_list[:, 0].argsort()]
-
-flow_network.diameter = np.array(
-    [5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06,
-     5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06,
-     5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06, 5E-06])
-flow_network.length = np.array([6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05,
-                                6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05,
-                                6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05,
-                                6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05, 6.2E-05,
-                                6.2E-05])
 
 # Update the transmissibility
 print("Update transmissibility: ...")
@@ -144,5 +130,3 @@ print("Check flow balance: DONE")
 
 # Write the results to file
 flow_network.write_network()
-
-# display_graph_util()

@@ -75,10 +75,12 @@ class WriteNetworkIgraph(WriteNetwork):
 
         if flownetwork.ht is not None:
             graph.es["ht"] = flownetwork.ht
+
         if flownetwork.hd is not None:
             graph.es["hd"] = flownetwork.hd
 
-        graph.vs["xyz"] = flownetwork.xyz.tolist()
+        if flownetwork.xyz is not None: # TODO cancellare questa parte (?)
+            graph.vs["xyz"] = flownetwork.xyz.tolist()
 
         if flownetwork.pressure is not None:
             graph.vs["pressure"] = flownetwork.pressure

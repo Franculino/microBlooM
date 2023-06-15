@@ -58,6 +58,8 @@ class SetupSimulation(Setup):
                 imp_read = read_network.ReadNetworkIgraph(PARAMETERS)  # Imports a graph from igraph file (pickle file)
             case 4:
                 imp_read = read_network.ReadNetworkSingleHexagon(PARAMETERS) # Initialises a single hexagonal 2D network
+            case 5:
+                imp_read = read_network.ReadNetworkSingleHexagonTrifurcation(PARAMETERS)  # Initialises a single hexagonal 2D network with trifurcation
             case _:
                 sys.exit("Error: Choose valid option to generate or import a network (read_network_option)")
 
