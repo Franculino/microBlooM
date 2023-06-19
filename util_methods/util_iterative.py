@@ -84,6 +84,8 @@ def util_iterative_method(PARAMETERS, flownetwork):
                     print("iteration " + str(flownetwork.iteration) + " " + str(iteration_plot))
 
     # iteration_plot = np.append(iteration_plot, 0)
+    iteration_plot = np.append(iteration_plot, 0)
+    flownetwork.iteration += 1
     print("Error at each iteration " + str(iteration_plot))
     print("Convergence: DONE in -> " + str(flownetwork.iteration))
 

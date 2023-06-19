@@ -260,7 +260,7 @@ def util_display_graph(g, iteration, PARAMETERS, flownetwork):
         # nodes label
         vertex_label=[[str(round(g.vs[i]["pressure"], 3)), i] for i in range(0, len(g.vs["pressure"]))],
         # size of nodes label
-        vertex_label_size=10.0,
+        vertex_label_size=30.0,
         # size of edges
         edge_width=1,
         # color of edges
@@ -275,7 +275,7 @@ def util_display_graph(g, iteration, PARAMETERS, flownetwork):
                     range(0, len(g.es["flow_rate"]))],
         #
         # edge label size
-        edge_label_size=10.0,
+        edge_label_size=30.0,
         edge_align_label=False,
     )
     if PARAMETERS['save']:

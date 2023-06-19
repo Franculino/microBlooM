@@ -301,10 +301,10 @@ class ReadNetworkSingleHexagon(ReadNetwork):
         vessel_diameter = self._PARAMETERS["hexa_diameter"]
         vessel_length = self._PARAMETERS["hexa_edge_length"]
 
-        flownetwork.nr_of_vs = 8
+        flownetwork.nr_of_vs = 6
 
         # EDGE LIST
-        edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (2, 6), (4, 7)])
+        edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0)])
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)
         # Sort edge_list based on first column.
@@ -334,12 +334,11 @@ class ReadNetworkSingleHexagonTrifurcation(ReadNetwork):
         vessel_length = self._PARAMETERS["hexa_edge_length"]
 
         # EDGE LIST
-        # edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (2, 6), (4, 7), (0, 3)])
-        edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (2, 6), (4, 7), (0, 4)])
-
+        # edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 3)])
+        edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 2), (3, 5)])
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)
-        flownetwork.nr_of_vs = 8
+        flownetwork.nr_of_vs = 6
         # Sort edge_list based on first column.
         edge_list = edge_list[edge_list[:, 0].argsort()]
         flownetwork.nr_of_es = len(edge_list)
