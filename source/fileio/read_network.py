@@ -74,7 +74,7 @@ class ReadNetworkHexagonal(ReadNetwork):
                     xyz_vs[ii, 0] = xyz_vs[ii - 1, 0] + vessel_length
 
         # Generate edges; connect vertices by edge list
-        nr_of_edges = nr_vs_x // 2 * (3 * (nr_vs_y - 1) + 1) - (nr_vs_y - 1) // 2
+        nr_of_edges = (nr_vs_x // 2 * (3 * (nr_vs_y - 1) + 1) - (nr_vs_y - 1) // 2)
         edge_list = np.ones((nr_of_edges, 2), dtype=np.int) * (-1)  # initialise edge list with -1
         eid = 0
         # Generate the edges that horizontally connect vertices.
@@ -107,6 +107,10 @@ class ReadNetworkHexagonal(ReadNetwork):
                     edge_list[eid, 1] = ii_br
                     eid += 1
 
+        edge_list = np.append(edge_list, [[5, 14]], axis=0)
+        edge_list = np.append(edge_list, [[13, 22]], axis=0)
+        nr_of_edges += 2
+
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)
 
@@ -115,7 +119,7 @@ class ReadNetworkHexagonal(ReadNetwork):
 
         # Assign data to flownetwork class
         # Network attributes
-        flownetwork.nr_of_vs = nr_vs_x * nr_vs_y
+        flownetwork.nr_of_vs = (nr_vs_x * nr_vs_y)
         flownetwork.nr_of_es = nr_of_edges
 
         # Edge attributes
@@ -334,7 +338,7 @@ class ReadNetworkSingleHexagonTrifurcation(ReadNetwork):
         vessel_length = self._PARAMETERS["hexa_edge_length"]
 
         # EDGE LIST
-        # edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 3)])
+        #edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 3)])
         edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 2), (3, 5)])
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)

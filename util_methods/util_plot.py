@@ -64,6 +64,28 @@ def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
     return fractional_qRBCa, fractional_flow_a, fractional_qRBCb, fractional_flow_b
 
 
+def s_curve_util_trifurc(PARAMETERS, flownetwork):
+    plt.figure(figsize=(13, 13), dpi=200)
+    plt.style.use('seaborn-whitegrid')
+    print(flownetwork.fractional_trifurc_blood)
+    i = 0
+    while i < len(flownetwork.fractional_trifurc_blood):
+        plt.plot(flownetwork.fractional_trifurc_blood[i:i + 3], flownetwork.fractional_trifurc_RBCs[i:i + 3], "o")
+        print(flownetwork.fractional_trifurc_blood[i:i + 3])
+        i += 3
+
+    plt.title("Fractional bulk vs fractional RBC flow in Trifurcation Case")
+    plt.xlabel("fractional bulk flow")
+    plt.ylabel("fractional RBC flow")
+    # plt.legend()
+    plt.ylim(0, 1)
+    plt.xlim(0, 1)
+    plt.xticks(np.arange(0, 1.1, 0.20))
+    plt.yticks(np.arange(0, 1.1, 0.20))
+    plt.show()
+    # pass
+
+
 def s_curve_util(PARAMETERS, flownetwork):
     lista, list_b, listc, listd, liste, listf, listg, listh, cc, dd, ee, ff, gg, hh, ii, kk = [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
     plt.figure(figsize=(13, 13), dpi=200)
@@ -244,7 +266,7 @@ def util_display_graph(g, iteration, PARAMETERS, flownetwork):
     ig.plot(
         # graph to be shown
         g,
-        bbox=[1500, 1500],
+        bbox=[1200, 1200],
         # margin=100,
         target=ax,  # target="graph.pdf",
         # layout="auto",
@@ -252,7 +274,7 @@ def util_display_graph(g, iteration, PARAMETERS, flownetwork):
         # vertex_size=50,
         vertex_size=0.3,
         # to color the different vertex, also an example to conditionally color them in igraph
-        vertex_color=["cyan" if np.isin(i, PARAMETERS["hexa_boundary_vertices"]) else "red" for i in range(0, len(g.vs["pressure"]))],
+        vertex_color=["light blue" if np.isin(i, PARAMETERS["hexa_boundary_vertices"]) else "white" for i in range(0, len(g.vs["pressure"]))],
         # width of nodes outline
         vertex_frame_width=1.4,
         # color of the vertex outline
@@ -260,7 +282,7 @@ def util_display_graph(g, iteration, PARAMETERS, flownetwork):
         # nodes label
         vertex_label=[[str(round(g.vs[i]["pressure"], 3)), i] for i in range(0, len(g.vs["pressure"]))],
         # size of nodes label
-        vertex_label_size=30.0,
+        vertex_label_size=10.0,  # 20
         # size of edges
         edge_width=1,
         # color of edges
@@ -275,7 +297,7 @@ def util_display_graph(g, iteration, PARAMETERS, flownetwork):
                     range(0, len(g.es["flow_rate"]))],
         #
         # edge label size
-        edge_label_size=30.0,
+        edge_label_size=10.0,  # 20
         edge_align_label=False,
     )
     if PARAMETERS['save']:
@@ -285,13 +307,14 @@ def util_display_graph(g, iteration, PARAMETERS, flownetwork):
     plt.show()
 
 
+
 def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS):
     fig = plt.figure(figsize=(13, 13), dpi=200)
     ax = fig.add_subplot(111)
     plt.style.use('seaborn-whitegrid')
 
     plt.plot(range(0, flownetwork.iteration), iteration_plot, '-ok')
-    plt.title("Convergence plot for bboundary HD:" + str(PARAMETERS['boundary_hematocrit']) + "after " + str(
+    plt.title("Convergence plot for bboundary HD: " + str(PARAMETERS['boundary_hematocrit']) + " after " + str(
         flownetwork.iteration) + " iteration")
     plt.xlabel("Iteration", fontsize=18)
     plt.ylabel("Error difference", fontsize=18)
