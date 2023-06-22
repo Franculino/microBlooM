@@ -338,7 +338,7 @@ class ReadNetworkSingleHexagonTrifurcation(ReadNetwork):
         vessel_length = self._PARAMETERS["hexa_edge_length"]
 
         # EDGE LIST
-        #edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 3)])
+        # edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 3)])
         edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 2), (3, 5)])
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)

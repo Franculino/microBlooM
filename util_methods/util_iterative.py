@@ -8,7 +8,7 @@ from scipy.interpolate import make_interp_spline
 from scipy.optimize import curve_fit
 from sklearn.linear_model import LogisticRegression
 
-from util_methods.util_plot import s_curve_util, s_curve_personalized_thersholds, util_convergence_plot, s_curve_util_trifurc
+from util_methods.util_plot import s_curve_util, s_curve_personalized_thersholds, util_convergence_plot, s_curve_util_trifurcation
 
 
 def predictor_corrector_scheme(PARAMETERS, flownetwork, alpha, old):
@@ -98,4 +98,4 @@ def util_iterative_method(PARAMETERS, flownetwork):
     s_curve_personalized_thersholds(flownetwork, PARAMETERS, 0.5)
     s_curve_personalized_thersholds(flownetwork, PARAMETERS, 0.7)
 
-    s_curve_util_trifurc(PARAMETERS, flownetwork)
+    s_curve_util_trifurcation(PARAMETERS, flownetwork)

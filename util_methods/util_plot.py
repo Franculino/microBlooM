@@ -64,7 +64,7 @@ def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
     return fractional_qRBCa, fractional_flow_a, fractional_qRBCb, fractional_flow_b
 
 
-def s_curve_util_trifurc(PARAMETERS, flownetwork):
+def s_curve_util_trifurcation(PARAMETERS, flownetwork):
     plt.figure(figsize=(13, 13), dpi=200)
     plt.style.use('seaborn-whitegrid')
     print(flownetwork.fractional_trifurc_blood)
@@ -74,6 +74,7 @@ def s_curve_util_trifurc(PARAMETERS, flownetwork):
         print(flownetwork.fractional_trifurc_blood[i:i + 3])
         i += 3
 
+    plt.plot([0, 0.5, 1], [0, 0.5, 1],'black')
     plt.title("Fractional bulk vs fractional RBC flow in Trifurcation Case")
     plt.xlabel("fractional bulk flow")
     plt.ylabel("fractional RBC flow")
@@ -132,7 +133,7 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.title("S-Curve with boundary hematocrit at " + str(PARAMETERS['boundary_hematocrit']))
     plt.xlabel("fractional blood flow")
     plt.ylabel("fractional erythrocity flow")
-    plt.legend(["daughter a", " daughter b", "HD:0.1", "HD:0.3", "HD:0.5", "HD:0.7"])
+    plt.legend(["HD:0.1", "HD:0.1 ", "HD:0.3", "HD:0.3", "HD:0.5", "HD:0.5", "HD:0.7", "HD:0.7"])
     plt.ylim(0, 1)
     plt.xlim(0, 1)
     plt.xticks(np.arange(0, 1.1, 0.20))
@@ -305,7 +306,6 @@ def util_display_graph(g, iteration, PARAMETERS, flownetwork):
             PARAMETERS['path_for_graph'] + '/iteration_graph/' + str(PARAMETERS['boundary_hematocrit']) + '/' + str(
                 iteration) + '_HD_' + str(PARAMETERS['boundary_hematocrit']) + '.png')
     plt.show()
-
 
 
 def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS):

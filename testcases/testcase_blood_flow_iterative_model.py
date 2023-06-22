@@ -24,33 +24,34 @@ from util_methods.util_iterative import util_iterative_method
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,   # 1: generate hexagonal graph
-                                    # 2: import graph from csv files
-                                    # 3: import graph from igraph file (pickle file)
-                                    # 4: generate hexagonal graph composed of a single hexagon
-                                    # 5: generate hexagonal graph composed of a single hexagon for trifurcation
-                                    # 6: todo import graph from edge_data and vertex_data pickle files
+        "read_network_option": 4,  # 1: generate hexagonal graph
+        # 2: import graph from csv files
+        # 3: import graph from igraph file (pickle file)
+        # 4: generate hexagonal graph composed of a single hexagon
+        # 5: generate hexagonal graph composed of a single hexagon for trifurcation
+        # 6: todo import graph from edge_data and vertex_data pickle files
         "write_network_option": 2,  # 1: do not write anything
-                                    # 2: write to igraph format # todo: handle overwriting data from import file
-                                    # 3-...: todo other file formats.
-        "tube_haematocrit_option": 2,   # 1: No RBCs (ht=0)
-                                        # 2: Constant haematocrit
-                                        # 3: todo: RBC tracking
-                                        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 4,     # 1: No RBCs (hd=0)
-                                    # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-                                    # 3: Laws by Pries and Secomb (2005)
-                                    # 4: Laws by Preis (1996)
-        "solver_option": 1,     # 1: Direct solver
-                                # 2: PyAMG solver
-                                # 3-...: other solvers
+        # 2: write to igraph format # todo: handle overwriting data from import file
+        # 3-...: todo other file formats.
+        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
+        # 2: Constant haematocrit
+        # 3: todo: RBC tracking
+        # 4-...: todo: steady state RBC laws
+        "rbc_impact_option": 4,  # 1: No RBCs (hd=0)
+        # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
+        # 3: Laws by Pries and Secomb (2005)
+        # 4: Laws by Preis (1996)
+        "solver_option": 1,  # 1: Direct solver
+        # 2: PyAMG solver
+        # 3-...: other solvers
         "convergence_case": 2,  # 1: Difference between two iteration of the qRBCs
-                                # 2: Normalize error based on the flow
+        # 2: Normalize error based on the flow
 
         # Blood properties
         "ht_constant": 3E-01,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
         "boundary_hematocrit": [5E-1, 3E-1, 1E-1],
+
         # alpha
         "alpha": 0.2,
         "epsilon": 5E-25,
@@ -61,9 +62,9 @@ PARAMETERS = MappingProxyType(
         "nr_of_hexagon_y": 3,
         "hexa_edge_length": 62.E-6,
         "hexa_diameter": 5e-6,
-        "hexa_boundary_vertices": [0, 27],
-        "hexa_boundary_values": [5, 1],
-        "hexa_boundary_types": [1, 1],
+        "hexa_boundary_vertices": [0, 2, 4],
+        "hexa_boundary_values": [5, 2, 1],
+        "hexa_boundary_types": [1, 1, 1],
 
         # implementation for multiple inflows
 
