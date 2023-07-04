@@ -58,8 +58,12 @@ class PressureFlowSolver(ABC):
         transmiss = flownetwork.transmiss
         pressure = flownetwork.pressure
 
+        #
+
         # Update flow rates based on the transmissibility and pressure.
         flownetwork.flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
+        # flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
+        # flownetwork.flow_rate = np.where(np.abs(flow_rate) < self._PARAMETERS["machine_error"], 0, flow_rate)
 
         # :TODO: REFACTOR AND FINALIZE THE IMPLEMENTATION
         # system_matrix = flownetwork.system_matrix

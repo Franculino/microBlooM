@@ -226,6 +226,7 @@ class ReadNetworkCsv(ReadNetwork):
         print("Number of  es: " + str(flownetwork.nr_of_es))
 
 
+
 class ReadNetworkIgraph(ReadNetwork):
     def read(self, flownetwork):
         """
