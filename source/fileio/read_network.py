@@ -219,7 +219,12 @@ class ReadNetworkCsv(ReadNetwork):
         df_boundary_data.sort_values(self._PARAMETERS["csv_boundary_vs"])
         flownetwork.boundary_vs = df_boundary_data[self._PARAMETERS["csv_boundary_vs"]].to_numpy().astype(np.int)
         flownetwork.boundary_type = df_boundary_data[self._PARAMETERS["csv_boundary_type"]].to_numpy().astype(np.int)
-        flownetwork.boundary_val = df_boundary_data[self._PARAMETERS["csv_boundary_value"]].to_numpy()
+        flownetwork.boundary_val = df_boundary_data[self._PARAMETERS["csv_boundary_value"]].multiply(133.322).to_numpy()  # 133.3223684
+
+        print("Number of  vs: " + str(flownetwork.nr_of_vs))
+        print("Number of boundary vs: " + str(len(flownetwork.boundary_vs)))
+        print("Number of  es: " + str(flownetwork.nr_of_es))
+
 
 
 class ReadNetworkIgraph(ReadNetwork):
@@ -343,6 +348,37 @@ class ReadNetworkSingleHexagonTrifurcation(ReadNetwork):
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)
         flownetwork.nr_of_vs = 6
+        # Sort edge_list based on first column.
+        edge_list = edge_list[edge_list[:, 0].argsort()]
+        flownetwork.nr_of_es = len(edge_list)
+        # Edge attributes
+        flownetwork.length = np.ones(flownetwork.nr_of_es) * vessel_length
+        flownetwork.diameter = np.ones(flownetwork.nr_of_es) * vessel_diameter
+        flownetwork.edge_list = edge_list
+
+        df_boundaries = pd.DataFrame(
+            {'vs_ids': np.array(self._PARAMETERS["hexa_boundary_vertices"], dtype=np.int),
+             'vals': np.array(self._PARAMETERS["hexa_boundary_values"], dtype=np.float),
+             'types': np.array(self._PARAMETERS["hexa_boundary_types"], dtype=np.int)})
+
+        df_boundaries = df_boundaries.sort_values('vs_ids')
+
+        flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
+        flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
+        flownetwork.boundary_type = df_boundaries["types"].to_numpy()
+
+
+class ReadNetworkSingleHexagonDoubleEdge(ReadNetwork):
+
+    def read(self, flownetwork):
+        vessel_diameter = self._PARAMETERS["hexa_diameter"]
+        vessel_length = self._PARAMETERS["hexa_edge_length"]
+
+        # EDGE LIST
+        edge_list = np.array([(0, 1), (1, 2), (1, 2), (2, 3)])
+        # Sort edge_list such that always lower index is in first column.
+        edge_list = np.sort(edge_list, axis=1)
+        flownetwork.nr_of_vs = 4
         # Sort edge_list based on first column.
         edge_list = edge_list[edge_list[:, 0].argsort()]
         flownetwork.nr_of_es = len(edge_list)

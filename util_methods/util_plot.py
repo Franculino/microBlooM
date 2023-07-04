@@ -74,7 +74,7 @@ def s_curve_util_trifurcation(PARAMETERS, flownetwork):
         print(flownetwork.fractional_trifurc_blood[i:i + 3])
         i += 3
 
-    plt.plot([0, 0.5, 1], [0, 0.5, 1],'black')
+    plt.plot([0, 0.5, 1], [0, 0.5, 1], 'black')
     plt.title("Fractional bulk vs fractional RBC flow in Trifurcation Case")
     plt.xlabel("fractional bulk flow")
     plt.ylabel("fractional RBC flow")
@@ -83,6 +83,10 @@ def s_curve_util_trifurcation(PARAMETERS, flownetwork):
     plt.xlim(0, 1)
     plt.xticks(np.arange(0, 1.1, 0.20))
     plt.yticks(np.arange(0, 1.1, 0.20))
+
+    if PARAMETERS['save']:
+        plt.savefig(
+            PARAMETERS['path_for_graph'] + '/iteration_graph/trifurc.png')
     plt.show()
     # pass
 
@@ -130,7 +134,7 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.plot(flownetwork.fractional_a_blood, flownetwork.fractional_a_qRBCs, "o")
     plt.plot(flownetwork.fractional_b_blood, flownetwork.fractional_b_qRBCs, "o")
 
-    plt.title("S-Curve with boundary hematocrit at " + str(PARAMETERS['boundary_hematocrit']))
+    plt.title("S-Curve ")
     plt.xlabel("fractional blood flow")
     plt.ylabel("fractional erythrocity flow")
     plt.legend(["HD:0.1", "HD:0.1 ", "HD:0.3", "HD:0.3", "HD:0.5", "HD:0.5", "HD:0.7", "HD:0.7"])
@@ -141,7 +145,7 @@ def s_curve_util(PARAMETERS, flownetwork):
 
     if PARAMETERS['save']:
         plt.savefig(
-            PARAMETERS['path_for_graph'] + '/s_curve_hd_' + str(PARAMETERS['boundary_hematocrit']) + '.png')
+            PARAMETERS['path_for_graph'] + '/iteration_graph/s_curve.png')
     plt.show()
 
 
@@ -214,8 +218,7 @@ def s_curve_personalized_thersholds(flownetwork, PARAMETERS, interval):
 
     if PARAMETERS['save']:
         plt.savefig(
-            PARAMETERS['path_for_graph'] + '/s_curve_int/HD_' + str(
-                PARAMETERS['boundary_hematocrit']) + '_s_curve_interval_near_' + str(
+            PARAMETERS['path_for_graph'] + '/iteration_graph/s_curve_interval_near_' + str(
                 interval) + '.png')
     plt.show()
 
@@ -251,7 +254,7 @@ def graph_creation(flownetwork):
     return graph
 
 
-def util_display_graph(g, iteration, PARAMETERS, flownetwork):
+def util_display_graph(g, PARAMETERS, flownetwork):
     """
     Function to display the graph and give particulary color to each part
     :param g: graph created with graph_creation()
@@ -263,7 +266,7 @@ def util_display_graph(g, iteration, PARAMETERS, flownetwork):
 
     # create the figure for the plot
     fig, ax = plt.subplots(figsize=(25, 25))
-    ax.set_title("Iteration " + str(iteration))
+    # ax.set_title("Iteration ")  # + str(iteration))
     ig.plot(
         # graph to be shown
         g,
@@ -302,28 +305,27 @@ def util_display_graph(g, iteration, PARAMETERS, flownetwork):
         edge_align_label=False,
     )
     if PARAMETERS['save']:
-        plt.savefig(
-            PARAMETERS['path_for_graph'] + '/iteration_graph/' + str(PARAMETERS['boundary_hematocrit']) + '/' + str(
-                iteration) + '_HD_' + str(PARAMETERS['boundary_hematocrit']) + '.png')
+        #  plt.savefig( PARAMETERS['path_for_graph'] + '/iteration_graph/' + str(PARAMETERS['boundary_hematocrit']) + '/' + str( iteration) + '_HD_' + str(PARAMETERS[
+        #  'boundary_hematocrit']) + '.png')
+        plt.savefig(PARAMETERS['path_for_graph'] + '/iteration_graph/' + 'last_iteration.png')
     plt.show()
 
 
 def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS):
-    fig = plt.figure(figsize=(13, 13), dpi=200)
-    ax = fig.add_subplot(111)
+    fig = plt.figure(figsize=(20, 20), dpi=200)
+    # ax = fig.add_subplot(111)
     plt.style.use('seaborn-whitegrid')
 
-    plt.plot(range(0, flownetwork.iteration), iteration_plot, '-ok')
-    plt.title("Convergence plot for bboundary HD: " + str(PARAMETERS['boundary_hematocrit']) + " after " + str(
-        flownetwork.iteration) + " iteration")
+    plt.plot(range(0, flownetwork.iteration), iteration_plot, "-")  # , '-ok')
+    plt.title("Convergence plot after " + str(flownetwork.iteration) + " iteration")
     plt.xlabel("Iteration", fontsize=18)
     plt.ylabel("Error difference", fontsize=18)
     plt.yscale("log")
     plt.yticks(fontsize=12)
-    for i, v in enumerate(iteration_plot):
-        ax.annotate(str("{:.1e}".format(v)), xy=(i, v), xytext=(-17, 17), textcoords='offset points')
+    # for i, v in enumerate(iteration_plot):
+    #    ax.annotate(str("{:.1e}".format(v)), xy=(i, v), xytext=(-17, 17), textcoords='offset points')
 
     if PARAMETERS['save']:
         plt.savefig(
-            PARAMETERS['path_for_graph'] + '/convergence_plot_hd_' + str(PARAMETERS['boundary_hematocrit']) + '.png')
+            PARAMETERS['path_for_graph'] + '/iteration_graph/convergence_plot.png')
     plt.show()

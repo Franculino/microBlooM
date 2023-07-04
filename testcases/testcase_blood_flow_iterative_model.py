@@ -24,33 +24,36 @@ from util_methods.util_iterative import util_iterative_method
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 4,  # 1: generate hexagonal graph
-        # 2: import graph from csv files
-        # 3: import graph from igraph file (pickle file)
-        # 4: generate hexagonal graph composed of a single hexagon
-        # 5: generate hexagonal graph composed of a single hexagon for trifurcation
-        # 6: todo import graph from edge_data and vertex_data pickle files
-        "write_network_option": 2,  # 1: do not write anything
-        # 2: write to igraph format # todo: handle overwriting data from import file
-        # 3-...: todo other file formats.
-        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
-        # 2: Constant haematocrit
-        # 3: todo: RBC tracking
-        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 4,  # 1: No RBCs (hd=0)
-        # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-        # 3: Laws by Pries and Secomb (2005)
-        # 4: Laws by Preis (1996)
-        "solver_option": 1,  # 1: Direct solver
-        # 2: PyAMG solver
-        # 3-...: other solvers
+        "read_network_option": 2,   # 1: generate hexagonal graph
+                                    # 2: import graph from csv files
+                                    # 3: import graph from igraph file (pickle file)
+                                    # 4: generate hexagonal graph composed of a single hexagon
+                                    # 5: generate hexagonal graph composed of a single hexagon for trifurcation
+                                    # 6: todo import graph from edge_data and vertex_data pickle files
+        "write_network_option": 1,  # 1: do not write anything
+                                    # 2: write to igraph format # todo: handle overwriting data from import file
+                                    # 3-...: todo other file formats.
+        "tube_haematocrit_option": 2,   # 1: No RBCs (ht=0)
+                                        # 2: Constant hematocrit
+                                        # 3: todo: RBC tracking
+                                        # 4-...: todo: steady state RBC laws
+        "rbc_impact_option": 4,     # 1: No RBCs (hd=0)
+                                    # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
+                                    # 3: Laws by Pries and Secomb (2005)
+                                    # 4: Laws by Preis (1996)
+        "solver_option": 1,     # 1: Direct solver
+                                # 2: PyAMG solver
+                                # 3-...: other solvers
         "convergence_case": 2,  # 1: Difference between two iteration of the qRBCs
-        # 2: Normalize error based on the flow
+                                # 2: Normalize error based on the flow
 
         # Blood properties
-        "ht_constant": 3E-01,  # only required if RBC impact is considered
+        "ht_constant": 4E-01,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
-        "boundary_hematocrit": [5E-1, 3E-1, 1E-1],
+        "boundary_hematocrit": [0.4] * 1275,  # [0.4] * 1276,  # [0.5,0.3,0.1] np.linspace(0.5, 0.1, 1276)
+
+        # Machine error for float
+        "machine_error": 1E-15,
 
         # alpha
         "alpha": 0.2,
@@ -58,24 +61,23 @@ PARAMETERS = MappingProxyType(
         "epsilon_second_method": 1E-10,
 
         # Hexagonal network properties. Only required for "read_network_option" 1
-        "nr_of_hexagon_x": 3,
-        "nr_of_hexagon_y": 3,
+        "nr_of_hexagon_x": 9,
+        "nr_of_hexagon_y": 9,
         "hexa_edge_length": 62.E-6,
         "hexa_diameter": 5e-6,
-        "hexa_boundary_vertices": [0, 2, 4],
-        "hexa_boundary_values": [5, 2, 1],
-        "hexa_boundary_types": [1, 1, 1],
+        "hexa_boundary_vertices": [1, 67, 45, 89],
+        "hexa_boundary_values": [100, 60, 4, 1],
+        "hexa_boundary_types": [1, 1, 1, 1],
 
-        # implementation for multiple inflows
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
-        "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
-        "csv_path_boundary_data": "data/network/b6_B_pre_061/boundary_node_data.csv",
+        "csv_path_vertex_data": "/Users/cucciolo/Desktop/microBlooM/MVN1/node_data.csv",
+        "csv_path_edge_data": "/Users/cucciolo/Desktop/microBlooM/MVN1/edge_data.csv",
+        "csv_path_boundary_data": "/Users/cucciolo/Desktop/microBlooM/MVN1/node_boundary_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
-        "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
+        "csv_boundary_vs": "nodeID", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p",
 
         # Import network from igraph option. Only required for "read_network_option" 3
         "pkl_path_igraph": "/Users/cucciolo/Desktop/Bern/GraphHoney.pkl",
@@ -84,8 +86,8 @@ PARAMETERS = MappingProxyType(
         "ig_boundary_value": "boundaryValue",
 
         # Write options
-        "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "/Users/cucciolo/Desktop/microBlooM/data/out/hematocrit.pkl",
+        "write_override_initial_graph": False,  # todo: currently does not do anything
+        "write_path_igraph": "/Users/cucciolo/Desktop/microBlooM/data/out/mvn1.vtp",
         # only required for "write_network_option" 2
         "save": False,
         "path_for_graph": "/Users/cucciolo/Desktop/microBlooM/data/out",
@@ -120,7 +122,7 @@ flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
 print("Iterative Approach: ...")
-util_iterative_method(PARAMETERS, flow_network)
+util_iterative_method(PARAMETERS, flow_network, flow_balance)
 print("Iterative Approach: DONE")
 
 print("Check flow balance: ...")

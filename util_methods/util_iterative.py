@@ -4,46 +4,33 @@ import sys
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
+from line_profiler_pycharm import profile
 from scipy.interpolate import make_interp_spline
 from scipy.optimize import curve_fit
 from sklearn.linear_model import LogisticRegression
 
-from util_methods.util_plot import s_curve_util, s_curve_personalized_thersholds, util_convergence_plot, s_curve_util_trifurcation
+from util_methods.util_plot import s_curve_util, s_curve_personalized_thersholds, util_convergence_plot, s_curve_util_trifurcation, util_display_graph, graph_creation
 
 
-def predictor_corrector_scheme(PARAMETERS, flownetwork, alpha, old):
-    """
-
-    """
-    hematocrit = copy.copy(flownetwork.hd)
+def predictor_corrector_scheme(PARAMETERS, flownetwork, old_hemat):
+    hematocrit = copy.deepcopy(flownetwork.hd)
     new_hematocrit = np.zeros(len(hematocrit))
     for hemat in range(0, (len(hematocrit))):
-        new_hematocrit[hemat] = (PARAMETERS["alpha"] * old[hemat]) + (
+        new_hematocrit[hemat] = (PARAMETERS["alpha"] * old_hemat[hemat]) + (
                 (1 - PARAMETERS["alpha"]) * hematocrit[hemat])
     return new_hematocrit
 
 
-def logifunc(x, a, b, c, d):
-    return a / (1 + np.exp(-c * (x - d))) + b
-
-
-def mae(y_true, predictions):
-    y_true, predictions = np.array(y_true), np.array(predictions)
-    return np.mean(np.abs(y_true - predictions))
-
-
-def util_iterative_method(PARAMETERS, flownetwork):
+@profile
+def util_iterative_method(PARAMETERS, flownetwork, flow_balance):
     """
     Util to iterate with the method
-    - it has been already performed a iteration with the common normal one (n=0) so
+    - it has been already performed iteration with the common normal one (n=0) so
     now n=1
     in this case I skip the convergence and the corrector scheme
-
     I'll perform the corrector scheme and check at n=2
 
     """
-    alpha = PARAMETERS["alpha"]
-
     flownetwork.convergence_check = False
 
     print("Convergence: ...")
@@ -54,16 +41,24 @@ def util_iterative_method(PARAMETERS, flownetwork):
 
     while flownetwork.convergence_check is False:
         old_hematocrit = copy.copy(flownetwork.hd)
-        old_flow = copy.copy(flownetwork.flow_rate)
+        old_flow = np.abs(copy.copy(flownetwork.flow_rate))
 
         # iteration n=1
-        flownetwork.iterative()
+        flownetwork.iterative_part_one()
+        # flownetwork.hd = predictor_corrector_scheme(PARAMETERS, flownetwork, old_hematocrit)
+        flownetwork.iterative_part_two()
 
         # check if we are in convergences
         match PARAMETERS["convergence_case"]:
             case 1:
                 convergence = np.abs(
                     (flownetwork.hd * np.abs(flownetwork.flow_rate)) - (old_hematocrit * np.abs(old_flow)))
+                print("Number of element under the threshold ", str(np.sum(convergence < PARAMETERS["epsilon"])), "/", str(len(convergence)))
+                sorted_arr = np.sort(convergence)[::-1]
+                # Extract the top four highest elements
+                top_four = sorted_arr[:5]
+                print("Higher 5 element in convergence", str(top_four))
+
                 for element in convergence:
                     if element < PARAMETERS["epsilon"]:
                         flownetwork.convergence_check = True
@@ -74,20 +69,36 @@ def util_iterative_method(PARAMETERS, flownetwork):
                         print("iteration " + str(flownetwork.iteration) + " " + str(iteration_plot))
                         break
             case 2:
-                convergence = np.abs(flownetwork.flow_rate - old_flow) / old_flow
-                if np.max(convergence) < PARAMETERS["epsilon_second_method"]:
+                # print("Number nan element in old flow ", np.sum(np.isnan(old_flow)))
+                # print("Number zero element in old flow ", np.sum(np.count_nonzero(old_flow == 0)))
+
+                convergence = np.abs(np.average(np.abs(flownetwork.flow_rate)) - np.average(old_flow)) / np.average(old_flow)
+                # convergence = np.where(np.isinf(convergence), np.nan, convergence)
+                # convergence[np.isnan(convergence)] = 0
+                # print("Number of element under the threshold ", str(np.sum(convergence < PARAMETERS["epsilon_second_method"])), "/", str(len(convergence)))
+                # sorted_arr = np.sort(convergence)[::-1]
+                # Extract the top four highest elements
+                # top_four = sorted_arr[:50]
+                # print("Higher 50 element in convergence", str(top_four))
+
+                if convergence < PARAMETERS["epsilon_second_method"]:
                     flownetwork.convergence_check = True
                 else:
                     flownetwork.convergence_check = False
-                    iteration_plot = np.append(iteration_plot, np.max(convergence))
+                    iteration_plot = np.append(iteration_plot, convergence)
                     flownetwork.iteration += 1
-                    print("iteration " + str(flownetwork.iteration) + " " + str(iteration_plot))
+
+                    if flownetwork.iteration % 50 == 0:
+                        print("iteration " + str(flownetwork.iteration) + " " + str(convergence))
+                        util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)
 
     # iteration_plot = np.append(iteration_plot, 0)
     iteration_plot = np.append(iteration_plot, 0)
     flownetwork.iteration += 1
     print("Error at each iteration " + str(iteration_plot))
     print("Convergence: DONE in -> " + str(flownetwork.iteration))
+
+    # util_display_graph(graph_creation(flownetwork), PARAMETERS, flownetwork)
 
     util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)
 

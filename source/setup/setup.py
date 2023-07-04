@@ -13,7 +13,6 @@ import source.fileio.read_parameters as read_parameters
 import source.inverseproblemmodules.adjoint_method_implementations as adjoint_method_parameters
 import source.inverseproblemmodules.adjoint_method_solver as adjoint_method_solver
 import source.inverseproblemmodules.alpha_restriction as alpha_mapping
-import source.bloodflowmodel.iterative_hematocrit as iterative_hematocrit
 import sys
 
 
@@ -60,6 +59,8 @@ class SetupSimulation(Setup):
                 imp_read = read_network.ReadNetworkSingleHexagon(PARAMETERS) # Initialises a single hexagonal 2D network
             case 5:
                 imp_read = read_network.ReadNetworkSingleHexagonTrifurcation(PARAMETERS)  # Initialises a single hexagonal 2D network with trifurcation
+            case 6:
+                imp_read = read_network.ReadNetworkSingleHexagonDoubleEdge(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to generate or import a network (read_network_option)")
 
@@ -99,7 +100,7 @@ class SetupSimulation(Setup):
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
             case 4:  # Discharging Hematocrit based on the empirical laws by Pries (1990)
                 imp_hd = discharge_haematocrit.DischargeHaematocritPries1990(PARAMETERS)
-                imp_transmiss = transmissibility.TransmissibilityVitroPries1992(PARAMETERS)
+                imp_transmiss = transmissibility.TransmissibilityVitroPries2005(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS)  # No Fahraeus effect (u_RBC = u_Bulk)
             case _:
                 sys.exit("Error: Choose valid option for the handling of RBCs (rbc_impact_option)")

@@ -50,8 +50,12 @@ class PressureFlowSolver(ABC):
         transmiss = flownetwork.transmiss
         pressure = flownetwork.pressure
 
+        #
+
         # Update flow rates based on the transmissibility and pressure.
         flownetwork.flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
+        # flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
+        # flownetwork.flow_rate = np.where(np.abs(flow_rate) < self._PARAMETERS["machine_error"], 0, flow_rate)
 
 
 class PressureFlowSolverSparseDirect(PressureFlowSolver):
@@ -105,21 +109,21 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
         # array with values +/-50% of the pressure boundary value.
         res = []
         if flownetwork.pressure is None:
-            if (1 in flownetwork.boundary_type) and not(2 in flownetwork.boundary_type):  # only pressure boundaries
+            if (1 in flownetwork.boundary_type) and not (2 in flownetwork.boundary_type):  # only pressure boundaries
                 boundary_inlet = np.max(flownetwork.boundary_val)
                 boundary_outlet = np.min(flownetwork.boundary_val)
-                x0 = boundary_inlet - np.arange(0.001, 1, 0.999/flownetwork.nr_of_vs) * (boundary_inlet - boundary_outlet)
+                x0 = boundary_inlet - np.arange(0.001, 1, 0.999 / flownetwork.nr_of_vs) * (boundary_inlet - boundary_outlet)
                 x0[flownetwork.boundary_vs] = flownetwork.boundary_val
             elif (1 in flownetwork.boundary_type) and (2 in flownetwork.boundary_type):
-                boundary_pressure_vs = flownetwork.boundary_vs[flownetwork.boundary_type==1]
-                boundary_pressure_val = flownetwork.boundary_val[flownetwork.boundary_type==1]
-                x0 = np.arange(0.5, 1.5, 1/flownetwork.nr_of_vs) * np.max(boundary_pressure_val)
+                boundary_pressure_vs = flownetwork.boundary_vs[flownetwork.boundary_type == 1]
+                boundary_pressure_val = flownetwork.boundary_val[flownetwork.boundary_type == 1]
+                x0 = np.arange(0.5, 1.5, 1 / flownetwork.nr_of_vs) * np.max(boundary_pressure_val)
                 x0[boundary_pressure_vs] = boundary_pressure_val
             else:
                 sys.exit("Warning Message: only flow boundary conditions were assigned! Define new boundary conditions,"
                          " including at least one pressure boundary condition!")
-            flownetwork.pressure, info= ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600,
-                                                 cycle="V", return_info=True)
+            flownetwork.pressure, info = ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600,
+                                                  cycle="V", return_info=True)
         else:
             x0 = flownetwork.pressure
             flownetwork.pressure, info = ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600,
