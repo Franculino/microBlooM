@@ -15,6 +15,7 @@ import source.inverseproblemmodules.adjoint_method_solver as adjoint_method_solv
 import source.inverseproblemmodules.alpha_restriction as alpha_mapping
 import source.fileio.read_distensibility_parameters as read_distensibility_parameters
 import source.distensibilitymodules.distensibility_law as distensibility_law
+import source.strokemodules.stroke_state as stroke_state
 import sys
 
 
@@ -35,6 +36,17 @@ class Setup(ABC):
         Abstract method to set up the inverse model
         """
 
+    @abstractmethod
+    def setup_distensibility_model(self, PARAMETERS):
+        """
+        Abstract method to set up the distensibility model
+        """
+
+    @abstractmethod
+    def setup_stroke_model(self, PARAMETERS):
+        """
+        Abstract method to set up the distensibility model
+        """
 
 class SetupSimulation(Setup):
     """
@@ -89,11 +101,11 @@ class SetupSimulation(Setup):
                 imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS)  # No Fahraeus effect (u_RBC = u_Bulk)
             case 2:  # Takes RBCs into account based on the empirical laws by Pries, Neuhaus, Gaehtgens (1992)
                 imp_hd = discharge_haematocrit.DischargeHaematocritVitroPries1992(PARAMETERS)
-                imp_transmiss = transmissibility.TransmissibilityVitroPries1992(PARAMETERS)
+                imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
             case 3:  # Takes RBCs into account based on the empirical laws by Pries and Secomb (2005)
                 imp_hd = discharge_haematocrit.DischargeHaematocritVitroPries2005(PARAMETERS)
-                imp_transmiss = transmissibility.TransmissibilityVitroPries2005(PARAMETERS)
+                imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option for the handling of RBCs (rbc_impact_option)")
@@ -110,7 +122,6 @@ class SetupSimulation(Setup):
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
         return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
-
 
     def setup_inverse_model(self, PARAMETERS):
         """
@@ -157,28 +168,60 @@ class SetupSimulation(Setup):
 
     def setup_distensibility_model(self, PARAMETERS):
         """
-        Set up the inverse model and returns various implementations of the inverse model
+        Set up the distensibility model and returns various implementations of the distensibility model
         :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
         :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
         :returns: the implementation objects. Error if invalid option is chosen.
         """
 
-        match PARAMETERS["distensibility_model"]:
+        match PARAMETERS["distensibility_ref_state"]:
             case 1:  # No update of diameters due to vessel distensibility
-                imp_distensibility_law = distensibility_law.DistensibilityNothing(PARAMETERS)
+                imp_distensibility_ref_state = distensibility_law.DistensibilityNothing(PARAMETERS)
                 imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersNothing(
                     PARAMETERS)
             case 2:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
-                imp_distensibility_law = distensibility_law.DistensibilityLawPassiveLinearReferenceBaselinePressure(
+                imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceBaselinePressure(
                     PARAMETERS)
                 imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(
                     PARAMETERS)
             case 3:  # Passive diameter changes, linearised. p_ext=0, d_ref computed.
-                imp_distensibility_law = distensibility_law.DistensibilityLawPassiveLinearReferenceConstantExternalPressure(
+                imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressure(
                     PARAMETERS)
                 imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(
                     PARAMETERS)
             case _:
-                sys.exit("Error: Choose valid option for distensibility law (distensibility_solver)")
+                sys.exit("Error: Choose valid option to define the reference state (distensibility_ref_state)")
 
-        return imp_distensibility_law, imp_read_distensibility_parameters
+        match PARAMETERS["distensibility_ref_state"]:
+            case 1:  # No update of diameters due to vessel distensibility
+                imp_distensibility_relation = distensibility_law.DistensibilityNothing(PARAMETERS)
+            case 2:  #
+                imp_distensibility_relation = distensibility_law.DistensibilityLawPassiveSherwin(PARAMETERS)
+            case 3:  #
+                imp_distensibility_relation = distensibility_law.DistensibilityLawPassiveUrquiza(PARAMETERS)
+            case 4:  #
+                imp_distensibility_relation = distensibility_law.DistensibilityLawPassiveRammos(PARAMETERS)
+            case _:
+                sys.exit("Error: Choose valid option to define the reference state (distensibility_relation)")
+
+        return imp_distensibility_ref_state, imp_read_distensibility_parameters, imp_distensibility_relation
+
+
+    def setup_stroke_model(self, PARAMETERS):
+        """
+        Set up the stroke model and returns various implementations of the stroke model
+        :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
+        :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
+        :returns: the implementation objects. Error if invalid option is chosen.
+        """
+        match PARAMETERS["induce_stroke_cases"]:
+            case 1:  # Not induce stroke
+                imp_induce_stroke = stroke_state.StrokeStateNothing(PARAMETERS)
+            case 2:  # Induce stroke in a hexagonal network
+                imp_induce_stroke = stroke_state.StrokeStateHexagonalNetwork(PARAMETERS)
+            case 3:  # Induce stroke in a network reading diameters at stroke state from a csv file
+                imp_induce_stroke = stroke_state.StrokeStateFromFile(PARAMETERS)
+            case _:
+                sys.exit("Error: Choose valid option to induce stroke (induce_stroke_cases)")
+
+        return imp_induce_stroke

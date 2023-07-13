@@ -64,7 +64,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "data/network/b6_B_pre_061/b6_B_initial.pkl",
+        "pkl_path_igraph": "data/network/B6_B_01/b6_B_pre_stroke.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",

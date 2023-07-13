@@ -17,6 +17,7 @@ class FlowNetwork(object):
                  imp_transmiss: transmissibility.Transmissibility, imp_buildsystem: buildsystem.BuildSystem,
                  imp_solver: pressureflowsolver.PressureFlowSolver, imp_rbcvelocity: rbc_velocity.RbcVelocity,
                  PARAMETERS: MappingProxyType):
+
         # Network attributes
         self.nr_of_vs = None
         self.nr_of_es = None
@@ -86,5 +87,4 @@ class FlowNetwork(object):
         self._imp_buildsystem.build_linear_system(self)
         self._imp_solver.update_pressure_flow(self)
         self._imp_rbcvelocity.update_velocity(self)
-
 

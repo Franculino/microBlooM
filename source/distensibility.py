@@ -4,11 +4,11 @@ import source.distensibilitymodules.distensibility_law as distensibility_law
 import source.fileio.read_distensibility_parameters as read_distensibility_parameters
 
 
-
 class Distensibility(object):
     def __init__(self, flownetwork: flow_network.FlowNetwork,
-                 imp_distensibilitylaw: distensibility_law.DistensibilityLaw,
-                 imp_read_distensibility_parameters: read_distensibility_parameters.ReadDistensibilityParameters):
+                 imp_distensibility_ref_state: distensibility_law.DistensibilityLaw,
+                 imp_read_distensibility_parameters: read_distensibility_parameters.ReadDistensibilityParameters,
+                 imp_distensibility_relation: distensibility_law.DistensibilityLaw):
         # "Reference" to flow network
         self._flow_network = flownetwork
 
@@ -25,8 +25,9 @@ class Distensibility(object):
         self.diameter_ref = None
 
         # "References" to implementations
-        self._imp_distensibility_law = imp_distensibilitylaw
+        self._imp_distensibility_ref_state = imp_distensibility_ref_state
         self._imp_read_distensibility_parameters = imp_read_distensibility_parameters
+        self._imp_distensibility_relation = imp_distensibility_relation
 
     def initialise_distensibility(self):
         """
@@ -35,10 +36,10 @@ class Distensibility(object):
         self._imp_read_distensibility_parameters.read(self, self._flow_network)
         self._flow_network.update_transmissibility()
         self._flow_network.update_blood_flow()
-        self._imp_distensibility_law.initialise_distensibility_law(self, self._flow_network)
+        self._imp_distensibility_ref_state.initialise_distensibility_ref_state(self, self._flow_network)
 
     def update_vessel_diameters(self):
         """
-        Method to blablabla
+        Method to update the  diameters based on different distensibility p-A relations
         """
-        self._imp_distensibility_law.update_diameter(self, self._flow_network)
+        self._imp_distensibility_relation.update_diameter(self, self._flow_network)

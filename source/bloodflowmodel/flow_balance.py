@@ -4,9 +4,14 @@ import source.flow_network as flow_network
 
 
 class FlowBalance(object):
+    """
+    Class for the implementations related to monitoring the flow balance
+    """
 
     def __init__(self, flownetwork: flow_network.FlowNetwork):
-
+        """
+        Constructor of FlowBalance
+        """
         self.flownetwork = flownetwork
 
     def _get_flow_balance(self):
@@ -35,6 +40,10 @@ class FlowBalance(object):
 
         ref_flow = np.abs(flow_rate[boundary_vs[0]])
         tol_flow = tol * ref_flow
+
+        # sort_flow_rate = np.sort(flow_rate)
+        # nr_zeros = np.size(flow_rate[flow_rate == 0.])
+        # tol_flow = np.abs(flow_rate[nr_zeros])
 
         is_inside_node = np.logical_not(np.in1d(np.arange(nr_of_vs), boundary_vs))
         local_balance = np.abs(flow_balance[is_inside_node])
