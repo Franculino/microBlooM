@@ -87,8 +87,12 @@ class BuildSystemSparseCoo(BuildSystem):
 
 class BuildSystemSparseCooNoOneSimple(BuildSystem):
     """
-    Class for building a sparse linear system of equations (coo_matrix) without one in the matrix.
-    Valid in case of pressure
+    Class for building a sparse linear system of equations (coo_matrix).
+    In order to remove the ones from the A matrix, the value in the matrix of boundary nodes
+    (in the matrix represented of [0 ... 1 ... 0]) are divided for the value of each boundaries.
+    i.e. we know that 1 x pressure_value = boundary_value so pressure_value/boundary_value = 1 for that node
+    to obtain this relation in the A matrix we are going to insert 1/boundary_value and in the b vector 1.
+    This allows to not have anymore entries equal to 1 in the A matrix and preserve the information about the boundary values.
     """
 
     def build_linear_system(self, flownetwork):
@@ -146,28 +150,20 @@ class BuildSystemSparseCooNoOneSimple(BuildSystem):
         flownetwork.system_matrix = system_matrix
         flownetwork.rhs = rhs
 
-        pressure = spsolve(flownetwork.system_matrix, flownetwork.rhs)
-        residual = (flownetwork.system_matrix * pressure) - rhs
 
-        # Compute the residual of the internal nodes
-        # boolean mask to identify the element to be eliminated
-        mask = np.ones(residual.shape, dtype=bool)
-        mask[boundary_vertices] = False
-
-        # Delete elements at boundary vertex
-        residual = residual[mask]
-        # residuals
-        flownetwork.residualsInternalNodesSimple = residual
-
-
-class BuildSystemSparseCooNoOne(BuildSystem):
+class BuildSystemSparseCscNoOne(BuildSystem):
     """
-    Class for building a sparse linear system of equations (coo_matrix) without one in the matrix.
+    Class for building a sparse linear system of equations (csc_matrix) without one in the matrix.
+    This approach fill the CSC matrix as in BuildSystemSparseCoo(BuildSystem) but to prevent the possibility to have
+    1-values entries in our matrix the entries referred to the boundary vertex are removed.
+    This allows to have less magnitude order difference in our matrix and consequentially less condition number.
+
+    This approach is created to increase the numerical accuracy in aur approach.
     """
 
     def build_linear_system(self, flownetwork):
         """
-        Fast method to build a linear system of equation. The sparse system matrix is COOrdinate format. The right
+        Fast method to build a linear system of equation. The sparse system matrix is CSC format. The right
         hand side vector is a 1d-numpy array. Accounts for pressure and flow boundary conditions. The system matrix
         and right hand side are updated in flownetwork.
         :param flownetwork: flow network object
@@ -177,7 +173,7 @@ class BuildSystemSparseCooNoOne(BuildSystem):
         transmiss = flownetwork.transmiss
         edge_list = flownetwork.edge_list
 
-        # Generate row, col and data arrays required to build a coo_matrix.
+        # Generate row, col and data arrays required to build a csc_matrix.
         # In a first step, assume a symmetrical system matrix without accounting for boundary conditions.
         # Example: Network with 2 edges and 3 vertices. edge_list = [[v1, v2], [v2, v3]], transmiss = [T1, T2]
         # row = [v1, v2, v1, v2, v2, v3, v2, v3]
@@ -214,11 +210,11 @@ class BuildSystemSparseCooNoOne(BuildSystem):
         rhs = np.zeros(nr_of_vs)
         aux = np.zeros(nr_of_vs)
 
-        # Assign flow rate boundary value to right hand side vector.
+        # Assign flow rate and pressure boundary value to right hand side vector.
         rhs[boundary_vertices[boundary_types == 1]] = boundary_values[boundary_types == 1]  # assign flow source term to rhs
         rhs[boundary_vertices[boundary_types == 2]] = boundary_values[boundary_types == 2]  # assign pressure source term to rhs
 
-        # aux vector to reconstruct the array
+        # Assign flow rate and pressure boundary value to aux vector
         aux[boundary_vertices[boundary_types == 1]] = boundary_values[boundary_types == 1]
         aux[boundary_vertices[boundary_types == 2]] = boundary_values[boundary_types == 2]
         # Pressure values
@@ -233,12 +229,11 @@ class BuildSystemSparseCooNoOne(BuildSystem):
 
             # Identify the element that need to go on the right side vector
             for element, row_idx in zip(elements, rows):
-                # remove the ones from the possible values in the data
-                # sum the element for that row
+                # remove the ones from the possible values in the data and move the element to  rhs
                 rhs[row_idx] += np.where(element == 1, 0, np.abs(element) * aux[column_index])
+
         # Modify system matrix and the rhs to eliminate the rows and the column of the boundary nodes
         # System
-
         # cast to CSR format
         system_matrix = system_matrix.tocsr()
 
@@ -259,11 +254,5 @@ class BuildSystemSparseCooNoOne(BuildSystem):
         rhs = rhs[mask]
 
         # Assign the values
-        flownetwork.system_matrix1 = system_matrix
-        flownetwork.rhs1 = rhs
-
-        # to check residuals
-        # pressure = spsolve(flownetwork.system_matrix, flownetwork.rhs)
-
-        # Compute the residual
-        # flownetwork.residualsInternalNodesOne = system_matrix.dot(pressure) - rhs
+        flownetwork.system_matrix = system_matrix
+        flownetwork.rhs = rhs

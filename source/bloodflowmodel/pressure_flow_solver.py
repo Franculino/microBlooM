@@ -1,3 +1,4 @@
+import copy
 import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
@@ -6,6 +7,8 @@ import numpy as np
 from scipy.sparse import csc_matrix, csr_matrix, isspmatrix_csc
 from scipy.sparse.linalg import spsolve
 from pyamg import smoothed_aggregation_solver
+
+from source.bloodflowmodel.build_system import BuildSystemSparseCscNoOne, BuildSystemSparseCooNoOneSimple
 
 
 class PressureFlowSolver(ABC):
@@ -47,10 +50,16 @@ class PressureFlowSolver(ABC):
         """
         edge_list = flownetwork.edge_list
         transmiss = flownetwork.transmiss
-        pressure = flownetwork.pressure
+        pressure_One = flownetwork.pressure_One
+        pressure_Original = flownetwork.pressure_Original
+        pressure_OneSimple = flownetwork.pressure_OneSimple
 
         # Update flow rates based on the transmissibility and pressure.
-        flownetwork.flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
+        flownetwork.flow_rateOne = transmiss * (pressure_One[edge_list[:, 0]] - pressure_One[edge_list[:, 1]])
+        flownetwork.flow_rateOneSimple = transmiss * (pressure_OneSimple[edge_list[:, 0]] - pressure_OneSimple[edge_list[:, 1]])
+        flownetwork.flow_rateOriginal = transmiss * (pressure_Original[edge_list[:, 0]] - pressure_Original[edge_list[:, 1]])
+
+        # sys.exit()
 
 
 class PressureFlowSolverSparseDirect(PressureFlowSolver):
@@ -69,7 +78,10 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
 
 class PressureFlowSolverSparseDirectImprove(PressureFlowSolver):
     """
-    Class for calculating the pressure with a sparse direct solver.
+    Class for calculating the pressure with a sparse direct solver in case of:
+    - CSC matrix: this matrix is created from the BuildSystemSparseCscNoOne(BuildSystem), the entries refer just to the internal nodes
+    - other matrix: this matrix is created from any other methods, it is referred to all the nodes
+
     """
 
     def _solve_pressure(self, flownetwork):
@@ -78,31 +90,134 @@ class PressureFlowSolverSparseDirectImprove(PressureFlowSolver):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
-        # BuildSystemSparseCooNoOneSimple.build_linear_system(self, flownetwork)
-        # print(np.sum(np.absolute(flownetwork.residualsInternalNodesOne)) / (flownetwork.nr_of_vs - len(flownetwork.boundary_vs)))
-        # print(np.sum(np.absolute(flownetwork.residualsInternalNodesSimple)) / (flownetwork.nr_of_vs - len(flownetwork.boundary_vs)))
+        system_matrix = flownetwork.system_matrix
+        rhs = flownetwork.rhs
+        boundary_vs = flownetwork.boundary_vs
+        boundary_val = flownetwork.boundary_val
+        boundary_type = flownetwork.boundary_type
+        nr_of_vs = flownetwork.nr_of_vs
 
+        if isspmatrix_csc(system_matrix):
+            # Compute the pressures for internal nodes
+            pressure_internal_nodes = spsolve(system_matrix, rhs)
+
+            # Compute the residual
+            residual_Internal_Node = flownetwork.system_matrix.dot(pressure_internal_nodes) - flownetwork.rhs
+
+            # Create a new array (aux)
+            aux = np.zeros(nr_of_vs)
+
+            # Insert the boundary values in the position in aux vertex equal to boundary vertex
+            aux[boundary_vs[boundary_type == 1]] = boundary_val[boundary_type == 1]
+            aux[boundary_vs[boundary_type == 2]] = boundary_val[boundary_type == 2]
+
+            # Insert the pressure in the aux array in the remaining spot
+            aux[~np.isin(np.arange(len(aux)), boundary_vs[(boundary_type == 1) | (boundary_type == 2)])] = pressure_internal_nodes
+
+            # Reconstruct the pressure arrays
+            flownetwork.pressure = aux
+
+        else:
+            flownetwork.pressure = spsolve(csc_matrix(system_matrix), rhs)
+
+            # Compute the residual
+            residualFullNodes = system_matrix.dot(flownetwork.pressure) - rhs
+
+
+class PressureFlowSolverSparseDirectImproveUtil(PressureFlowSolver):
+    """
+    UTIL METHOD TO PRINT THE RESULT [TO BE DELETED]
+
+    Class for calculating the pressure with a sparse direct solver in case of:
+    - CSC matrix: this matrix is created from the BuildSystemSparseCscNoOne(BuildSystem), the entries refer just to the internal nodes
+    - other matrix: this matrix is created from any other methods, it is referred to all the nodes
+    """
+
+    def _solve_pressure(self, flownetwork):
+        """
+        Solve the linear system of equations for the pressure and update the pressure in flownetwork.
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        flownetwork.pressure_Original = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
+        pressure_Original = copy.copy(flownetwork.pressure_Original)
+        # Compute the residual
+        residual_Old_method_Full = flownetwork.system_matrix.dot(flownetwork.pressure_Original) - flownetwork.rhs
+
+        # SIMPLE ONE APPROACH
+        BuildSystemSparseCooNoOneSimple.build_linear_system(self, flownetwork)
+        flownetwork.pressure_OneSimple = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
+        pressure_OneSimple = copy.copy(flownetwork.pressure_OneSimple)
+        # Compute the residual
+        residual_OneSimple_Full = flownetwork.system_matrix.dot(flownetwork.pressure_OneSimple) - flownetwork.rhs
+
+        # NEW SYSTEM CREATION
+        BuildSystemSparseCscNoOne.build_linear_system(self, flownetwork)  # is csc
         if isspmatrix_csc(flownetwork.system_matrix):
-
             # Compute the pressures
             pressure = spsolve(flownetwork.system_matrix, flownetwork.rhs)
 
             # Compute the residual
-            residual = (flownetwork.system_matrix * pressure) - flownetwork.rhs
+            residual_Internal_Node = flownetwork.system_matrix.dot(pressure) - flownetwork.rhs
 
             # Create a new array (aux) and insert elements from boundary values in it at specific position
             aux = np.zeros(flownetwork.nr_of_vs)
             aux[flownetwork.boundary_vs[flownetwork.boundary_type == 1]] = flownetwork.boundary_val[flownetwork.boundary_type == 1]
+            aux[flownetwork.boundary_vs[flownetwork.boundary_type == 2]] = flownetwork.boundary_val[flownetwork.boundary_type == 2]
 
             # Insert the pressure in the auxiliar array in the remaining spot
-            aux[~np.isin(np.arange(len(aux)), flownetwork.boundary_vs[flownetwork.boundary_type == 1])] = pressure
+            aux[~np.isin(np.arange(len(aux)), flownetwork.boundary_vs[(flownetwork.boundary_type == 1) | (flownetwork.boundary_type == 2)])] = pressure
 
             # reconstruct the pressure arrays
-            flownetwork.pressure = aux
+            flownetwork.pressure_One = aux
+            pressure_One = flownetwork.pressure_One
         else:
             flownetwork.pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
             # Compute the residual
-            residual = (flownetwork.system_matrix * flownetwork.pressure) - flownetwork.rhs
+            residual = flownetwork.system_matrix.dot(flownetwork.pressure) - flownetwork.rhs
+
+        # Pressure
+        print("Difference between pressure computed with original method and new simple approach")
+        are_arrays_similar(pressure_Original, pressure_OneSimple, 1)
+        print("Difference between pressure computed with original method and  new approach")
+        are_arrays_similar(pressure_Original, pressure_One, 1)
+
+        # RESIDUALS
+        print("Difference between residual computed with original method and new simple approach (FULL)")
+        are_arrays_similar(residual_Old_method_Full, residual_OneSimple_Full, 1)
+
+        print("Difference between residual of internal nodes computed with original method and new simple approach")
+        pressure_internal_node_Original = internal_nodes_pressure(pressure_Original, flownetwork.boundary_vs)
+        pressure_internal_node_OneSimple = internal_nodes_pressure(pressure_OneSimple, flownetwork.boundary_vs)
+        are_arrays_similar(pressure_internal_node_Original, pressure_internal_node_OneSimple, 1)
+
+        print("Difference between residual of internal nodes computed with original method and new approach")
+        pressure_internal_node_One = internal_nodes_pressure(pressure_OneSimple, flownetwork.boundary_vs)
+        are_arrays_similar(pressure_internal_node_Original, pressure_internal_node_One, 1)
+
+    #  sys.exit()
+
+
+def internal_nodes_pressure(pressure, boundary_vertices):
+    # RHS
+    # boolean mask to identify the element to be eliminated
+    mask = np.ones(pressure.shape, dtype=bool)
+    mask[boundary_vertices] = False
+
+    # Delete elements at boundary vertex
+    pressure = pressure[mask]
+    return pressure
+
+
+def are_arrays_similar(arr1, arr2, threshold_percent):
+    diff = np.abs(arr1 - arr2)
+    max_diff = np.mean(diff)
+    threshold = threshold_percent / 100.0 * np.max(np.abs(arr1))
+
+    if max_diff <= threshold:
+        return print(max_diff)
+    else:
+        return print(max_diff)
 
 
 class PressureFlowSolverPyAMG(PressureFlowSolver):
