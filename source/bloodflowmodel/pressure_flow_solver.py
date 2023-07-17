@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from types import MappingProxyType
 
 import numpy as np
-from scipy.sparse import csc_matrix, csr_matrix
+from scipy.sparse import csc_matrix, csr_matrix, isspmatrix_csc
 from scipy.sparse.linalg import spsolve
 from pyamg import smoothed_aggregation_solver
 
@@ -67,6 +67,44 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         flownetwork.pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
 
 
+class PressureFlowSolverSparseDirectImprove(PressureFlowSolver):
+    """
+    Class for calculating the pressure with a sparse direct solver.
+    """
+
+    def _solve_pressure(self, flownetwork):
+        """
+        Solve the linear system of equations for the pressure and update the pressure in flownetwork.
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        # BuildSystemSparseCooNoOneSimple.build_linear_system(self, flownetwork)
+        # print(np.sum(np.absolute(flownetwork.residualsInternalNodesOne)) / (flownetwork.nr_of_vs - len(flownetwork.boundary_vs)))
+        # print(np.sum(np.absolute(flownetwork.residualsInternalNodesSimple)) / (flownetwork.nr_of_vs - len(flownetwork.boundary_vs)))
+
+        if isspmatrix_csc(flownetwork.system_matrix):
+
+            # Compute the pressures
+            pressure = spsolve(flownetwork.system_matrix, flownetwork.rhs)
+
+            # Compute the residual
+            residual = (flownetwork.system_matrix * pressure) - flownetwork.rhs
+
+            # Create a new array (aux) and insert elements from boundary values in it at specific position
+            aux = np.zeros(flownetwork.nr_of_vs)
+            aux[flownetwork.boundary_vs[flownetwork.boundary_type == 1]] = flownetwork.boundary_val[flownetwork.boundary_type == 1]
+
+            # Insert the pressure in the auxiliar array in the remaining spot
+            aux[~np.isin(np.arange(len(aux)), flownetwork.boundary_vs[flownetwork.boundary_type == 1])] = pressure
+
+            # reconstruct the pressure arrays
+            flownetwork.pressure = aux
+        else:
+            flownetwork.pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
+            # Compute the residual
+            residual = (flownetwork.system_matrix * flownetwork.pressure) - flownetwork.rhs
+
+
 class PressureFlowSolverPyAMG(PressureFlowSolver):
     """
     Class for calculating the pressure with an algebraic multigrid (AMG) solver.
@@ -104,21 +142,21 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
         # array with values +/-50% of the pressure boundary value.
         res = []
         if flownetwork.pressure is None:
-            if (1 in flownetwork.boundary_type) and not(2 in flownetwork.boundary_type):  # only pressure boundaries
+            if (1 in flownetwork.boundary_type) and not (2 in flownetwork.boundary_type):  # only pressure boundaries
                 boundary_inlet = np.max(flownetwork.boundary_val)
                 boundary_outlet = np.min(flownetwork.boundary_val)
-                x0 = boundary_inlet - np.arange(0.001, 1, 0.999/flownetwork.nr_of_vs) * (boundary_inlet - boundary_outlet)
+                x0 = boundary_inlet - np.arange(0.001, 1, 0.999 / flownetwork.nr_of_vs) * (boundary_inlet - boundary_outlet)
                 x0[flownetwork.boundary_vs] = flownetwork.boundary_val
             elif (1 in flownetwork.boundary_type) and (2 in flownetwork.boundary_type):
-                boundary_pressure_vs = flownetwork.boundary_vs[flownetwork.boundary_type==1]
-                boundary_pressure_val = flownetwork.boundary_val[flownetwork.boundary_type==1]
-                x0 = np.arange(0.5, 1.5, 1/flownetwork.nr_of_vs) * np.max(boundary_pressure_val)
+                boundary_pressure_vs = flownetwork.boundary_vs[flownetwork.boundary_type == 1]
+                boundary_pressure_val = flownetwork.boundary_val[flownetwork.boundary_type == 1]
+                x0 = np.arange(0.5, 1.5, 1 / flownetwork.nr_of_vs) * np.max(boundary_pressure_val)
                 x0[boundary_pressure_vs] = boundary_pressure_val
             else:
                 sys.exit("Warning Message: only flow boundary conditions were assigned! Define new boundary conditions,"
                          " including at least one pressure boundary condition!")
-            flownetwork.pressure, info= ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600,
-                                                 cycle="V", return_info=True)
+            flownetwork.pressure, info = ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600,
+                                                  cycle="V", return_info=True)
         else:
             x0 = flownetwork.pressure
             flownetwork.pressure, info = ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600,
