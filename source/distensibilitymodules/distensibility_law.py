@@ -4,14 +4,14 @@ import numpy as np
 import sys
 
 
-class DistensibilityLaw(ABC):
+class DistensibilityLawInitialise(ABC):
     """
-    Abstract base class for bla
+    Abstract base class for initialiasing the distensibility law
     """
 
     def __init__(self, PARAMETERS: MappingProxyType):
         """
-        Constructor of Distensibility Law.
+        Constructor of DistensibilityLawInitialisation.
         :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
         :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
         """
@@ -27,6 +27,20 @@ class DistensibilityLaw(ABC):
         :type flownetwork: source.flow_network.FlowNetwork
         """
 
+
+class DistensibilityLawUpdate(ABC):
+    """
+    Abstract base class for updating the diameters
+    """
+
+    def __init__(self, PARAMETERS: MappingProxyType):
+        """
+        Constructor of DistensibilityLawInitialisation.
+        :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
+        :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
+        """
+        self._PARAMETERS = PARAMETERS
+
     @abstractmethod
     def update_diameter(self, distensibility, flownetwork):
         """
@@ -38,7 +52,7 @@ class DistensibilityLaw(ABC):
         """
 
 
-class DistensibilityNothing(DistensibilityLaw):
+class DistensibilityInitialiseNothing(DistensibilityLawInitialise):
     def initialise_distensibility_ref_state(self, distensibility, flownetwork):
         """
         Do not update any diameters based on vessel distensibility
@@ -48,41 +62,8 @@ class DistensibilityNothing(DistensibilityLaw):
         :type flownetwork: source.flow_network.FlowNetwork
         """
 
-    def update_diameter(self, distensibility, flownetwork):
-        """
-        Do not update any diameters based on vessel distensibility
-        :param distensibility: distensibility object
-        :type distensibility: source.distensibility.Distensibility
-        :param flownetwork: flow network object
-        :type flownetwork: source.flow_network.FlowNetwork
-        """
 
-
-class DistensibilityLawPassive(DistensibilityLaw):
-
-    @abstractmethod
-    def initialise_distensibility_ref_state(self, distensibility, flownetwork):
-        """
-        Specify the reference pressure and diameter
-        :param distensibility: distensibility object
-        :type distensibility: source.distensibility.Distensibility
-        :param flownetwork: flow network object
-        :type flownetwork: source.flow_network.FlowNetwork
-        """
-
-    @abstractmethod
-    def update_diameter(self, distensibility, flownetwork):
-        """
-        Update the diameters based on a passive distensibility law
-        All used passive distensibility laws are summarized by Absi et al. (2018) - review paper
-        :param distensibility: distensibility object
-        :type distensibility: source.distensibility.Distensibility
-        :param flownetwork: flow network object
-        :type flownetwork: source.flow_network.FlowNetwork
-        """
-
-
-class DistensibilityLawPassiveReferenceBaselinePressure(DistensibilityLawPassive):
+class DistensibilityLawPassiveReferenceBaselinePressure(DistensibilityLawInitialise):
 
     def initialise_distensibility_ref_state(self, distensibility, flownetwork):
         """
@@ -97,12 +78,13 @@ class DistensibilityLawPassiveReferenceBaselinePressure(DistensibilityLawPassive
         distensibility.diameter_ref = np.copy(flownetwork.diameter)[distensibility.eid_vessel_distensibility]
 
 
-class DistensibilityLawPassiveReferenceConstantExternalPressure(DistensibilityLawPassive):
+class DistensibilityLawPassiveReferenceConstantExternalPressureSherwin(DistensibilityLawInitialise):
 
     def initialise_distensibility_ref_state(self, distensibility, flownetwork):
         """
         Set the reference pressure to the constant external pressure. Compute a reference diameter for each
         vessel based on the specified reference pressure and the baseline diameters & pressures.
+        Based on a non-linear p-A ralation proposed by Sherwin et al. (2003)
         :param distensibility: distensibility object
         :type distensibility: source.distensibility.Distensibility
         :param flownetwork: flow network object
@@ -132,7 +114,56 @@ class DistensibilityLawPassiveReferenceConstantExternalPressure(DistensibilityLa
         distensibility.diameter_ref = diameter_ref
 
 
-class DistensibilityLawPassiveSherwin(DistensibilityLawPassive):
+class DistensibilityLawPassiveReferenceConstantExternalPressureUrquiza(DistensibilityLawInitialise):
+
+    def initialise_distensibility_ref_state(self, distensibility, flownetwork):
+        """
+        Set the reference pressure to the constant external pressure. Compute a reference diameter for each
+        vessel based on the specified reference pressure and the baseline diameters & pressures.
+        Based on a non-linear p-A relation proposed by Urquiza et al. (2006)
+        :param distensibility: distensibility object
+        :type distensibility: source.distensibility.Distensibility
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        # External pressure
+        distensibility.pressure_external = self._PARAMETERS["pressure_external"]
+        # Edge ids that are a vessel with distensibility (diameter changes are possible)
+        eids_dist = distensibility.eid_vessel_distensibility
+        # Assign a constant external pressure for the entire vasculature
+        distensibility.pressure_ref = np.ones(flownetwork.nr_of_vs)*distensibility.pressure_external
+
+        # Compute the reference diameter based on the constant external pressure and the baseline diameters & pressures.
+        # Reference diameter does not correspond to the baseline diameter.
+        pressure_difference_vertex = flownetwork.pressure - distensibility.pressure_ref
+        pressure_difference_edge = .5 * np.sum(pressure_difference_vertex[flownetwork.edge_list], axis=1)[
+            eids_dist]
+
+        # Solve quadratic formula for diameter ref {-b + sqrt(b^2-4*a*c)} (other solution is invalid)
+        kappa = 2 * distensibility.e_modulus * distensibility.wall_thickness / pressure_difference_edge
+        diameter_ref = .5 * (-kappa + np.sqrt(np.square(kappa) + 4 * kappa * flownetwork.diameter[eids_dist]))
+
+        if True in (diameter_ref < .5 * flownetwork.diameter[eids_dist]):
+            sys.exit("Error: Suspicious small reference diameter (compared to baseline diameter) detected. ")
+
+        distensibility.diameter_ref = diameter_ref
+
+
+
+
+class DistensibilityLawUpdateNothing(DistensibilityLawUpdate):
+
+    def update_diameter(self, distensibility, flownetwork):
+        """
+        Do not update any diameters based on vessel distensibility
+        :param distensibility: distensibility object
+        :type distensibility: source.distensibility.Distensibility
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+
+
+class DistensibilityLawUpdatePassiveSherwin(DistensibilityLawUpdate):
 
     def update_diameter(self, distensibility, flownetwork):
         """
@@ -160,7 +191,7 @@ class DistensibilityLawPassiveSherwin(DistensibilityLawPassive):
         flownetwork.diameter = diameter_new
 
 
-class DistensibilityLawPassiveUrquiza(DistensibilityLawPassive):
+class DistensibilityLawUpdatePassiveUrquiza(DistensibilityLawUpdate):
 
     def update_diameter(self, distensibility, flownetwork):
         """
@@ -187,7 +218,7 @@ class DistensibilityLawPassiveUrquiza(DistensibilityLawPassive):
         flownetwork.diameter = diameter_new
 
 
-class DistensibilityLawPassiveRammos(DistensibilityLawPassive):
+class DistensibilityLawUpdatePassiveRammos(DistensibilityLawUpdate):
 
     def update_diameter(self, distensibility, flownetwork):
         """

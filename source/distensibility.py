@@ -6,9 +6,9 @@ import source.fileio.read_distensibility_parameters as read_distensibility_param
 
 class Distensibility(object):
     def __init__(self, flownetwork: flow_network.FlowNetwork,
-                 imp_distensibility_ref_state: distensibility_law.DistensibilityLaw,
+                 imp_distensibility_ref_state: distensibility_law.DistensibilityLawInitialise,
                  imp_read_distensibility_parameters: read_distensibility_parameters.ReadDistensibilityParameters,
-                 imp_distensibility_relation: distensibility_law.DistensibilityLaw):
+                 imp_distensibility_relation: distensibility_law.DistensibilityLawUpdate):
         # "Reference" to flow network
         self._flow_network = flownetwork
 

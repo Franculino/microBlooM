@@ -174,37 +174,44 @@ class SetupSimulation(Setup):
         :returns: the implementation objects. Error if invalid option is chosen.
         """
 
-        match PARAMETERS["distensibility_ref_state"]:
-            case 1:  # No update of diameters due to vessel distensibility
-                imp_distensibility_ref_state = distensibility_law.DistensibilityNothing(PARAMETERS)
+        match PARAMETERS["read_dist_parameters_option"]:
+            case 1:  # Do not read anything
                 imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersNothing(
                     PARAMETERS)
+            case 2:  # Read distensibility porameters from csv file
+                imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(
+                    PARAMETERS)
+            case _:
+                sys.exit("Error: Choose valid option to read distensibility porameters (read_dist_parameters_option)")
+
+        match PARAMETERS["distensibility_ref_state_option"]:
+            case 1:  # No update of diameters due to vessel distensibility
+                imp_distensibility_ref_state = distensibility_law.DistensibilityInitialiseNothing(PARAMETERS)
             case 2:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
                 imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceBaselinePressure(
                     PARAMETERS)
-                imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(
+            case 3:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Sherwin et al. (2003).
+                imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureSherwin(
                     PARAMETERS)
-            case 3:  # Passive diameter changes, linearised. p_ext=0, d_ref computed.
-                imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressure(
-                    PARAMETERS)
-                imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(
+            case 4:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Urquiza et al. (2006).
+                imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureUrquiza(
                     PARAMETERS)
             case _:
-                sys.exit("Error: Choose valid option to define the reference state (distensibility_ref_state)")
+                sys.exit("Error: Choose valid option to define the reference state (distensibility_ref_state_option)")
 
-        match PARAMETERS["distensibility_ref_state"]:
+        match PARAMETERS["distensibility_relation_option"]:
             case 1:  # No update of diameters due to vessel distensibility
-                imp_distensibility_relation = distensibility_law.DistensibilityNothing(PARAMETERS)
-            case 2:  #
-                imp_distensibility_relation = distensibility_law.DistensibilityLawPassiveSherwin(PARAMETERS)
-            case 3:  #
-                imp_distensibility_relation = distensibility_law.DistensibilityLawPassiveUrquiza(PARAMETERS)
-            case 4:  #
-                imp_distensibility_relation = distensibility_law.DistensibilityLawPassiveRammos(PARAMETERS)
+                imp_distensibility_relation = distensibility_law.DistensibilityLawUpdateNothing(PARAMETERS)
+            case 2:  # Update of diameters based on a non-linear p-A ralation proposed by Sherwin et al. (2003).
+                imp_distensibility_relation = distensibility_law.DistensibilityLawUpdatePassiveSherwin(PARAMETERS)
+            case 3:  # Update of diameters based on a non-linear p-A ralation proposed by Urquiza et al. (2006).
+                imp_distensibility_relation = distensibility_law.DistensibilityLawUpdatePassiveUrquiza(PARAMETERS)
+            case 4:  # Update of diameters based on a non-linear p-A ralation proposed by Rammos et al. (1998).
+                imp_distensibility_relation = distensibility_law.DistensibilityLawUpdatePassiveRammos(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to define the reference state (distensibility_relation)")
 
-        return imp_distensibility_ref_state, imp_read_distensibility_parameters, imp_distensibility_relation
+        return imp_read_distensibility_parameters, imp_distensibility_ref_state, imp_distensibility_relation
 
 
     def setup_stroke_model(self, PARAMETERS):
@@ -214,7 +221,7 @@ class SetupSimulation(Setup):
         :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
         :returns: the implementation objects. Error if invalid option is chosen.
         """
-        match PARAMETERS["induce_stroke_cases"]:
+        match PARAMETERS["induce_stroke_option"]:
             case 1:  # Not induce stroke
                 imp_induce_stroke = stroke_state.StrokeStateNothing(PARAMETERS)
             case 2:  # Induce stroke in a hexagonal network
@@ -222,6 +229,6 @@ class SetupSimulation(Setup):
             case 3:  # Induce stroke in a network reading diameters at stroke state from a csv file
                 imp_induce_stroke = stroke_state.StrokeStateFromFile(PARAMETERS)
             case _:
-                sys.exit("Error: Choose valid option to induce stroke (induce_stroke_cases)")
+                sys.exit("Error: Choose valid option to induce stroke (induce_stroke_option)")
 
         return imp_induce_stroke

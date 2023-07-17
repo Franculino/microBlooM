@@ -80,7 +80,7 @@ PARAMETERS = MappingProxyType(
         # Stroke options
         ##########################
 
-        "induce_stroke_cases": 3,       # 1: Don't induce stroke
+        "induce_stroke_option": 3,       # 1: Don't induce stroke
                                         # 2: Induce stroke in a hexagonal network - only required for "read_network_option" 1
                                         # 3: Induce stroke in a network reading diameters at stroke state from a csv file
 
@@ -95,14 +95,20 @@ PARAMETERS = MappingProxyType(
         ##########################
 
         # Set up distensibility model
-        "distensibility_ref_state": 3,  # 1: No update of diameters due to vessel distensibility
-                                        # 2: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = p_base, d_ref = d_base
-                                        # 3: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const, d_ref computed
+        "read_dist_parameters_option": 2,       # 1: Do not read anything
+                                                # 2: Read from csv file
 
-        "distensibility_relation": 2,   # 1: No update of diameters due to vessel distensibility
-                                        # 2: Relation based on Sherwin et al. (2003) - non linear p-A relation
-                                        # 3: Relation based on Urquiza et al. (2006) - non linear p-A relation
-                                        # 4: Rekation based on Rammos et al. (1998) - linear p-A relation
+        "distensibility_ref_state_option": 4,   # 1: No update of diameters due to vessel distensibility
+                                                # 2: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = p_base,
+                                                    # d_ref = d_base
+                                                # 3: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                    # d_ref computed based on Sherwin et al. (2003)
+                                                # 4: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                    # d_ref computed based on Urquiza et al. (2006)
+
+        "distensibility_relation_option": 3,    # 1: No update of diameters due to vessel distensibility
+                                                # 2: Relation based on Sherwin et al. (2003) - non linear p-A relation
+                                                # 3: Relation based on Urquiza et al. (2006) - non linear p-A relation
 
         # Distensibility edge properties
         "csv_path_distensibility": "data/distensibility/distensibility_parameters.csv",
@@ -116,10 +122,10 @@ setup_blood_flow = setup.SetupSimulation()
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
     imp_solver = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
 
-imp_induce_stroke = setup_blood_flow.setup_stroke_model(PARAMETERS)
-
-imp_distensibility_ref_state, imp_read_distensibility_parameters, imp_distensibility_relation = \
+imp_read_distensibility_parameters, imp_distensibility_ref_state, imp_distensibility_relation = \
     setup_blood_flow.setup_distensibility_model(PARAMETERS)
+
+imp_induce_stroke = setup_blood_flow.setup_stroke_model(PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file
@@ -131,7 +137,7 @@ flow_balance = FlowBalance(flow_network)
 distensibility = Distensibility(flow_network, imp_distensibility_ref_state, imp_read_distensibility_parameters,
                                 imp_distensibility_relation)
 
-stroke_model = StrokeModel(imp_induce_stroke, PARAMETERS)
+stroke_model = StrokeModel(flow_network, distensibility, imp_induce_stroke, PARAMETERS)
 
 # Import or generate the network - Import data for the pre-stroke state
 print("Read network: ...")
@@ -179,5 +185,4 @@ for i in range(100):
         diameters_current = flow_network.diameter
 print("Update the diameters based on Distensibility Law: DONE")
 
-sys.exit()
 flow_network.write_network()
