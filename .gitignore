@@ -15,3 +15,4 @@ util_methods/old_code.py
 MVN1
 MVN2
 testcases/testcase_blood_flow_iterative_model.py.pclprof
+*.pclprof

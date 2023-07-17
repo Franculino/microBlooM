@@ -107,7 +107,6 @@ class DischargeHaematocritVitroPries2005(DischargeHaematocrit):
         flownetwork.hd = hd  # Update discharge haematocrit
 
 
-@profile
 def edge_connected_dict(edge_list):
     edge_connected_position = defaultdict(list)
     node_connected = defaultdict(list)
@@ -126,8 +125,7 @@ def edge_connected_dict(edge_list):
 
 
 class DischargeHaematocritPries1990(DischargeHaematocrit):
-
-    def qRCS(self, case, flow_a_par, flow_b_par, flow_c_par, flow_a_d, flow_b_d, flow_c_d, hemat_a_par, hemat_b_par, hemat_c_par, hemat_a_d, hemat_b_d, hemat_c_d, **kwargs):
+    def q_rcs(self, case, flow_a_par, flow_b_par, flow_c_par, flow_a_d, flow_b_d, flow_c_d, hemat_a_par, hemat_b_par, hemat_c_par, hemat_a_d, hemat_b_d, hemat_c_d, **kwargs):
         """
         check the RBC balance
         qRBC = q * Hdt
@@ -208,7 +206,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         else:
             hematocrit = hemat_parent
 
-        rbc_balance += self.qRCS(1, flow_parent, None, None, flow_daughter, None, None, hemat_parent, None, None, hematocrit, None, None, )
+        rbc_balance += self.q_rcs(1, flow_parent, None, None, flow_daughter, None, None, hemat_parent, None, None, hematocrit, None, None, )
         return hematocrit, rbc_balance
 
     def hematocrit_1_3(self, flow_parent, hemat_parent, flow_daughter_a, flow_daughter_b, flow_daughter_c, rbc_balance, fractional_trifurc_RBCs, fractional_trifurc_blood):
@@ -222,8 +220,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                             / qRBC_parent])
             fractional_trifurc_blood.extend([flow_daughter_a / flow_parent, flow_daughter_b / flow_parent, flow_daughter_c / flow_parent])
 
-        rbc_balance += self.qRCS(3, flow_parent, None, None, flow_daughter_a, flow_daughter_b, flow_daughter_c, hemat_parent, None, None, hematocrit_a, hematocrit_b,
-                                 hematocrit_c)
+        rbc_balance += self.q_rcs(3, flow_parent, None, None, flow_daughter_a, flow_daughter_b, flow_daughter_c, hemat_parent, None, None, hematocrit_a, hematocrit_b,
+                                  hematocrit_c)
         return hematocrit_a, hematocrit_b, hematocrit_c, rbc_balance
 
     def hematocrit_2_1(self, flow_parent_a, flow_parent_b, flow_daughter, hemat_parent_a, hemat_parent_b, rbc_balance):
@@ -232,7 +230,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
             hematocrit = 0
         else:
             hematocrit = ((flow_parent_a * hemat_parent_a) + (flow_parent_b * hemat_parent_b)) / (flow_parent_a + flow_parent_b)
-        rbc_balance += self.qRCS(4, flow_parent_a, flow_parent_b, None, flow_daughter, None, None, hemat_parent_a, hemat_parent_b, None, hematocrit, None, None)
+        rbc_balance += self.q_rcs(4, flow_parent_a, flow_parent_b, None, flow_daughter, None, None, hemat_parent_a, hemat_parent_b, None, hematocrit, None, None)
         return hematocrit, rbc_balance
 
     def hematocrit_2_2_aux(self, hemat_a, hemat_b, flow_a, flow_b, diameter_a, diameter_b):
@@ -263,7 +261,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                                                        flow_parent, flow_daughter_a, flow_daughter_b,
                                                                        fractional_a_qRBCs, fractional_b_qRBCs, fractional_a_blood, fractional_b_blood,
                                                                        hemat_parent_plot)
-        rbc_balance += self.qRCS(2, flow_parent, None, None, flow_daughter_a, flow_daughter_b, None, hemat_parent, None, None, hematocrit_a, hematocrit_b, None)
+        rbc_balance += self.q_rcs(2, flow_parent, None, None, flow_daughter_a, flow_daughter_b, None, hemat_parent, None, None, hematocrit_a, hematocrit_b, None)
 
         return hematocrit_a, hematocrit_b, rbc_balance
 
@@ -281,8 +279,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
             hematocrit = ((flow_parent_a * hemat_parent_a) + (flow_parent_b * hemat_parent_b) + (flow_parent_c * hemat_parent_c)) / (flow_parent_a + flow_parent_b +
                                                                                                                                      flow_parent_c)
 
-        rbc_balance += self.qRCS(5, flow_parent_a, flow_parent_b, flow_parent_c, flow_daughter, None, None, hemat_parent_a, hemat_parent_b, hemat_parent_c, hematocrit, None,
-                                 None)
+        rbc_balance += self.q_rcs(5, flow_parent_a, flow_parent_b, flow_parent_c, flow_daughter, None, None, hemat_parent_a, hemat_parent_b, hemat_parent_c, hematocrit, None,
+                                  None)
 
         return hematocrit, rbc_balance
 
@@ -346,27 +344,27 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 hemat_a = (fractional_qRBCa * qRBCp) / flow_a
                 hemat_b = (fractional_qRBCb * qRBCp) / flow_b
 
-            # check if we are near the threshold
-            if hemat_b >= threshold:
-                hemat_surplus = hemat_b - threshold
-                fractional_RBCs_surplus = (hemat_surplus * flow_b) / qRBCp
+                # check if we are near the threshold
+                if hemat_b >= threshold:
+                    hemat_surplus = hemat_b - threshold
+                    fractional_RBCs_surplus = (hemat_surplus * flow_b) / qRBCp
 
-                fractional_qRBCb = fractional_qRBCb - fractional_RBCs_surplus
-                fractional_qRBCa = fractional_qRBCa + fractional_RBCs_surplus
+                    fractional_qRBCb = fractional_qRBCb - fractional_RBCs_surplus
+                    fractional_qRBCa = fractional_qRBCa + fractional_RBCs_surplus
 
-                hemat_a = (fractional_qRBCa * qRBCp) / flow_a
-                hemat_b = (fractional_qRBCb * qRBCp) / flow_b
-                # for plot
+                    hemat_a = (fractional_qRBCa * qRBCp) / flow_a
+                    hemat_b = (fractional_qRBCb * qRBCp) / flow_b
+                    # for plot
 
-            elif hemat_a >= threshold:
-                hemat_surplus = hemat_a - threshold
-                fractional_RBCs_surplus = (hemat_surplus * flow_a) / qRBCp
+                elif hemat_a >= threshold:
+                    hemat_surplus = hemat_a - threshold
+                    fractional_RBCs_surplus = (hemat_surplus * flow_a) / qRBCp
 
-                # for plot
-                fractional_qRBCb = fractional_qRBCb + fractional_RBCs_surplus
-                fractional_qRBCa = fractional_qRBCa - fractional_RBCs_surplus
-                hemat_a = (fractional_qRBCa * qRBCp) / flow_a
-                hemat_b = (fractional_qRBCb * qRBCp) / flow_b
+                    # for plot
+                    fractional_qRBCb = fractional_qRBCb + fractional_RBCs_surplus
+                    fractional_qRBCa = fractional_qRBCa - fractional_RBCs_surplus
+                    hemat_a = (fractional_qRBCa * qRBCp) / flow_a
+                    hemat_b = (fractional_qRBCb * qRBCp) / flow_b
 
             fractional_a_qRBCs.append(fractional_qRBCa)
             fractional_b_qRBCs.append(fractional_qRBCb)
@@ -383,7 +381,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 sys.exit()
         return hemat_a, hemat_b
 
-    @profile
     def update_hd(self, flownetwork):
         flownetwork.boundary_hematocrit = self._PARAMETERS["boundary_hematocrit"]
         flownetwork.fractional_a_qRBCs, flownetwork.fractional_b_qRBCs = [], []

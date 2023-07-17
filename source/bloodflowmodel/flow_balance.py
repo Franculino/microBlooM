@@ -26,7 +26,7 @@ class FlowBalance(object):
         return flow_balance
 
     def check_flow_balance(self, tol=1.00E-05):
-
+        # tol = self.flownetwork.min_flow
         nr_of_vs = self.flownetwork.nr_of_vs
         flow_rate = self.flownetwork.flow_rate
         boundary_vs = self.flownetwork.boundary_vs
@@ -51,4 +51,3 @@ class FlowBalance(object):
             sys.exit("Is globally balanced: " + str(is_globally_balanced) + "(with tol " + str(tol_flow) + ")")
 
         return
-

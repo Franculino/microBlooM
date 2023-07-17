@@ -51,35 +51,29 @@ def util_iterative_method(PARAMETERS, flownetwork, flow_balance):
         # check if we are in convergences
         match PARAMETERS["convergence_case"]:
             case 1:
-                convergence = np.abs(
-                    (flownetwork.hd * np.abs(flownetwork.flow_rate)) - (old_hematocrit * np.abs(old_flow)))
-                print("Number of element under the threshold ", str(np.sum(convergence < PARAMETERS["epsilon"])), "/", str(len(convergence)))
-                sorted_arr = np.sort(convergence)[::-1]
-                # Extract the top four highest elements
-                top_four = sorted_arr[:5]
-                print("Higher 5 element in convergence", str(top_four))
+                # convergence = np.abs((flownetwork.hd * np.abs(flownetwork.flow_rate)) - (old_hematocrit * np.abs(old_flow)))
+                convergence = np.average(flownetwork.hd * np.abs(flownetwork.flow_rate) - (old_hematocrit * np.abs(old_flow)))
+                if convergence < PARAMETERS["epsilon"]:
+                    flownetwork.convergence_check = True
+                else:
+                    flownetwork.convergence_check = False
+                    iteration_plot = np.append(iteration_plot, convergence)
+                    flownetwork.iteration += 1
 
-                for element in convergence:
-                    if element < PARAMETERS["epsilon"]:
-                        flownetwork.convergence_check = True
-                    else:
-                        flownetwork.convergence_check = False
-                        iteration_plot = np.append(iteration_plot, element)
-                        flownetwork.iteration += 1
-                        print("iteration " + str(flownetwork.iteration) + " " + str(iteration_plot))
-                        break
+                    if flownetwork.iteration % 50 == 0:
+                        print("iteration " + str(flownetwork.iteration) + " " + str(convergence))
+                        util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)
+                # for element in convergence:
+                #     if element < PARAMETERS["epsilon"]:
+                #         flownetwork.convergence_check = True
+                #     else:
+                #         flownetwork.convergence_check = False
+                #         iteration_plot = np.append(iteration_plot, element)
+                #         flownetwork.iteration += 1
+                #         print("iteration " + str(flownetwork.iteration) + " " + str(iteration_plot))
+                #         break
             case 2:
-                # print("Number nan element in old flow ", np.sum(np.isnan(old_flow)))
-                # print("Number zero element in old flow ", np.sum(np.count_nonzero(old_flow == 0)))
-
                 convergence = np.abs(np.average(np.abs(flownetwork.flow_rate)) - np.average(old_flow)) / np.average(old_flow)
-                # convergence = np.where(np.isinf(convergence), np.nan, convergence)
-                # convergence[np.isnan(convergence)] = 0
-                # print("Number of element under the threshold ", str(np.sum(convergence < PARAMETERS["epsilon_second_method"])), "/", str(len(convergence)))
-                # sorted_arr = np.sort(convergence)[::-1]
-                # Extract the top four highest elements
-                # top_four = sorted_arr[:50]
-                # print("Higher 50 element in convergence", str(top_four))
 
                 if convergence < PARAMETERS["epsilon_second_method"]:
                     flownetwork.convergence_check = True
