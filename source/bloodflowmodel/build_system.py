@@ -90,6 +90,7 @@ class BuildSystemSparseCooNoOneSimple(BuildSystem):
     Class for building a sparse linear system of equations (coo_matrix) without one in the matrix.
     Valid in case of pressure
     """
+
     def build_linear_system(self, flownetwork):
         """
         Fast method to build a linear system of equation. The sparse system matrix is COOrdinate format. The right
@@ -211,10 +212,15 @@ class BuildSystemSparseCooNoOne(BuildSystem):
 
         # Initialise the right hand side vector.
         rhs = np.zeros(nr_of_vs)
+        aux = np.zeros(nr_of_vs)
 
         # Assign flow rate boundary value to right hand side vector.
-        rhs[boundary_vertices[boundary_types == 2]] = boundary_values[boundary_types == 2]  # assign flow source term to rhs
+        rhs[boundary_vertices[boundary_types == 1]] = boundary_values[boundary_types == 1]  # assign flow source term to rhs
+        rhs[boundary_vertices[boundary_types == 2]] = boundary_values[boundary_types == 2]  # assign pressure source term to rhs
 
+        # aux vector to reconstruct the array
+        aux[boundary_vertices[boundary_types == 1]] = boundary_values[boundary_types == 1]
+        aux[boundary_vertices[boundary_types == 2]] = boundary_values[boundary_types == 2]
         # Pressure values
         # index of column
         for column_index in boundary_vertices:
@@ -225,18 +231,11 @@ class BuildSystemSparseCooNoOne(BuildSystem):
             # Identify the rows of the system matrix
             rows = column_vector.indices
 
-            aux = np.zeros(flownetwork.nr_of_vs)
-            aux[flownetwork.boundary_vs[flownetwork.boundary_type == 1]] = flownetwork.boundary_val[flownetwork.boundary_type == 1]
-
-            # reconstruct the pressure arrays
-            flownetwork.pressure = aux
             # Identify the element that need to go on the right side vector
             for element, row_idx in zip(elements, rows):
                 # remove the ones from the possible values in the data
-                element = np.where(element == 1, 0, element)
                 # sum the element for that row
-                rhs[row_idx] += np.abs(element) * aux[row_idx]
-
+                rhs[row_idx] += np.where(element == 1, 0, np.abs(element) * aux[column_index])
         # Modify system matrix and the rhs to eliminate the rows and the column of the boundary nodes
         # System
 
@@ -260,11 +259,11 @@ class BuildSystemSparseCooNoOne(BuildSystem):
         rhs = rhs[mask]
 
         # Assign the values
-        flownetwork.system_matrix = system_matrix
-        flownetwork.rhs = rhs
+        flownetwork.system_matrix1 = system_matrix
+        flownetwork.rhs1 = rhs
 
         # to check residuals
-        pressure = spsolve(flownetwork.system_matrix, flownetwork.rhs)
+        # pressure = spsolve(flownetwork.system_matrix, flownetwork.rhs)
 
         # Compute the residual
-        flownetwork.residualsInternalNodesOne = (system_matrix * pressure) - rhs
+        # flownetwork.residualsInternalNodesOne = system_matrix.dot(pressure) - rhs
