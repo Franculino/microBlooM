@@ -254,15 +254,14 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
         if hemat_parent == 0 or flow_parent == 0:
             hematocrit_a, hematocrit_b = 0, 0
-
         else:
             hematocrit_a, hematocrit_b = self.get_erythrocyte_fraction(hemat_parent,
                                                                        diameter_parent, diameter_a, diameter_b,
                                                                        flow_parent, flow_daughter_a, flow_daughter_b,
                                                                        fractional_a_qRBCs, fractional_b_qRBCs, fractional_a_blood, fractional_b_blood,
                                                                        hemat_parent_plot)
-        rbc_balance += self.q_rcs(2, flow_parent, None, None, flow_daughter_a, flow_daughter_b, None, hemat_parent, None, None, hematocrit_a, hematocrit_b, None)
 
+        rbc_balance += self.q_rcs(2, flow_parent, None, None, flow_daughter_a, flow_daughter_b, None, hemat_parent, None, None, hematocrit_a, hematocrit_b, None)
         return hematocrit_a, hematocrit_b, rbc_balance
 
     def hematocrit_3_1(self, flow_parent_a, flow_parent_b, flow_parent_c, flow_daughter, hemat_parent_a, hemat_parent_b, hemat_parent_c, rbc_balance):
@@ -307,10 +306,9 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
         # in case of 0 hematocrit in par is not possible to do phase separation
         if hemat_par == 0 or flow_parent == 0:
-            sys.exit()
             hemat_a, hemat_b = 0, 0
 
-        elif flow_a == 0 or flow_b == 0:
+        elif flow_a == 0 and flow_b == 0:
             hemat_a, hemat_b = 0, 0
 
         else:
@@ -460,11 +458,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                         n_daughter = 3
                     case 0:  # no daughters
                         n_daughter = 0
-                # case _:
-                # print(node)
-                # print("too many daughter edge: " + str(edge_daughter) + " with parent " + str(parent_edge))
-
-                # sys.exit()
 
                 # PARENTS
                 # check zero flow or Hd
@@ -486,12 +479,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                     case 0:
                         n_parent = 0
 
-                    # case _:
-                    # print(node)
-                    # print("too many parent edge: " + str(parent_edge) + " with daughters " + str(edge_daughter))
-                    # sys.exit()
-
-                # if flow_hd_check:
                 # check it the node is a boundary node
                 if node[1] in boundary_vs:
                     # if np.isin(node[1], flownetwork.boundary_vs):
@@ -554,9 +541,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 diameter_ghost = diameter[single_daughter]
                                 # flow ghost daughter: surplus flow between the parent and daughter vessel
                                 flow_ghost = flow[parent] - flow[single_daughter]
-                                # Nan control
-                                # flow[parent] = self.is_nan(flow[parent])
-                                # flownetwork.hd[parent] = self.is_nan(flownetwork.hd[parent])
                                 # compute hematocrit for daughter vessel and check RBCs value
                                 flownetwork.hd[single_daughter], hemat_ghost_daughter, rbc_balance = self.hematocrit_1_2(flow[parent], flownetwork.hd[parent],
                                                                                                                          flow[single_daughter],
@@ -718,16 +702,45 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                             flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_3_1(flow[parent_a], flow[parent_b], flow[parent_c], flow[single_daughter],
                                                                                                flownetwork.hd[parent_a], flownetwork.hd[parent_b], flownetwork.hd[parent_c],
                                                                                                rbc_balance)
+                        # only daughter
                         case 0, _:
-                            # print(node)
                             if len(edge_daughter) == 3:
+                                # print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(edge_daughter[0]) + " " + str(
+                                # edge_daughter[1]) + " " + str(edge_daughter[2]))
+
                                 flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], flownetwork.hd[daughter_c] = 0, 0, 0
                             elif len(edge_daughter) == 2:
+                                # print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(edge_daughter[0]) + " " + str(
+                                # edge_daughter[1]))
                                 flownetwork.hd[daughter_a], flownetwork.hd[daughter_b] = 0, 0
+                            elif len(edge_daughter) == 4:
+                                # print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(edge_daughter[0]) + " " + str(
+                                #    edge_daughter[1]) + " " +  str(edge_daughter[2]) + " " + str(edge_daughter[3]))
+                                flownetwork.hd[edge_daughter[0]], flownetwork.hd[edge_daughter[1]], flownetwork.hd[edge_daughter[2]], flownetwork.hd[edge_daughter[3]] = 0, 0, 0, 0
+
                             else:
+                                # print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(single_daughter))
                                 flownetwork.hd[single_daughter] = 0
-                            #   print("single")
-                            #  print(edge_daughter)
+
+                        # only patent
+                        case _, 0:
+                            # pass
+                            if len(parent_edge) == 3:
+                                # print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent_edge[0]) + " " + str(parent_edge[1])
+                                #      + " " + str(parent_edge[2]))
+                                flownetwork.hd[parent_a], flownetwork.hd[parent_b], flownetwork.hd[parent_c] = 0, 0, 0
+
+                            elif len(parent_edge) == 2:
+                                # print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent_edge[0]) + " " + str(parent_edge[1]))
+                                flownetwork.hd[parent_a], flownetwork.hd[parent_b] = 0, 0
+                            elif len(parent_edge) == 4:
+                                # print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent_edge[0]) + " " + str(
+                                #        parent_edge[1]) + " " + str(parent_edge[2]) + " " + str(parent_edge[3]))
+                                flownetwork.hd[parent_edge[0]], flownetwork.hd[parent_edge[1]], flownetwork.hd[parent_edge[2]], flownetwork.hd[parent_edge[3]] = 0, 0, 0, 0
+
+                            else:
+                                # print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent))
+                                flownetwork.hd[parent] = 0
             # with one more tab is possible to have the check at the end of the iteration
             # print("Check RBCs balance: ...")
             if rbc_balance > 0:

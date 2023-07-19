@@ -50,7 +50,7 @@ PARAMETERS = MappingProxyType(
         # Blood properties
         "ht_constant": 4E-01,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
-        "boundary_hematocrit": [0.4] * 1275,  # [0.4] * 1276,  # [0.5,0.3,0.1] np.linspace(0.5, 0.1, 1276)
+        "boundary_hematocrit": [0.4] * 1276,  # [0.4] * 1276,  # [0.5,0.3,0.1] np.linspace(0.5, 0.1, 1276)
 
         # Machine error for float
         "machine_error": 1E-15,

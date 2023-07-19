@@ -19,7 +19,7 @@ class FlowNetwork(object):
                  PARAMETERS: MappingProxyType):
         # Network attributes
         self.residualsInternalNodesOne = None
-        self.residualsInternalNodesSimple = None
+        self.residualsInternalNodesSimple = None #TODO: suprlus of elements
         self.min_flow = None
         self.eps_eff = None
         self.nr_of_vs = None

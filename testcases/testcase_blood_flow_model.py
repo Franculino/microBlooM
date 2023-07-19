@@ -36,7 +36,7 @@ PARAMETERS = MappingProxyType(
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: Laws by Pries and Secomb (2005)
                                  # 4-...: todo: Other laws. in vivo?
-        "solver_option": 4,  # 1: Direct solver
+        "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
                              # 3-...: other solvers
 

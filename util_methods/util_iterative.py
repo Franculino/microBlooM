@@ -60,20 +60,12 @@ def util_iterative_method(PARAMETERS, flownetwork, flow_balance):
                     iteration_plot = np.append(iteration_plot, convergence)
                     flownetwork.iteration += 1
 
-                    if flownetwork.iteration % 50 == 0:
+                    if flownetwork.iteration % 10 == 0:
                         print("iteration " + str(flownetwork.iteration) + " " + str(convergence))
                         util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)
-                # for element in convergence:
-                #     if element < PARAMETERS["epsilon"]:
-                #         flownetwork.convergence_check = True
-                #     else:
-                #         flownetwork.convergence_check = False
-                #         iteration_plot = np.append(iteration_plot, element)
-                #         flownetwork.iteration += 1
-                #         print("iteration " + str(flownetwork.iteration) + " " + str(iteration_plot))
-                #         break
+
             case 2:
-                convergence = np.abs(np.average(np.abs(flownetwork.flow_rate)) - np.average(old_flow)) / np.average(old_flow)
+                convergence = np.abs(np.average(np.abs(flownetwork.flow_rate)) - np.average(old_flow)) / np.average(np.abs(old_flow))
 
                 if convergence < PARAMETERS["epsilon_second_method"]:
                     flownetwork.convergence_check = True
@@ -81,7 +73,7 @@ def util_iterative_method(PARAMETERS, flownetwork, flow_balance):
                     flownetwork.convergence_check = False
                     iteration_plot = np.append(iteration_plot, convergence)
                     flownetwork.iteration += 1
-
+                    # print("iteration " + str(flownetwork.iteration))
                     if flownetwork.iteration % 50 == 0:
                         print("iteration " + str(flownetwork.iteration) + " " + str(convergence))
                         util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)
