@@ -22,11 +22,11 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,  # 1: generate hexagonal graph
+        "read_network_option": 3,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
-        "write_network_option": 1,  # 1: do not write anything
+        "write_network_option": 4,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
                                     # 3: write to vtp format
                                     # 4: write to two csv files
@@ -67,7 +67,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "not needed",
+        "pkl_path_igraph": "data/network/B6_B_01/b6_B_pre_stroke.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
@@ -80,7 +80,7 @@ PARAMETERS = MappingProxyType(
         # Stroke options
         ##########################
 
-        "induce_stroke_option": 3,       # 1: Don't induce stroke
+        "induce_stroke_option": 3,      # 1: Don't induce stroke
                                         # 2: Induce stroke in a hexagonal network - only required for "read_network_option" 1
                                         # 3: Induce stroke in a network reading diameters at stroke state from a csv file
 
@@ -98,17 +98,20 @@ PARAMETERS = MappingProxyType(
         "read_dist_parameters_option": 2,       # 1: Do not read anything
                                                 # 2: Read from csv file
 
-        "distensibility_ref_state_option": 4,   # 1: No update of diameters due to vessel distensibility
+        "distensibility_ref_state_option": 5,   # 1: No update of diameters due to vessel distensibility
                                                 # 2: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = p_base,
                                                     # d_ref = d_base
                                                 # 3: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
                                                     # d_ref computed based on Sherwin et al. (2003)
                                                 # 4: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
                                                     # d_ref computed based on Urquiza et al. (2006)
+                                                # 5: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                    # d_ref computed based on Rammos et al. (1998)
 
-        "distensibility_relation_option": 3,    # 1: No update of diameters due to vessel distensibility
+        "distensibility_relation_option": 4,    # 1: No update of diameters due to vessel distensibility
                                                 # 2: Relation based on Sherwin et al. (2003) - non linear p-A relation
                                                 # 3: Relation based on Urquiza et al. (2006) - non linear p-A relation
+                                                # 4: Relation based on Rammos et al. (1998) - linear p-A relation
 
         # Distensibility edge properties
         "csv_path_distensibility": "data/distensibility/distensibility_parameters.csv",
