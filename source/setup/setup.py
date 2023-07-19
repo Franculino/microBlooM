@@ -196,6 +196,9 @@ class SetupSimulation(Setup):
             case 4:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Urquiza et al. (2006).
                 imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureUrquiza(
                     PARAMETERS)
+            case 5:
+                imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureRammos(
+                    PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to define the reference state (distensibility_ref_state_option)")
 
