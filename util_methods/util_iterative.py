@@ -42,11 +42,14 @@ def util_iterative_method(PARAMETERS, flownetwork, flow_balance):
     while flownetwork.convergence_check is False:
         old_hematocrit = copy.copy(flownetwork.hd)
         old_flow = np.abs(copy.copy(flownetwork.flow_rate))
-
+        print("----- Iteration " + str(flownetwork.iteration) + " -----")
         # iteration n=1
         flownetwork.iterative_part_one()
         # flownetwork.hd = predictor_corrector_scheme(PARAMETERS, flownetwork, old_hematocrit)
         flownetwork.iterative_part_two()
+        print("Check flow balance: ...")
+        flow_balance.check_flow_balance()
+        print("Check flow balance: DONE")
 
         # check if we are in convergences
         match PARAMETERS["convergence_case"]:
@@ -73,7 +76,7 @@ def util_iterative_method(PARAMETERS, flownetwork, flow_balance):
                     flownetwork.convergence_check = False
                     iteration_plot = np.append(iteration_plot, convergence)
                     flownetwork.iteration += 1
-                    # print("iteration " + str(flownetwork.iteration))
+
                     if flownetwork.iteration % 50 == 0:
                         print("iteration " + str(flownetwork.iteration) + " " + str(convergence))
                         util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)

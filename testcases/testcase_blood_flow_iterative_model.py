@@ -50,7 +50,7 @@ PARAMETERS = MappingProxyType(
         # Blood properties
         "ht_constant": 4E-01,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
-        "boundary_hematocrit": [0.4] * 1276,  # [0.4] * 1276,  # [0.5,0.3,0.1] np.linspace(0.5, 0.1, 1276)
+        "boundary_hematocrit": [0.4] * 2000,  # [0.4] * 1276,  # [0.5,0.3,0.1] np.linspace(0.5, 0.1, 1276)
 
         # Machine error for float
         "machine_error": 1E-15,
@@ -125,9 +125,9 @@ print("Iterative Approach: ...")
 util_iterative_method(PARAMETERS, flow_network, flow_balance)
 print("Iterative Approach: DONE")
 
-print("Check flow balance: ...")
-flow_balance.check_flow_balance()
-print("Check flow balance: DONE")
+# print("Check flow balance: ...")
+# flow_balance.check_flow_balance()
+# print("Check flow balance: DONE")
 
 # Write the results to file
 flow_network.write_network()

@@ -59,9 +59,17 @@ class PressureFlowSolver(ABC):
         pressure = flownetwork.pressure
 
         #
+        if flownetwork.tollerance is None:
+            # Update flow rates based on the transmissibility and pressure.
+            flownetwork.flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
+            print("Number of zero flow vessel " + str(len(flownetwork.flow_rate[flownetwork.flow_rate == 0])) + " "
+                  + str(np.round((len(flownetwork.flow_rate[flownetwork.flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)) + "%")
+        else:
+            flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
+            flownetwork.flow_rate = np.where(np.abs(flow_rate) < flownetwork.tollerance, 0, flow_rate)
+            print("Number of zero flow vessel " + str(len(flownetwork.flow_rate[flownetwork.flow_rate == 0])) + " "
+                  + str(np.round((len(flownetwork.flow_rate[flownetwork.flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)) + "%")
 
-        # Update flow rates based on the transmissibility and pressure.
-        flownetwork.flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
         # flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
         # flownetwork.flow_rate = np.where(np.abs(flow_rate) < self._PARAMETERS["machine_error"], 0, flow_rate)
 

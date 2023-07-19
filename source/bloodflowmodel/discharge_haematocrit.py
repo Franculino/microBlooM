@@ -118,7 +118,6 @@ def edge_connected_dict(edge_list):
         node_connected[start].append(end)
         node_connected[end].append(start)
 
-    # Convert the defaultdicts to regular dictionaries if necessary
     edge_connected_position = dict(edge_connected_position)
     node_connected = dict(node_connected)
 
@@ -127,21 +126,7 @@ def edge_connected_dict(edge_list):
 
 class DischargeHaematocritPries1990(DischargeHaematocrit):
 
-    for edge, (start, end) in enumerate(edge_list):
-        edge_connected_position[start].append(edge)
-        edge_connected_position[end].append(edge)
-        node_connected[start].append(end)
-        node_connected[end].append(start)
-
-    # Convert the defaultdicts to regular dictionaries if necessary
-    edge_connected_position = dict(edge_connected_position)
-    node_connected = dict(node_connected)
-
-    return edge_connected_position, node_connected  # edge_connected
-
-
-class DischargeHaematocritPries1990(DischargeHaematocrit):
-    def q_rcs(self, case, flow_a_par, flow_b_par, flow_c_par, flow_a_d, flow_b_d, flow_c_d, hemat_a_par, hemat_b_par, hemat_c_par, hemat_a_d, hemat_b_d, hemat_c_d, **kwargs):
+    def qRCS(self, case, flow_a_par, flow_b_par, flow_c_par, flow_a_d, flow_b_d, flow_c_d, hemat_a_par, hemat_b_par, hemat_c_par, hemat_a_d, hemat_b_d, hemat_c_d, **kwargs):
         """
         check the RBC balance
         qRBC = q * Hdt
@@ -279,7 +264,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                                                        hemat_parent_plot)
         rbc_balance += self.qRCS(2, flow_parent, None, None, flow_daughter_a, flow_daughter_b, None, hemat_parent, None, None, hematocrit_a, hematocrit_b, None)
 
-        rbc_balance += self.q_rcs(2, flow_parent, None, None, flow_daughter_a, flow_daughter_b, None, hemat_parent, None, None, hematocrit_a, hematocrit_b, None)
         return hematocrit_a, hematocrit_b, rbc_balance
 
     def hematocrit_3_1(self, flow_parent_a, flow_parent_b, flow_parent_c, flow_daughter, hemat_parent_a, hemat_parent_b, hemat_parent_c, rbc_balance):
@@ -323,11 +307,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         threshold = 0.99
 
         # in case of 0 hematocrit in par is not possible to do phase separation
-        if hemat_par == 0 or flow_parent == 0:
-            sys.exit()
-            hemat_a, hemat_b = 0, 0
-
-        elif flow_a == 0 or flow_b == 0:
+        if flow_a == 0 and flow_b == 0:
             hemat_a, hemat_b = 0, 0
 
         else:
@@ -362,26 +342,26 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 hemat_b = (fractional_qRBCb * qRBCp) / flow_b
 
             # check if we are near the threshold
-            if hemat_b >= threshold:
-                hemat_surplus = hemat_b - threshold
-                fractional_RBCs_surplus = (hemat_surplus * flow_b) / qRBCp
+                if hemat_b >= threshold:
+                    hemat_surplus = hemat_b - threshold
+                    fractional_RBCs_surplus = (hemat_surplus * flow_b) / qRBCp
 
-                fractional_qRBCb = fractional_qRBCb - fractional_RBCs_surplus
-                fractional_qRBCa = fractional_qRBCa + fractional_RBCs_surplus
+                    fractional_qRBCb = fractional_qRBCb - fractional_RBCs_surplus
+                    fractional_qRBCa = fractional_qRBCa + fractional_RBCs_surplus
 
-                hemat_a = (fractional_qRBCa * qRBCp) / flow_a
-                hemat_b = (fractional_qRBCb * qRBCp) / flow_b
-                # for plot
+                    hemat_a = (fractional_qRBCa * qRBCp) / flow_a
+                    hemat_b = (fractional_qRBCb * qRBCp) / flow_b
+                    # for plot
 
-            elif hemat_a >= threshold:
-                hemat_surplus = hemat_a - threshold
-                fractional_RBCs_surplus = (hemat_surplus * flow_a) / qRBCp
+                elif hemat_a >= threshold:
+                    hemat_surplus = hemat_a - threshold
+                    fractional_RBCs_surplus = (hemat_surplus * flow_a) / qRBCp
 
-                # for plot
-                fractional_qRBCb = fractional_qRBCb + fractional_RBCs_surplus
-                fractional_qRBCa = fractional_qRBCa - fractional_RBCs_surplus
-                hemat_a = (fractional_qRBCa * qRBCp) / flow_a
-                hemat_b = (fractional_qRBCb * qRBCp) / flow_b
+                    # for plot
+                    fractional_qRBCb = fractional_qRBCb + fractional_RBCs_surplus
+                    fractional_qRBCa = fractional_qRBCa - fractional_RBCs_surplus
+                    hemat_a = (fractional_qRBCa * qRBCp) / flow_a
+                    hemat_b = (fractional_qRBCb * qRBCp) / flow_b
 
             fractional_a_qRBCs.append(fractional_qRBCa)
             fractional_b_qRBCs.append(fractional_qRBCb)
@@ -737,15 +717,62 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                                                                                flownetwork.hd[parent_a], flownetwork.hd[parent_b], flownetwork.hd[parent_c],
                                                                                                rbc_balance)
                         case 0, _:
-                            # print(node)
                             if len(edge_daughter) == 3:
+                                if np.sum(flow[edge_daughter] != 0) != 0:
+                                    print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(edge_daughter[0]) + " " + str(
+                                        edge_daughter[1]) + " " + str(edge_daughter[2]))
+                                    print(str(flow[edge_daughter[0]]) + " " + str(flow[edge_daughter[1]]) + " " + str(flow[edge_daughter[2]]))
                                 flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], flownetwork.hd[daughter_c] = 0, 0, 0
+
                             elif len(edge_daughter) == 2:
+                                if np.sum(flow[edge_daughter] != 0) != 0:
+                                    print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(edge_daughter[0]) + " " + str(
+                                        edge_daughter[1]))
+                                    print(str(flow[edge_daughter[0]]) + " " + str(flow[edge_daughter[1]]))
                                 flownetwork.hd[daughter_a], flownetwork.hd[daughter_b] = 0, 0
+
+                            elif len(edge_daughter) == 4:
+                                if np.sum(flow[edge_daughter] != 0) != 0:
+                                    print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(edge_daughter[0]) + " " + str(
+                                        edge_daughter[1]) + " " + str(edge_daughter[2]) + " " + str(edge_daughter[3]))
+                                    print(str(flow[edge_daughter[0]]) + " " + str(flow[edge_daughter[1]]) + " " + str(flow[edge_daughter[2]]) + " " + str(flow[edge_daughter[3]]))
+                                flownetwork.hd[edge_daughter[0]], flownetwork.hd[edge_daughter[1]], flownetwork.hd[edge_daughter[2]], flownetwork.hd[edge_daughter[3]] = 0, 0, 0, 0
+
                             else:
                                 flownetwork.hd[single_daughter] = 0
-                            #   print("single")
-                            #  print(edge_daughter)
+                                if np.sum(flow[edge_daughter] != 0) != 0:
+                                    print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(single_daughter))
+                                    print(str(flow[single_daughter]))
+
+                        case _, 0:
+                            # pass
+                            if len(parent_edge) == 3:
+                                if np.sum(flow[parent_edge] != 0) != 0:
+                                    print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent_edge[0]) + " " + str(parent_edge[1])
+                                          + " " + str(parent_edge[2]))
+                                    print(str(flow[parent_edge[0]]) + " " + str(flow[parent_edge[1]]) + " " + str(flow[parent_edge[2]]))
+
+                                flownetwork.hd[parent_a], flownetwork.hd[parent_b], flownetwork.hd[parent_c] = 0, 0, 0
+
+                            elif len(parent_edge) == 2:
+                                if np.sum(flow[parent_edge] != 0) != 0:
+                                    print(
+                                        "The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent_edge[0]) + " " + str(parent_edge[1]))
+                                    print(str(flow[parent_edge[0]]) + " " + str(flow[parent_edge[1]]))
+                                flownetwork.hd[parent_a], flownetwork.hd[parent_b] = 0, 0
+
+                            elif len(parent_edge) == 4:
+                                if np.sum(flow[parent_edge] != 0) != 0:
+                                    print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent_edge[0]) + " " + str(
+                                        parent_edge[1]) + " " + str(parent_edge[2]) + " " + str(parent_edge[3]))
+                                    print(str(flow[parent_edge[0]]) + " " + str(flow[parent_edge[1]]) + " " + str(flow[parent_edge[2]]) + " " + str(flow[parent_edge[3]]))
+                                flownetwork.hd[parent_edge[0]], flownetwork.hd[parent_edge[1]], flownetwork.hd[parent_edge[2]], flownetwork.hd[parent_edge[3]] = 0, 0, 0, 0
+                            else:
+                                if np.sum(flow[parent_edge] != 0) != 0:
+                                    print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent))
+                                    print(str(flow[parent]))
+                                flownetwork.hd[parent] = 0
+
             # with one more tab is possible to have the check at the end of the iteration
             # print("Check RBCs balance: ...")
             if rbc_balance > 0:
