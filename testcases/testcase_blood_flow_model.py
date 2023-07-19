@@ -21,7 +21,7 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,  # 1: generate hexagonal graph
+        "read_network_option": 2,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
@@ -33,13 +33,14 @@ PARAMETERS = MappingProxyType(
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
                                        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 3,  # 1: No RBCs (hd=0)
+        "rbc_impact_option": 1,  # 1: No RBCs (hd=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: Laws by Pries and Secomb (2005)
                                  # 4-...: todo: Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
-                             # 3-...: other solvers
+                             # 3: Direct Solver, with 1/boundary condition approach
+                             # 4: Direct Solver, with new approach for system matrix
 
         # Blood properties
         "ht_constant": 0.3,  # only required if RBC impact is considered
@@ -55,13 +56,13 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
-        "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
-        "csv_path_boundary_data": "data/network/b6_B_pre_061/boundary_node_data.csv",
+        "csv_path_vertex_data": "/Users/cucciolo/Desktop/microBlooM/MVN1/node_data.csv",
+        "csv_path_edge_data": "/Users/cucciolo/Desktop/microBlooM/MVN1/edge_data.csv",
+        "csv_path_boundary_data": "/Users/cucciolo/Desktop/microBlooM/MVN1/node_boundary_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
-        "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
+        "csv_boundary_vs": "nodeID", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p", #boundaryValue
 
         # Import network from igraph option. Only required for "read_network_option" 3
         "pkl_path_igraph": "data/network/b6_B_pre_061/b6_B_initial.pkl",

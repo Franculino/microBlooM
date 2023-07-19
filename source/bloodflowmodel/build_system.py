@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
 from scipy.sparse import coo_matrix, csc_matrix
-from scipy.sparse.linalg import spsolve
 
 
 class BuildSystem(ABC):

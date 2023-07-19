@@ -34,7 +34,7 @@ class RbcVelocity(ABC):
         :rtype: 1d numpy array
         """
         diameter = flownetwork.diameter
-        flow_rate = flownetwork.flow_rate
+        flow_rate = flownetwork.flow_rateOriginal
 
         return flow_rate / (np.square(diameter) * np.pi / 4)
 

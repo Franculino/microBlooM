@@ -5,7 +5,7 @@ from types import MappingProxyType
 
 import numpy as np
 from scipy.sparse import csc_matrix, csr_matrix, isspmatrix_csc
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import spsolve, norm, inv
 from pyamg import smoothed_aggregation_solver
 
 from source.bloodflowmodel.build_system import BuildSystemSparseCscNoOne, BuildSystemSparseCooNoOneSimple
@@ -50,6 +50,7 @@ class PressureFlowSolver(ABC):
         """
         edge_list = flownetwork.edge_list
         transmiss = flownetwork.transmiss
+        system_matrix = flownetwork.system_matrix
         pressure_One = flownetwork.pressure_One
         pressure_Original = flownetwork.pressure_Original
         pressure_OneSimple = flownetwork.pressure_OneSimple
@@ -58,6 +59,18 @@ class PressureFlowSolver(ABC):
         flownetwork.flow_rateOne = transmiss * (pressure_One[edge_list[:, 0]] - pressure_One[edge_list[:, 1]])
         flownetwork.flow_rateOneSimple = transmiss * (pressure_OneSimple[edge_list[:, 0]] - pressure_OneSimple[edge_list[:, 1]])
         flownetwork.flow_rateOriginal = transmiss * (pressure_Original[edge_list[:, 0]] - pressure_Original[edge_list[:, 1]])
+
+        # # Calculate the 2-norm of the inverse of the CSR matrix
+        # norm_csr = norm(system_matrix)
+        # # Calculate the 2-norm of the inverse of the CSR matrix
+        # norm_inv_csr = norm(inv(system_matrix))
+        # # Calculate the condition number
+        # cond = norm_csr * norm_inv_csr
+        # # Calculate number of accurate digits
+        # significant_digits = np.round((16 - np.log10(cond)), decimals=0)
+        # print("Condition number" + str(cond))
+        # print("Assuming as A and b accurate up to 16 decimal digits, the entries are accurate of 16 - " + str(np.round(np.log10(cond))) + " = " +
+        #   str(significant_digits) + " digit")
 
         # sys.exit()
 
@@ -122,6 +135,7 @@ class PressureFlowSolverSparseDirectImprove(PressureFlowSolver):
 
             # Compute the residual
             residualFullNodes = system_matrix.dot(flownetwork.pressure) - rhs
+        sys.exit()
 
 
 class PressureFlowSolverSparseDirectImproveUtil(PressureFlowSolver):
@@ -183,22 +197,17 @@ class PressureFlowSolverSparseDirectImproveUtil(PressureFlowSolver):
         are_arrays_similar(pressure_Original, pressure_One, 1)
 
         # RESIDUALS
-        print("Difference between residual computed with original method and new simple approach (FULL)")
-        are_arrays_similar(residual_Old_method_Full, residual_OneSimple_Full, 1)
+        print("Max residual computed with original method (FULL) " + str(np.max(residual_Old_method_Full)))
+        print("Max residual computed with new simple approach (FULL) " + str(np.max(residual_OneSimple_Full)))
 
-        print("Difference between residual of internal nodes computed with original method and new simple approach")
-        pressure_internal_node_Original = internal_nodes_pressure(pressure_Original, flownetwork.boundary_vs)
-        pressure_internal_node_OneSimple = internal_nodes_pressure(pressure_OneSimple, flownetwork.boundary_vs)
-        are_arrays_similar(pressure_internal_node_Original, pressure_internal_node_OneSimple, 1)
+        print("Max residual computed with original method (internal) " + str(np.max(internal_nodes(residual_Old_method_Full, flownetwork.boundary_vs))))
+        print("Max residual computed with new simple approach (internal) " + str(np.max(internal_nodes(residual_OneSimple_Full, flownetwork.boundary_vs))))
+        print("Max residual computed with Noone approach (internal) " + str(np.max(residual_Internal_Node)))
 
-        print("Difference between residual of internal nodes computed with original method and new approach")
-        pressure_internal_node_One = internal_nodes_pressure(pressure_OneSimple, flownetwork.boundary_vs)
-        are_arrays_similar(pressure_internal_node_Original, pressure_internal_node_One, 1)
-
-    #  sys.exit()
+        # sys.exit()
 
 
-def internal_nodes_pressure(pressure, boundary_vertices):
+def internal_nodes(pressure, boundary_vertices):
     # RHS
     # boolean mask to identify the element to be eliminated
     mask = np.ones(pressure.shape, dtype=bool)
@@ -211,13 +220,13 @@ def internal_nodes_pressure(pressure, boundary_vertices):
 
 def are_arrays_similar(arr1, arr2, threshold_percent):
     diff = np.abs(arr1 - arr2)
-    max_diff = np.mean(diff)
+    max_diff = np.max(diff)
     threshold = threshold_percent / 100.0 * np.max(np.abs(arr1))
-
+    percentage_diff = (max_diff / np.max(np.abs(arr1))) * 100.0
     if max_diff <= threshold:
-        return print(max_diff)
+        return print("Percentage of difference " + str(percentage_diff) + " %" + " Max difference " + str(max_diff))
     else:
-        return print(max_diff)
+        return print("Percentage of difference " + str(percentage_diff) + " %" + " Max difference " + str(max_diff))
 
 
 class PressureFlowSolverPyAMG(PressureFlowSolver):

@@ -40,6 +40,7 @@ class SetupSimulation(Setup):
     """
     Class for setting up a simulation that only includes the blood flow model
     """
+
     def setup_bloodflow_model(self, PARAMETERS):
         """
         Set up the simulation and returns various implementations of the blood flow model
@@ -102,15 +103,20 @@ class SetupSimulation(Setup):
         match PARAMETERS["solver_option"]:
             case 1:
                 imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
-                imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirect(PARAMETERS)  # Direct solver
+                imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirectImproveUtil(PARAMETERS)  # Direct solver #:TODO riportare all'originale
             case 2:
                 imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
                 imp_solver = pressure_flow_solver.PressureFlowSolverPyAMG(PARAMETERS)  # Iterative solver
+            case 3:
+                imp_buildsystem = build_system.BuildSystemSparseCooNoOneSimple(PARAMETERS)
+                imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirectImprove(PARAMETERS)  # Direct solver
+            case 4:
+                imp_buildsystem = build_system.BuildSystemSparseCscNoOne(PARAMETERS)
+                imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirectImprove(PARAMETERS)  # Iterative solver
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
         return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
-
 
     def setup_inverse_model(self, PARAMETERS):
         """

@@ -18,6 +18,9 @@ class FlowNetwork(object):
                  imp_solver: pressureflowsolver.PressureFlowSolver, imp_rbcvelocity: rbc_velocity.RbcVelocity,
                  PARAMETERS: MappingProxyType):
         # Network attributes
+        self.pressure_OneSimple = None  #:TODO: eliminare
+        self.pressure_Original = None
+        self.pressure_One = None
         self.nr_of_vs = None
         self.nr_of_es = None
 
@@ -37,13 +40,13 @@ class FlowNetwork(object):
         self.rbc_velocity = None
 
         # Network boundaries
-        self.boundary_vs = None # vertex ids of boundaries (1d np.array)
-        self.boundary_val =  None # boundary values (1d np.array)
-        self.boundary_type = None # boundary type (1: pressure, 2: flow rate)
+        self.boundary_vs = None  # vertex ids of boundaries (1d np.array)
+        self.boundary_val = None  # boundary values (1d np.array)
+        self.boundary_type = None  # boundary type (1: pressure, 2: flow rate)
 
         # Solver
-        self.system_matrix = None # system matrix of linear system of equations
-        self.rhs = None # right hand side of linear system of equations
+        self.system_matrix = None  # system matrix of linear system of equations
+        self.rhs = None  # right hand side of linear system of equations
 
         # "References" to implementations
         self._imp_readnetwork = imp_readnetwork
@@ -86,5 +89,3 @@ class FlowNetwork(object):
         self._imp_buildsystem.build_linear_system(self)
         self._imp_solver.update_pressure_flow(self)
         self._imp_rbcvelocity.update_velocity(self)
-
-
