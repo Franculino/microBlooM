@@ -253,7 +253,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
     def hematocrit_1_2(self, flow_parent, hemat_parent, flow_daughter_a, flow_daughter_b, rbc_balance, diameter_parent, diameter_a, diameter_b, fractional_a_qRBCs,
                        fractional_b_qRBCs, fractional_a_blood, fractional_b_blood, hemat_parent_plot):
 
-        if hemat_parent == 0 or flow_parent == 0:
+        if hemat_parent == 0 and flow_parent == 0:
             hematocrit_a, hematocrit_b = 0, 0
 
         else:
@@ -341,7 +341,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 hemat_a = (fractional_qRBCa * qRBCp) / flow_a
                 hemat_b = (fractional_qRBCb * qRBCp) / flow_b
 
-            # check if we are near the threshold
+                # check if we are near the threshold
                 if hemat_b >= threshold:
                     hemat_surplus = hemat_b - threshold
                     fractional_RBCs_surplus = (hemat_surplus * flow_b) / qRBCp
@@ -458,11 +458,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                         n_daughter = 3
                     case 0:  # no daughters
                         n_daughter = 0
-                # case _:
-                # print(node)
-                # print("too many daughter edge: " + str(edge_daughter) + " with parent " + str(parent_edge))
-
-                # sys.exit()
 
                 # PARENTS
                 # check zero flow or Hd
@@ -483,11 +478,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
                     case 0:
                         n_parent = 0
-
-                    # case _:
-                    # print(node)
-                    # print("too many parent edge: " + str(parent_edge) + " with daughters " + str(edge_daughter))
-                    # sys.exit()
 
                 # if flow_hd_check:
                 # check it the node is a boundary node
@@ -552,9 +542,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 diameter_ghost = diameter[single_daughter]
                                 # flow ghost daughter: surplus flow between the parent and daughter vessel
                                 flow_ghost = flow[parent] - flow[single_daughter]
-                                # Nan control
-                                # flow[parent] = self.is_nan(flow[parent])
-                                # flownetwork.hd[parent] = self.is_nan(flownetwork.hd[parent])
                                 # compute hematocrit for daughter vessel and check RBCs value
                                 flownetwork.hd[single_daughter], hemat_ghost_daughter, rbc_balance = self.hematocrit_1_2(flow[parent], flownetwork.hd[parent],
                                                                                                                          flow[single_daughter],
@@ -668,8 +655,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                         # (-<)
                         case 1, 2:
                             # compute phase separation and check RBC balance
-                            # flow[parent] = self.is_nan(flow[parent])
-                            # flownetwork.hd[parent] = self.is_nan(flownetwork.hd[parent])
                             flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], rbc_balance = self.hematocrit_1_2(flow[parent], flownetwork.hd[parent], flow[daughter_a],
                                                                                                                       flow[daughter_b],
                                                                                                                       rbc_balance, diameter[parent], diameter[daughter_a],

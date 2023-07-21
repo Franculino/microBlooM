@@ -312,18 +312,17 @@ def util_display_graph(g, PARAMETERS, flownetwork):
 
 
 def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS):
-    fig = plt.figure(figsize=(20, 20), dpi=200)
+    fig = plt.figure(figsize=(30, 30), dpi=200)
     # ax = fig.add_subplot(111)
     plt.style.use('seaborn-whitegrid')
 
     plt.plot(range(0, flownetwork.iteration), iteration_plot, "-")  # , '-ok')
-    plt.title("Convergence plot after " + str(flownetwork.iteration) + " iteration")
-    plt.xlabel("Iteration", fontsize=18)
-    plt.ylabel("Error difference", fontsize=18)
+    plt.title("Convergence plot after " + str(flownetwork.iteration) + " iteration", fontsize=30)
+    plt.xlabel("Iteration", fontsize=30)
+    plt.ylabel("Error difference", fontsize=30)
     plt.yscale("log")
-    plt.yticks(fontsize=12)
-    # for i, v in enumerate(iteration_plot):
-    #    ax.annotate(str("{:.1e}".format(v)), xy=(i, v), xytext=(-17, 17), textcoords='offset points')
+    plt.yticks(fontsize=30)
+    plt.xticks(fontsize=30)
 
     if PARAMETERS['save']:
         plt.savefig(

@@ -42,20 +42,19 @@ def util_iterative_method(PARAMETERS, flownetwork, flow_balance):
     while flownetwork.convergence_check is False:
         old_hematocrit = copy.copy(flownetwork.hd)
         old_flow = np.abs(copy.copy(flownetwork.flow_rate))
-        print("----- Iteration " + str(flownetwork.iteration) + " -----")
+        # print("----- Iteration " + str(flownetwork.iteration) + " -----")
         # iteration n=1
         flownetwork.iterative_part_one()
         # flownetwork.hd = predictor_corrector_scheme(PARAMETERS, flownetwork, old_hematocrit)
         flownetwork.iterative_part_two()
-        print("Check flow balance: ...")
+        # print("Check flow balance: ...")
         flow_balance.check_flow_balance()
-        print("Check flow balance: DONE")
+        # print("Check flow balance: DONE")
 
         # check if we are in convergences
         match PARAMETERS["convergence_case"]:
             case 1:
-                # convergence = np.abs((flownetwork.hd * np.abs(flownetwork.flow_rate)) - (old_hematocrit * np.abs(old_flow)))
-                convergence = np.average(flownetwork.hd * np.abs(flownetwork.flow_rate) - (old_hematocrit * np.abs(old_flow)))
+                convergence = np.abs(np.average((flownetwork.hd * np.abs(flownetwork.flow_rate)) - (old_hematocrit * old_flow)))
                 if convergence < PARAMETERS["epsilon"]:
                     flownetwork.convergence_check = True
                 else:
@@ -63,12 +62,13 @@ def util_iterative_method(PARAMETERS, flownetwork, flow_balance):
                     iteration_plot = np.append(iteration_plot, convergence)
                     flownetwork.iteration += 1
 
-                    if flownetwork.iteration % 10 == 0:
-                        print("iteration " + str(flownetwork.iteration) + " " + str(convergence))
-                        util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)
+                    if flownetwork.iteration % 50 == 0:
+                        print(f"iteration {str(flownetwork.iteration)}: {str(convergence)}")
+                        # util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)
+                        print(f"Min error value: {np.min(iteration_plot)}")
 
             case 2:
-                convergence = np.abs(np.average(np.abs(flownetwork.flow_rate)) - np.average(old_flow)) / np.average(np.abs(old_flow))
+                convergence = np.abs(np.average(np.abs(flownetwork.flow_rate)) - np.average(old_flow)) / np.average(old_flow)
 
                 if convergence < PARAMETERS["epsilon_second_method"]:
                     flownetwork.convergence_check = True
@@ -78,16 +78,14 @@ def util_iterative_method(PARAMETERS, flownetwork, flow_balance):
                     flownetwork.iteration += 1
 
                     if flownetwork.iteration % 50 == 0:
-                        print("iteration " + str(flownetwork.iteration) + " " + str(convergence))
-                        util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)
+                        print(f"iteration {str(flownetwork.iteration)}: {str(convergence)}")
+                        # util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)
+                        print(f"Min error value: {np.min(iteration_plot)}")
 
-    # iteration_plot = np.append(iteration_plot, 0)
     iteration_plot = np.append(iteration_plot, 0)
     flownetwork.iteration += 1
     print("Error at each iteration " + str(iteration_plot))
     print("Convergence: DONE in -> " + str(flownetwork.iteration))
-
-    # util_display_graph(graph_creation(flownetwork), PARAMETERS, flownetwork)
 
     util_convergence_plot(flownetwork, iteration_plot, PARAMETERS)
 

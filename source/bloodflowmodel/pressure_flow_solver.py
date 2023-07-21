@@ -59,16 +59,19 @@ class PressureFlowSolver(ABC):
         pressure = flownetwork.pressure
 
         #
-        if flownetwork.tollerance is None:
+        if flownetwork.tolerance is None:
             # Update flow rates based on the transmissibility and pressure.
             flownetwork.flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
             print("Number of zero flow vessel " + str(len(flownetwork.flow_rate[flownetwork.flow_rate == 0])) + " "
                   + str(np.round((len(flownetwork.flow_rate[flownetwork.flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)) + "%")
+            print(f"min flow rate = {np.min(np.abs(flownetwork.flow_rate[flownetwork.flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flownetwork.flow_rate))}")
+
         else:
             flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
-            flownetwork.flow_rate = np.where(np.abs(flow_rate) < flownetwork.tollerance, 0, flow_rate)
-            print("Number of zero flow vessel " + str(len(flownetwork.flow_rate[flownetwork.flow_rate == 0])) + " "
-                  + str(np.round((len(flownetwork.flow_rate[flownetwork.flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)) + "%")
+            flownetwork.flow_rate = np.where(np.abs(flow_rate) < flownetwork.tolerance, 0, flow_rate)
+            if flownetwork.iteration <=2:
+                print(f"Number of zero flow vessel {len(flownetwork.flow_rate[flownetwork.flow_rate == 0])} "
+                      f"{np.round((len(flownetwork.flow_rate[flownetwork.flow_rate == 0]) / flownetwork.nr_of_es) *100, decimals = 2)}")
 
         # flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
         # flownetwork.flow_rate = np.where(np.abs(flow_rate) < self._PARAMETERS["machine_error"], 0, flow_rate)

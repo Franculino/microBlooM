@@ -18,7 +18,7 @@ class FlowNetwork(object):
                  imp_solver: pressureflowsolver.PressureFlowSolver, imp_rbcvelocity: rbc_velocity.RbcVelocity,
                  PARAMETERS: MappingProxyType):
         # Network attributes
-        self.tollerance = None
+        self.tolerance = None
         self.min_flow = None
         self.eps_eff = None
         self.nr_of_vs = None
