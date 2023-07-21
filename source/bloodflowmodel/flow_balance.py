@@ -50,5 +50,12 @@ class FlowBalance(object):
             import sys
             sys.exit("Is globally balanced: " + str(is_globally_balanced) + "(with tol " + str(tol_flow) + ")")
 
-        return
+        # zero-flow-threshold
+        # The zero flow threshold is set as the max of the mass balance error for the internal nodes
+        if self.flownetwork.zeroFlowThreshold is None:
+            # max of the mass balance error for the internal nodes
+            self.flownetwork.zeroFlowThreshold = np.max(local_balance)
+            # print to check the value of the threshold
+            print("Tolerance :" + str(self.flownetwork.zeroFlowThreshold))
 
+        return

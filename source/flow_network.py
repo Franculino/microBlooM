@@ -17,6 +17,7 @@ class FlowNetwork(object):
                  imp_transmiss: transmissibility.Transmissibility, imp_buildsystem: buildsystem.BuildSystem,
                  imp_solver: pressureflowsolver.PressureFlowSolver, imp_rbcvelocity: rbc_velocity.RbcVelocity,
                  PARAMETERS: MappingProxyType):
+
         # Network attributes
         self.nr_of_vs = None
         self.nr_of_es = None
@@ -54,6 +55,9 @@ class FlowNetwork(object):
         self._imp_buildsystem = imp_buildsystem
         self._imp_solver = imp_solver
         self._imp_rbcvelocity = imp_rbcvelocity
+
+        # Threshold for zero-loops
+        self.zeroFlowThreshold = None
 
         # "Reference" to parameter dict
         self._PARAMETERS = PARAMETERS
