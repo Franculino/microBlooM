@@ -17,3 +17,4 @@ MVN2
 testcases/testcase_blood_flow_iterative_model.py.pclprof
 *.pclprof
 data_plot
+B6_B_01
