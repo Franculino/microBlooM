@@ -5,12 +5,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from math import e
 from numpy import arange
+import seaborn as sns
+from line_profiler_pycharm import profile
 
 
 def _logit(x):
     return np.log(x / (1 - x))
 
 
+@profile
 def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
     x_o_init = 1.12  # micrometers
     A_o_init = 15.47  # micrometers
@@ -64,14 +67,15 @@ def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
     return fractional_qRBCa, fractional_flow_a, fractional_qRBCb, fractional_flow_b
 
 
+@profile
 def s_curve_util_trifurcation(PARAMETERS, flownetwork):
     plt.figure(figsize=(13, 13), dpi=200)
     plt.style.use('seaborn-whitegrid')
-    print(flownetwork.fractional_trifurc_blood)
+    # print(flownetwork.fractional_trifurc_blood)
     i = 0
     while i < len(flownetwork.fractional_trifurc_blood):
         plt.plot(flownetwork.fractional_trifurc_blood[i:i + 3], flownetwork.fractional_trifurc_RBCs[i:i + 3], "o")
-        print(flownetwork.fractional_trifurc_blood[i:i + 3])
+        # print(flownetwork.fractional_trifurc_blood[i:i + 3])
         i += 3
 
     plt.plot([0, 0.5, 1], [0, 0.5, 1], 'black')
@@ -91,6 +95,7 @@ def s_curve_util_trifurcation(PARAMETERS, flownetwork):
     # pass
 
 
+@profile
 def s_curve_util(PARAMETERS, flownetwork):
     lista, list_b, listc, listd, liste, listf, listg, listh, cc, dd, ee, ff, gg, hh, ii, kk = [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
     plt.figure(figsize=(13, 13), dpi=200)
@@ -149,6 +154,7 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.show()
 
 
+@profile
 def s_curve_personalized_thersholds(flownetwork, PARAMETERS, interval):
     lista, list_b, listc, listd, liste, listf, listg, listh, cc, dd, ee, ff, gg, hh, ii, kk = [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
     plt.figure(figsize=(13, 13), dpi=200)
@@ -223,6 +229,7 @@ def s_curve_personalized_thersholds(flownetwork, PARAMETERS, interval):
     plt.show()
 
 
+@profile
 def graph_creation(flownetwork):
     edge_list = flownetwork.edge_list
     graph = ig.Graph(edge_list.tolist())  # Generate igraph based on edge_list
@@ -254,6 +261,7 @@ def graph_creation(flownetwork):
     return graph
 
 
+@profile
 def util_display_graph(g, PARAMETERS, flownetwork):
     """
     Function to display the graph and give particulary color to each part
@@ -311,6 +319,7 @@ def util_display_graph(g, PARAMETERS, flownetwork):
     plt.show()
 
 
+@profile
 def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS):
     fig = plt.figure(figsize=(30, 30), dpi=200)
     # ax = fig.add_subplot(111)
@@ -327,4 +336,57 @@ def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS):
     if PARAMETERS['save']:
         plt.savefig(
             PARAMETERS['path_for_graph'] + '/iteration_graph/convergence_plot.png')
+    plt.show()
+
+
+def percentage_lower_than(data, value):
+    """
+    Calculate the percentage of elements in the dataset that are lower than the given value.
+
+    Parameters:
+        data (numpy.ndarray): The dataset.
+        value (float): The value to compare with.
+
+    Returns:
+        float: The percentage of elements lower than the given value.
+    """
+    lower_count = np.sum(data < value)
+    total_count = len(data)
+    percentage = (lower_count / total_count) * 100
+    return percentage
+
+
+def frequency_plot(flownetwork, data, title, x_axis, color_plot):
+    mean_val = np.mean(data)
+    median_val = np.median(data)
+    max_val = np.max(data)
+
+    # print("The value for " + str(title) + " of: median = " + str(median_val) + " mean = " + str(mean_val) + " min = " + str(np.min(data[data != 0])) + " max = " + str(max_val))
+
+    percentage = percentage_lower_than(np.abs(data), flownetwork.zeroFlowThreshold)
+
+    bin_count = 20000
+
+    sns.histplot(data, bins=bin_count, kde=False, color=color_plot, edgecolor='white', stat="percent")
+
+    plt.xlabel(x_axis)
+    plt.ylabel('Percentage (%)')
+    plt.title(title)
+    sns.despine(left=True)
+    plt.grid(axis='y', alpha=0.5)
+    plt.xticks(fontsize=8)
+    plt.tick_params(axis='y', which='both', color='#f0f0f0')
+
+    bin_heights, _ = np.histogram(data, bins=bin_count)
+
+    plt.axvline(mean_val, color='red', linestyle='dashed', label='Mean', linewidth=1)
+    plt.axvline(median_val, color='blue', linestyle='dashed', label='Median', linewidth=1)
+    plt.axvline(max_val, color='green', linestyle='dashed', label='Max', linewidth=1)
+    plt.axvline(flownetwork.zeroFlowThreshold, color='orange', linestyle='dashed', label='Tolerance', linewidth=1)
+
+    plt.xscale('log')
+
+    plt.legend(loc='upper right')
+    plt.gca().set_facecolor('#f0f0f0')
+    plt.tight_layout()
     plt.show()

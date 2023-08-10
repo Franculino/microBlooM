@@ -7,7 +7,7 @@ import source.bloodflowmodel.pressure_flow_solver as pressureflowsolver
 import source.bloodflowmodel.build_system as buildsystem
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
 from types import MappingProxyType
-
+from line_profiler_pycharm import profile
 
 class FlowNetwork(object):
     # todo docstring and explain all attributes
@@ -18,7 +18,6 @@ class FlowNetwork(object):
                  imp_solver: pressureflowsolver.PressureFlowSolver, imp_rbcvelocity: rbc_velocity.RbcVelocity,
                  PARAMETERS: MappingProxyType):
         # Network attributes
-        self.tolerance = None
         self.min_flow = None
         self.eps_eff = None
         self.nr_of_vs = None
@@ -63,6 +62,9 @@ class FlowNetwork(object):
         self._imp_solver = imp_solver
         self._imp_rbcvelocity = imp_rbcvelocity
 
+        # Threshold for zero-loops
+        self.zeroFlowThreshold = None
+
         # "Reference" to parameter dict
         self._PARAMETERS = PARAMETERS
         return
@@ -95,15 +97,14 @@ class FlowNetwork(object):
         self._imp_solver.update_pressure_flow(self)
         self._imp_rbcvelocity.update_velocity(self)
 
-    def iterative_part_one(self):
+    @profile
+    def iterative_approach(self):
         """
         Update the hematocrit with iterative method, after a first normal first iteration
         """
         self._imp_ht.update_ht(self)
         self._imp_hd.update_hd(self)
         self._imp_transmiss.update_transmiss(self)
-
-    def iterative_part_two(self):
         self._imp_buildsystem.build_linear_system(self)
         self._imp_solver.update_pressure_flow(self)
         self._imp_rbcvelocity.update_velocity(self)

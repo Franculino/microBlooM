@@ -33,7 +33,7 @@ class BuildSystemSparseCoo(BuildSystem):
     """
     Class for building a sparse linear system of equations (coo_matrix).
     """
-
+    @profile
     def build_linear_system(self, flownetwork):
         """
         Fast method to build a linear system of equation. The sparse system matrix is COOrdinate format. The right

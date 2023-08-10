@@ -5,18 +5,12 @@ A python script to simulate stationary blood flow in microvascular networks. Cap
 3. Solve for flow rates, pressures and RBC velocities
 4. Save the results in a file
 """
-import copy
-import sys
-import numpy as np
-import pandas as pd
 
-import util_methods
 from source.flow_network import FlowNetwork
 from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
-from util_methods.display_graph import display_graph_util
-from util_methods.util_iterative import util_iterative_method
+from source.bloodflowmodel.iterative_routine import util_iterative_method
 
 # MappingProxyType is basically a const dict.
 # todo: read parameters from file; need a good way to import from human readable file (problem: json does not support
@@ -44,13 +38,12 @@ PARAMETERS = MappingProxyType(
         "solver_option": 1,     # 1: Direct solver
                                 # 2: PyAMG solver
                                 # 3-...: other solvers
-        "convergence_case": 2,  # 1: Difference between two iteration of the qRBCs
-                                # 2: Normalize error based on the flow
+
 
         # Blood properties
         "ht_constant": 4E-01,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
-        "boundary_hematocrit": [0.4] * 2000,  # [0.4] * 1276,  # [0.5,0.3,0.1] np.linspace(0.5, 0.1, 1276)
+        "boundary_hematocrit": [0.4] * 2000,
 
         # Machine error for float
         "machine_error": 1E-15,
@@ -71,18 +64,18 @@ PARAMETERS = MappingProxyType(
 
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "/Users/cucciolo/Desktop/microBlooM/MVN1/node_data.csv",
-        "csv_path_edge_data": "/Users/cucciolo/Desktop/microBlooM/MVN1/edge_data.csv",
-        "csv_path_boundary_data": "/Users/cucciolo/Desktop/microBlooM/MVN1/node_boundary_data.csv",
+        "csv_path_vertex_data": "/Users/cucciolo/Desktop/microBlooM/MVN2/node_data.csv",
+        "csv_path_edge_data": "/Users/cucciolo/Desktop/microBlooM/MVN2/edge_data.csv",
+        "csv_path_boundary_data": "/Users/cucciolo/Desktop/microBlooM/MVN2/node_boundary_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
         "csv_boundary_vs": "nodeID", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "/Users/cucciolo/Desktop/Bern/GraphHoney.pkl",
+        "pkl_path_igraph": "/Users/cucciolo/Desktop/microBlooM/B6_B_01/b6_B_pre_stroke.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
-        "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
+        "ig_boundary_type": "boundaryType",  # 1: pressure & 2: fl<ow rate
         "ig_boundary_value": "boundaryValue",
 
         # Write options

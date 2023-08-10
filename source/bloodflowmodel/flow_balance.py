@@ -110,7 +110,7 @@ class FlowBalance(object):
             upper_value = sorted_data[upper_index]
             return lower_value + (position - lower_index) * (upper_value - lower_value)
 
-    def find_approx_percentile_of_value(data, value):
+    def find_approx_percentile_of_value(self,data, value):
         # Step 1: Sort the data in ascending order
         sorted_data = sorted(data)
 
@@ -132,36 +132,32 @@ class FlowBalance(object):
         boundary_vs = self.flownetwork.boundary_vs
         flow_balance = self._get_flow_balance()
 
-        # to create the plot of the flow_rate
-
-        # to create the plot of the flow_rate
-
         ref_flow = np.abs(flow_rate[boundary_vs[0]])
         tol_flow = tol * ref_flow
 
         is_inside_node = np.logical_not(np.in1d(np.arange(nr_of_vs), boundary_vs))
         local_balance = np.abs(flow_balance[is_inside_node])
+        is_locally_balanced = local_balance < tol_flow
+        if False in np.unique(is_locally_balanced):
+            import sys
+            sys.exit("Is locally balanced: " + str(np.unique(is_locally_balanced)) + "(with tol " + str(tol_flow) + ")")
 
-        if self.flownetwork.tolerance is None:
-            self.flownetwork.tolerance = np.max(local_balance)
-            print("tollerance :" + str(self.flownetwork.tolerance))
-            print(f"min local_balance = {np.min(np.abs(local_balance[local_balance != 0]))} and max local_balance = {np.max(np.abs(local_balance))}")
-            # self.frequency_plot(np.abs(flow_rate), "Flow Rate of Original Approach", "Flow Rate", "lightblue")
+        balance_boundaries = flow_balance[boundary_vs]
+        global_balance = np.abs(np.sum(balance_boundaries))
+        is_globally_balanced = global_balance < tol_flow
+        if not is_globally_balanced:
+            import sys
+            sys.exit("Is globally balanced: " + str(is_globally_balanced) + "(with tol " + str(tol_flow) + ")")
 
-        else:
-            # print(f"min flow rate = {np.min(np.abs(flow_rate[flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flow_rate))}")
-            # print(f"min local_balance = {np.min(np.abs(local_balance[local_balance != 0]))} and max local_balance = {np.max(np.abs(local_balance))}")
+        # zero-flow-threshold
+        # The zero flow threshold is set as the max of the mass balance error for the internal nodes
+        if self.flownetwork.zeroFlowThreshold is None:
+            # max of the mass balance error for the internal nodes
+            self.flownetwork.zeroFlowThreshold = np.max(local_balance)
+            # print to check the value of the threshold
+            print("Tolerance :" + str(self.flownetwork.zeroFlowThreshold))
 
-            is_locally_balanced = local_balance < tol_flow
-            if False in np.unique(is_locally_balanced):
-                import sys
-                sys.exit("Is locally balanced: " + str(np.unique(is_locally_balanced)) + "(with tol " + str(tol_flow) + ")")
-
-            balance_boundaries = flow_balance[boundary_vs]
-            global_balance = np.abs(np.sum(balance_boundaries))
-            is_globally_balanced = global_balance < tol_flow
-            if not is_globally_balanced:
-                import sys
-                sys.exit("Is globally balanced: " + str(is_globally_balanced) + "(with tol " + str(tol_flow) + ")")
+            percentage = self.percentage_lower_than(np.abs(flow_rate), self.flownetwork.zeroFlowThreshold)
+            print(f"The percentage of elements lower than {self.flownetwork.zeroFlowThreshold} is: {percentage:.2f}%")
 
         return
