@@ -4,7 +4,7 @@ __pycache__
 .DS_Store
 .idea
 
-data/out
+
 
 
 different_diameters
@@ -18,3 +18,10 @@ testcases/testcase_blood_flow_iterative_model.py.pclprof
 *.pclprof
 data_plot
 B6_B_01
+util_methods
+9.png
+data/out/iteration_graph
+data/out/extract_value
+networks04
+data/out
+job.sh

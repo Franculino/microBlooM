@@ -1,7 +1,8 @@
+import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
-from line_profiler_pycharm import profile
+#from line_profiler_pycharm import profile
 from scipy.sparse import coo_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve
 
@@ -33,7 +34,8 @@ class BuildSystemSparseCoo(BuildSystem):
     """
     Class for building a sparse linear system of equations (coo_matrix).
     """
-    @profile
+
+    #@profile
     def build_linear_system(self, flownetwork):
         """
         Fast method to build a linear system of equation. The sparse system matrix is COOrdinate format. The right
@@ -79,7 +81,6 @@ class BuildSystemSparseCoo(BuildSystem):
         rhs[boundary_vertices[boundary_types == 1]] = boundary_values[boundary_types == 1]
         # Assign flow rate boundary value to right hand side vector.
         rhs[boundary_vertices[boundary_types == 2]] = boundary_values[boundary_types == 2]  # assign flow source term to rhs
-
         # Build the system matrix and assign the right hand side vector.
         flownetwork.system_matrix = coo_matrix((data, (row, col)), shape=(nr_of_vs, nr_of_vs))
         flownetwork.rhs = rhs
@@ -91,7 +92,7 @@ class BuildSystemSparseCooNoOneSimple(BuildSystem):
     Valid in case of pressure
     """
 
-    @profile
+    #@profile
     def build_linear_system(self, flownetwork):
         """
         Fast method to build a linear system of equation. The sparse system matrix is COOrdinate format. The right
@@ -166,7 +167,7 @@ class BuildSystemSparseCooNoOne(BuildSystem):
     Class for building a sparse linear system of equations (coo_matrix) without one in the matrix.
     """
 
-    @profile
+    #@profile
     def build_linear_system(self, flownetwork):
         """
         Fast method to build a linear system of equation. The sparse system matrix is COOrdinate format. The right

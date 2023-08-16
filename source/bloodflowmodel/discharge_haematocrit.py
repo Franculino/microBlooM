@@ -4,7 +4,7 @@ import sys
 
 import math
 import numpy as np
-from line_profiler_pycharm import profile
+#from line_profiler_pycharm import profile
 from math import e
 import copy
 from collections import defaultdict
@@ -26,9 +26,9 @@ class DischargeHaematocrit(ABC):
         :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
         """
         self._PARAMETERS = PARAMETERS
-        self.x_o_init = 1.12  # micrometers
-        self.A_o_init = 15.47  # micrometers
-        self.B_o_init = 8.13  # micrometers
+        self.x_o_init = 0.964  # micrometers
+        self.A_o_init = 13.29  # micrometers
+        self.B_o_init = 6.98  # micrometers
 
     @abstractmethod
     def update_hd(self, flownetwork):
@@ -295,7 +295,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
         return x_0, A, B
 
-    @profile
+    #@profile
     def get_erythrocyte_fraction(self, hemat_par, diam_par, diam_a, diam_b,
                                  flow_parent, flow_a, flow_b,
                                  fractional_a_qRBCs, fractional_b_qRBCs, fractional_a_blood, fractional_b_blood,
@@ -321,7 +321,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 fractional_qRBCa, fractional_qRBCb = 0, 1
 
             elif x_0 < fractional_flow_a < (1 - x_0):
-                internal_logit = (fractional_flow_a - x_0) / (1 - x_0)
+                internal_logit = (fractional_flow_a - x_0) / (1 - (2 * x_0))
                 logit_result = A + B * _logit(internal_logit)
                 fractional_qRBCa = (pow(e, logit_result) / (1 + pow(e, logit_result)))
                 fractional_qRBCb = 1 - fractional_qRBCa
@@ -377,7 +377,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 sys.exit()
         return hemat_a, hemat_b
 
-    @profile
+    #@profile
     def update_hd(self, flownetwork):
         flownetwork.boundary_hematocrit = self._PARAMETERS["boundary_hematocrit"]
         flownetwork.fractional_a_qRBCs, flownetwork.fractional_b_qRBCs = [], []
@@ -481,7 +481,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 # if flow_hd_check:
                 # check it the node is a boundary node
                 if node[1] in boundary_vs:
-                    # if np.isin(node[1], flownetwork.boundary_vs):
                     # check the flow between parents and daughters
                     match n_parent, n_daughter:
                         # grade = 2

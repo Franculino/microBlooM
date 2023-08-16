@@ -4,16 +4,15 @@ from igraph import Graph, Plot
 import matplotlib.pyplot as plt
 import numpy as np
 from math import e
+from matplotlib.ticker import ScalarFormatter, MultipleLocator
 from numpy import arange
 import seaborn as sns
-from line_profiler_pycharm import profile
 
 
 def _logit(x):
     return np.log(x / (1 - x))
 
 
-@profile
 def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
     x_o_init = 1.12  # micrometers
     A_o_init = 15.47  # micrometers
@@ -67,7 +66,6 @@ def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
     return fractional_qRBCa, fractional_flow_a, fractional_qRBCb, fractional_flow_b
 
 
-@profile
 def s_curve_util_trifurcation(PARAMETERS, flownetwork):
     plt.figure(figsize=(13, 13), dpi=200)
     plt.style.use('seaborn-whitegrid')
@@ -95,7 +93,7 @@ def s_curve_util_trifurcation(PARAMETERS, flownetwork):
     # pass
 
 
-@profile
+
 def s_curve_util(PARAMETERS, flownetwork):
     lista, list_b, listc, listd, liste, listf, listg, listh, cc, dd, ee, ff, gg, hh, ii, kk = [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
     plt.figure(figsize=(13, 13), dpi=200)
@@ -154,7 +152,7 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.show()
 
 
-@profile
+
 def s_curve_personalized_thersholds(flownetwork, PARAMETERS, interval):
     lista, list_b, listc, listd, liste, listf, listg, listh, cc, dd, ee, ff, gg, hh, ii, kk = [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
     plt.figure(figsize=(13, 13), dpi=200)
@@ -229,7 +227,7 @@ def s_curve_personalized_thersholds(flownetwork, PARAMETERS, interval):
     plt.show()
 
 
-@profile
+
 def graph_creation(flownetwork):
     edge_list = flownetwork.edge_list
     graph = ig.Graph(edge_list.tolist())  # Generate igraph based on edge_list
@@ -261,7 +259,7 @@ def graph_creation(flownetwork):
     return graph
 
 
-@profile
+
 def util_display_graph(g, PARAMETERS, flownetwork):
     """
     Function to display the graph and give particulary color to each part
@@ -319,19 +317,19 @@ def util_display_graph(g, PARAMETERS, flownetwork):
     plt.show()
 
 
-@profile
-def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS):
-    fig = plt.figure(figsize=(30, 30), dpi=200)
-    # ax = fig.add_subplot(111)
-    plt.style.use('seaborn-whitegrid')
 
+def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS, title):
+    # plt.figure(figsize=(15, 15), dpi=100)
+
+    plt.style.use('seaborn-whitegrid')
+    # title = "Convergence plot after " + str(flownetwork.iteration) + " iteration"
     plt.plot(range(0, flownetwork.iteration), iteration_plot, "-")  # , '-ok')
-    plt.title("Convergence plot after " + str(flownetwork.iteration) + " iteration", fontsize=30)
-    plt.xlabel("Iteration", fontsize=30)
-    plt.ylabel("Error difference", fontsize=30)
+    plt.title(title, fontsize=10)
+    plt.xlabel("Iteration", fontsize=10)
+    plt.ylabel("Error difference", fontsize=10)
     plt.yscale("log")
-    plt.yticks(fontsize=30)
-    plt.xticks(fontsize=30)
+    # plt.yticks(fontsize=10)
+    plt.xticks(fontsize=10)
 
     if PARAMETERS['save']:
         plt.savefig(

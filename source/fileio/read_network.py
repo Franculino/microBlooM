@@ -223,8 +223,9 @@ class ReadNetworkCsv(ReadNetwork):
 
         print("Number of  vs: " + str(flownetwork.nr_of_vs))
         print("Number of boundary vs: " + str(len(flownetwork.boundary_vs)))
+        # print(flownetwork.boundary_vs)
+        # print(flownetwork.boundary_val)
         print("Number of  es: " + str(flownetwork.nr_of_es))
-
 
 
 class ReadNetworkIgraph(ReadNetwork):
@@ -287,6 +288,10 @@ class ReadNetworkIgraph(ReadNetwork):
         flownetwork.boundary_val = boundary_values[np.logical_or(boundary_types == 1, boundary_types == 2)]
         flownetwork.boundary_vs = np.arange(flownetwork.nr_of_vs)[
             np.logical_or(boundary_types == 1, boundary_types == 2)]
+
+        print("Number of  vs: " + str(flownetwork.nr_of_vs))
+        print("Number of boundary vs: " + str(len(flownetwork.boundary_vs)))
+        print("Number of  es: " + str(flownetwork.nr_of_es))
 
 
 class ReadNetworkPkl(ReadNetwork):

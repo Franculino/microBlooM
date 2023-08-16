@@ -1,15 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import source.flow_network as flow_network
-import sys as sy
+from types import MappingProxyType
 import seaborn as sns
 
 
 class FlowBalance(object):
 
-    def __init__(self, flownetwork: flow_network.FlowNetwork):
+    def __init__(self, flownetwork: flow_network.FlowNetwork, PARAMETERS: MappingProxyType):
 
         self.flownetwork = flownetwork
+        self._PARAMETERS = PARAMETERS
 
     def _get_flow_balance(self):
 
@@ -151,7 +152,7 @@ class FlowBalance(object):
 
         # zero-flow-threshold
         # The zero flow threshold is set as the max of the mass balance error for the internal nodes
-        if self.flownetwork.zeroFlowThreshold is None:
+        if self.flownetwork.zeroFlowThreshold is None:  # self._PARAMETERS['zeroFlowThreshold'] is True and
             # max of the mass balance error for the internal nodes
             self.flownetwork.zeroFlowThreshold = np.max(local_balance)
             # print to check the value of the threshold
