@@ -26,13 +26,19 @@ class Setup(ABC):
     @abstractmethod
     def setup_bloodflow_model(self, PARAMETERS):
         """
-        Abstract method to set up the simulation
+        Abstract method to set up the forward blood flow model
         """
 
     @abstractmethod
     def setup_inverse_model(self, PARAMETERS):
         """
         Abstract method to set up the inverse model
+        """
+
+    @abstractmethod
+    def setup_distensibility_model(self, PARAMETERS):
+        """
+        Abstract method to set up the distensibility model
         """
 
 
@@ -89,11 +95,11 @@ class SetupSimulation(Setup):
                 imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS)  # No Fahraeus effect (u_RBC = u_Bulk)
             case 2:  # Takes RBCs into account based on the empirical laws by Pries, Neuhaus, Gaehtgens (1992)
                 imp_hd = discharge_haematocrit.DischargeHaematocritVitroPries1992(PARAMETERS)
-                imp_transmiss = transmissibility.TransmissibilityVitroPries1992(PARAMETERS)
+                imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
             case 3:  # Takes RBCs into account based on the empirical laws by Pries and Secomb (2005)
                 imp_hd = discharge_haematocrit.DischargeHaematocritVitroPries2005(PARAMETERS)
-                imp_transmiss = transmissibility.TransmissibilityVitroPries2005(PARAMETERS)
+                imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option for the handling of RBCs (rbc_impact_option)")

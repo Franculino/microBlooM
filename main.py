@@ -8,5 +8,5 @@
 # Run test case to tune diameters or transmissibilitites with the adjoint method
 # import testcases.testcase_inverse_problem
 
-# Run test case with only the blood flow model
+# Run test case with only the blood flow model considering vascular distensibility
 import testcases.testcase_distensibility
