@@ -43,9 +43,10 @@ PARAMETERS = MappingProxyType(
         # Blood properties
         "ht_constant": 4E-01,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
-        "boundary_hematocrit": [0.4] * 2000,  # np.array(np.linspace(0.9, 0.3, num=1275, dtype=list)),  # np.linspace(0.8, 0.3, num=8, dtype=list), #[0.4] * 1275,
-        # np.linspace(0.8,
+        "boundary_hematocrit": [0.4] * 2000,
 
+        # if True set the blood vessel with unrealistic blood flow to zero
+        "low_flow_vessel": True,
 
         # Machine error for float
         "machine_error": 1E-15,

@@ -55,19 +55,42 @@ class PressureFlowSolver(ABC):
         pressure = flownetwork.pressure
         nr_of_es = flownetwork.nr_of_es
 
-        if flownetwork.zeroFlowThreshold is None:
-            # Update flow rates based on the transmissibility and pressure.
-            flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
-        else:
-            # Compute the flow rates based on the transmissibility and pressure.
-            pressure_0 = pressure[edge_list[:, 0]]
-            pressure_1 = pressure[edge_list[:, 1]]
-            flow_rate = transmiss * (pressure_0 - pressure_1)
-            # set to zero the flow under the threshold
-            flow_rate = np.where(np.abs(flow_rate) < flownetwork.zeroFlowThreshold, 0, flow_rate)
+        # Compute the flow rates based on the transmissibility and pressure.
+        pressure_0 = pressure[edge_list[:, 0]]
+        pressure_1 = pressure[edge_list[:, 1]]
+        flow_rate = transmiss * (pressure_0 - pressure_1)
 
         # Update flow rate
         flownetwork.flow_rate = flow_rate
+
+
+def set_low_flow_threshold(flownetwork, local_balance):
+    # max of the mass balance error for the internal nodes
+    flownetwork.zeroFlowThreshold = np.max(local_balance)
+
+    # check how the flow it will change
+    # Print to display the percentage of Zero flow vessel
+    print(f"Percentage of zero flow vessel {np.round((len(flownetwork.flow_rate[flownetwork.flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)}%")
+    # Print to display the percentage of Zero flow vessel
+    print(f"Min flow rate = {np.min(np.abs(flownetwork.flow_rate[flownetwork.flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flownetwork.flow_rate))}")
+
+    # print to check the value of the threshold
+    print("Tolerance :" + str(flownetwork.zeroFlowThreshold))
+    # update the flow rate
+    return _update_low_flow(flownetwork, flownetwork.flow_rate)
+
+
+def _update_low_flow(flownetwork, flow_rate):
+    # Update flow rate based on the zero flow threshold
+    flow_rate = np.where(np.abs(flow_rate) < flownetwork.zeroFlowThreshold, 0, flow_rate)
+
+    # check how the flow it is changed
+    # Print to display the percentage of Zero flow vessel
+    print(f"Percentage of zero flow vessel {np.round((len(flow_rate[flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)}")
+    # Print to display the min and max flow_rate
+    print(f"Min flow rate = {np.min(np.abs(flow_rate[flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flow_rate))} %")
+
+    return flow_rate
 
 
 class PressureFlowSolverSparseDirect(PressureFlowSolver):
