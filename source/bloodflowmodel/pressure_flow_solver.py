@@ -50,15 +50,13 @@ class PressureFlowSolver(ABC):
         pressure = flownetwork.pressure
         nr_of_es = flownetwork.nr_of_es
 
-        # Update flow rates based on the transmissibility and pressure.
-        flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
+        # Compute the flow rates based on the transmissibility and pressure.
+        pressure_0 = pressure[edge_list[:, 0]]
+        pressure_1 = pressure[edge_list[:, 1]]
+        flow_rate = transmiss * (pressure_0 - pressure_1)
 
         # Update flow rate
-        if flownetwork.zeroFlowThreshold is not None:
-            # in case we want to exclude the unrealistic lower values in iterative model
-            flownetwork.flow_rate = _update_low_flow(flownetwork, flow_rate)
-        else:
-            flownetwork.flow_rate = flow_rate
+        flownetwork.flow_rate = flow_rate
 
 
 def set_low_flow_threshold(flownetwork, local_balance):
