@@ -5,13 +5,11 @@ A python script to simulate stationary blood flow in microvascular networks. Cap
 3. Solve for flow rates, pressures and RBC velocities
 4. Save the results in a file
 """
-import numpy as np
 
 from source.flow_network import FlowNetwork
 from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
-from source.bloodflowmodel.iterative_routine import util_iterative_method
 
 # MappingProxyType is basically a const dict.
 # todo: read parameters from file; need a good way to import from human readable file (problem: json does not support
@@ -25,9 +23,9 @@ PARAMETERS = MappingProxyType(
                                     # 4: generate hexagonal graph composed of a single hexagon
                                     # 5: generate hexagonal graph composed of a single hexagon for trifurcation
                                     # 6: todo import graph from edge_data and vertex_data pickle files
-        "write_network_option": 1,      # 1: do not write anything
-                                        # 2: write to igraph format # todo: handle overwriting data from import file
-                                        # 3-...: todo other file formats.
+        "write_network_option": 1,  # 1: do not write anything
+                                    # 2: write to igraph format # todo: handle overwriting data from import file
+                                    # 3-...: todo other file formats.
         "tube_haematocrit_option": 2,   # 1: No RBCs (ht=0)
                                         # 2: Constant hematocrit
                                         # 3: todo: RBC tracking
@@ -39,6 +37,8 @@ PARAMETERS = MappingProxyType(
         "solver_option": 1,     # 1: Direct solver
                                 # 2: PyAMG solver
                                 # 3-...: other solvers
+        "iterative_routine": 2,     # 1: Single iteration
+                                    # 2: Iterative routine
 
         # Blood properties
         "ht_constant": 4E-01,  # only required if RBC impact is considered
@@ -99,13 +99,13 @@ PARAMETERS = MappingProxyType(
 # Create object to set up the simulation and initialise the simulation
 setup_blood_flow = setup.SetupSimulation()
 # Initialise the implementations based on the parameters specified
-imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver = setup_blood_flow.setup_bloodflow_model(
+imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver, imp_iterative = setup_blood_flow.setup_bloodflow_model(
     PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
-                           imp_solver, imp_velocity, PARAMETERS)
+                           imp_solver, imp_velocity, imp_iterative, PARAMETERS)
 flow_balance = FlowBalance(flow_network)
 
 # Import or generate the network
@@ -123,13 +123,9 @@ print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
-print("Iterative Approach: ...")
-util_iterative_method(PARAMETERS, flow_network, flow_balance)
-print("Iterative Approach: DONE")
-
-# print("Check flow balance: ...")
-# flow_balance.check_flow_balance()
-# print("Check flow balance: DONE")
+print("Check flow balance: ...")
+flow_balance.check_flow_balance()
+print("Check flow balance: DONE")
 
 # Write the results to file
 flow_network.write_network()

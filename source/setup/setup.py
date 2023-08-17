@@ -8,6 +8,7 @@ import source.bloodflowmodel.transmissibility as transmissibility
 import source.bloodflowmodel.pressure_flow_solver as pressure_flow_solver
 import source.bloodflowmodel.build_system as build_system
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
+import source.bloodflowmodel.iterative as iterative_routine
 import source.fileio.read_target_values as read_target_values
 import source.fileio.read_parameters as read_parameters
 import source.inverseproblemmodules.adjoint_method_implementations as adjoint_method_parameters
@@ -122,7 +123,15 @@ class SetupSimulation(Setup):
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
-        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
+        match PARAMETERS["iterative_routine"]:
+            case 1:
+                imp_iterative = iterative_routine.IterativeRoutineNone(PARAMETERS)
+            case 2:
+                imp_iterative = iterative_routine.IterativeRoutineMultipleIteration(PARAMETERS)
+            case _:
+                sys.exit("Error: Choose valid option for the iterative routine (iterative_routine)")
+
+        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver, imp_iterative
 
     def setup_inverse_model(self, PARAMETERS):
         """

@@ -54,5 +54,6 @@ class FlowBalance(object):
         # zero-flow-threshold
         # The zero flow threshold is set as the max of the mass balance error for the internal nodes
         # it is computed the new flow inside
-        if self.flownetwork._PARAMETERS["low_flow_vessel"] is True and self.flownetwork.zeroFlowThreshold is None:
+        if self.flownetwork.PARAMETERS["low_flow_vessel"] is True and self.flownetwork.zeroFlowThreshold is None:
             self.flownetwork.flow_rate = set_low_flow_threshold(self.flownetwork, local_balance)
+            print("entrato")

@@ -6,7 +6,9 @@ import source.bloodflowmodel.transmissibility as transmissibility
 import source.bloodflowmodel.pressure_flow_solver as pressureflowsolver
 import source.bloodflowmodel.build_system as buildsystem
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
+import source.bloodflowmodel.iterative as iterative_routine
 from types import MappingProxyType
+
 
 class FlowNetwork(object):
     # todo docstring and explain all attributes
@@ -15,7 +17,7 @@ class FlowNetwork(object):
                  imp_tube_hd: dischargehaematocrit.DischargeHaematocrit,
                  imp_transmiss: transmissibility.Transmissibility, imp_buildsystem: buildsystem.BuildSystem,
                  imp_solver: pressureflowsolver.PressureFlowSolver, imp_rbcvelocity: rbc_velocity.RbcVelocity,
-                 PARAMETERS: MappingProxyType):
+                 imp_iterative: iterative_routine.IterativeRoutine, PARAMETERS: MappingProxyType):
         # Network attributes
         self.min_flow = None
         self.eps_eff = None
@@ -60,6 +62,7 @@ class FlowNetwork(object):
         self._imp_buildsystem = imp_buildsystem
         self._imp_solver = imp_solver
         self._imp_rbcvelocity = imp_rbcvelocity
+        self.imp_iterative = imp_iterative
 
         # Threshold for zero-loops
         self.zeroFlowThreshold = None
@@ -95,15 +98,5 @@ class FlowNetwork(object):
         self._imp_buildsystem.build_linear_system(self)
         self._imp_solver.update_pressure_flow(self)
         self._imp_rbcvelocity.update_velocity(self)
+        self.imp_iterative.iterative_function(self)
 
-
-    def iterative_approach(self):
-        """
-        Update the hematocrit with iterative method, after a first normal first iteration
-        """
-        self._imp_ht.update_ht(self)
-        self._imp_hd.update_hd(self)
-        self._imp_transmiss.update_transmiss(self)
-        self._imp_buildsystem.build_linear_system(self)
-        self._imp_solver.update_pressure_flow(self)
-        self._imp_rbcvelocity.update_velocity(self)
