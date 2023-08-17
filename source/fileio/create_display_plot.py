@@ -14,9 +14,9 @@ def _logit(x):
 
 
 def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
-    x_o_init = 1.12  # micrometers
-    A_o_init = 15.47  # micrometers
-    B_o_init = 8.13  # micrometers
+    x_o_init = 0.964  # micrometers
+    A_o_init = 13.29  # micrometers
+    B_o_init = 6.98  # micrometers
 
     diam_a, diam_b, diam_par = diam_a * 1E6, diam_b * 1E6, diam_par * 1E6
 
@@ -27,15 +27,15 @@ def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
 
     x_0 = x_o_init * (1 - hemat_par) / diam_par
 
-    A = A_o_init * ((pow(diam_a, 2) - pow(diam_b, 2)) / (pow(diam_a, 2) + pow(diam_b, 2))) * (
+    A = (-A_o_init) * ((pow(diam_a, 2) - pow(diam_b, 2)) / (pow(diam_a, 2) + pow(diam_b, 2))) * (
             1 - hemat_par) / diam_par
 
-    B = 1 + B_o_init * (1 - hemat_par) / diam_par
+    B = 1 + (B_o_init * (1 - hemat_par)) / diam_par
 
     if fractional_flow_a <= x_0:
         fractional_qRBCa, fractional_qRBCb = 0, 1
     elif x_0 < fractional_flow_a < (1 - x_0):
-        logit_F_Q_a_e = A + B * _logit((fractional_flow_a - x_0) / (1 - x_0))
+        logit_F_Q_a_e = A + B * _logit((fractional_flow_a - x_0) / (1 - (2 * x_0)))
         fractional_qRBCa = (pow(e, logit_F_Q_a_e) / (1 + pow(e, logit_F_Q_a_e)))
         fractional_qRBCb = 1 - fractional_qRBCa
     elif fractional_flow_a >= (1 - x_0):
@@ -86,12 +86,11 @@ def s_curve_util_trifurcation(PARAMETERS, flownetwork):
     plt.xticks(np.arange(0, 1.1, 0.20))
     plt.yticks(np.arange(0, 1.1, 0.20))
 
-    if PARAMETERS['save']:
-        plt.savefig(
-            PARAMETERS['path_for_graph'] + '/iteration_graph/trifurc.png')
-    plt.show()
+    # if PARAMETERS['save']:
+    #     plt.savefig(
+    #         PARAMETERS['path_for_graph'] + '/iteration_graph/trifurc.png')
+    # plt.show()
     # pass
-
 
 
 def s_curve_util(PARAMETERS, flownetwork):
@@ -146,11 +145,10 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.xticks(np.arange(0, 1.1, 0.20))
     plt.yticks(np.arange(0, 1.1, 0.20))
 
-    if PARAMETERS['save']:
-        plt.savefig(
-            PARAMETERS['path_for_graph'] + '/iteration_graph/s_curve.png')
-    plt.show()
-
+    # if PARAMETERS['save']:
+    #     plt.savefig(
+    #         PARAMETERS['path_for_graph'] + '/iteration_graph/s_curve.png')
+    # plt.show()
 
 
 def s_curve_personalized_thersholds(flownetwork, PARAMETERS, interval):
@@ -220,12 +218,11 @@ def s_curve_personalized_thersholds(flownetwork, PARAMETERS, interval):
     plt.xticks(np.arange(0, 1.1, 0.20))
     plt.yticks(np.arange(0, 1.1, 0.20))
 
-    if PARAMETERS['save']:
-        plt.savefig(
-            PARAMETERS['path_for_graph'] + '/iteration_graph/s_curve_interval_near_' + str(
-                interval) + '.png')
-    plt.show()
-
+    # if PARAMETERS['save']:
+    #     plt.savefig(
+    #         PARAMETERS['path_for_graph'] + '/iteration_graph/s_curve_interval_near_' + str(
+    #             interval) + '.png')
+    # plt.show()
 
 
 def graph_creation(flownetwork):
@@ -257,7 +254,6 @@ def graph_creation(flownetwork):
     if flownetwork.pressure is not None:
         graph.vs["pressure"] = flownetwork.pressure
     return graph
-
 
 
 def util_display_graph(g, PARAMETERS, flownetwork):
@@ -310,31 +306,31 @@ def util_display_graph(g, PARAMETERS, flownetwork):
         edge_label_size=10.0,  # 20
         edge_align_label=False,
     )
-    if PARAMETERS['save']:
-        #  plt.savefig( PARAMETERS['path_for_graph'] + '/iteration_graph/' + str(PARAMETERS['boundary_hematocrit']) + '/' + str( iteration) + '_HD_' + str(PARAMETERS[
-        #  'boundary_hematocrit']) + '.png')
-        plt.savefig(PARAMETERS['path_for_graph'] + '/iteration_graph/' + 'last_iteration.png')
+    # if PARAMETERS['save']:
+    #     #  plt.savefig( PARAMETERS['path_for_graph'] + '/iteration_graph/' + str(PARAMETERS['boundary_hematocrit']) + '/' + str( iteration) + '_HD_' + str(PARAMETERS[
+    #     #  'boundary_hematocrit']) + '.png')
+    #     plt.savefig(PARAMETERS['path_for_graph'] + '/iteration_graph/' + 'last_iteration.png')
     plt.show()
 
 
-
-def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS, title):
+def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS, title, path_title):
     # plt.figure(figsize=(15, 15), dpi=100)
 
     plt.style.use('seaborn-whitegrid')
     # title = "Convergence plot after " + str(flownetwork.iteration) + " iteration"
-    plt.plot(range(0, flownetwork.iteration), iteration_plot, "-")  # , '-ok')
+    plt.plot(range((flownetwork.iteration - 100), flownetwork.iteration), iteration_plot, "-")  # , '-ok')
     plt.title(title, fontsize=10)
     plt.xlabel("Iteration", fontsize=10)
-    plt.ylabel("Error difference", fontsize=10)
+    plt.ylabel("Error difference in %", fontsize=10)
     plt.yscale("log")
-    # plt.yticks(fontsize=10)
-    plt.xticks(fontsize=10)
+    plt.xticks(range((flownetwork.iteration - 100), flownetwork.iteration, 10))
+    # plt.xticks(fontsize=10)
 
     if PARAMETERS['save']:
         plt.savefig(
-            PARAMETERS['path_for_graph'] + '/iteration_graph/convergence_plot.png')
-    plt.show()
+            PARAMETERS['path_for_graph'] + '/iteration_graph/' + PARAMETERS["network_name"] + '/' + path_title + '_cnv_' + str(flownetwork.iteration) + '.png')
+    plt.close()
+    # plt.show()
 
 
 def percentage_lower_than(data, value):

@@ -19,7 +19,7 @@ from source.bloodflowmodel.iterative_routine import util_iterative_method
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 3,   # 1: generate hexagonal graph
+        "read_network_option": 2,   # 1: generate hexagonal graph
                                     # 2: import graph from csv files
                                     # 3: import graph from igraph file (pickle file)
                                     # 4: generate hexagonal graph composed of a single hexagon
@@ -50,26 +50,26 @@ PARAMETERS = MappingProxyType(
         # Machine error for float
         "machine_error": 1E-15,
 
-        # Alpha for hematocrit
-        "alpha": 0.2,
+        # Alpha for relaxation factor of SOR
+        "alpha": 0.8,
         "epsilon": 5E-25,
         "epsilon_second_method": 1E-10,
 
-        # zeroFlowThreshold defualt is False, true inc ase of iterative routine
+        # zeroFlowThreshold default is False, true inc ase of iterative routine
         "zeroFlowThreshold": False,
         # Hexagonal network properties. Only required for "read_network_option" 1
-        "nr_of_hexagon_x": 9,
-        "nr_of_hexagon_y": 9,
-        "hexa_edge_length": 62.E-6,
-        "hexa_diameter": 5e-6,
-        "hexa_boundary_vertices": [1, 7, 70, 89],
-        "hexa_boundary_values": [100, 80,  20, 10],
-        "hexa_boundary_types": [1, 1, 1,1],
+        "nr_of_hexagon_x": 5,
+        "nr_of_hexagon_y": 5,
+        "hexa_edge_length": 62.e-6,
+        "hexa_diameter": 5.e-6,
+        "hexa_boundary_vertices": [0, 27],
+        "hexa_boundary_values": [5, 2],
+        "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "MVN2/node_data.csv",
-        "csv_path_edge_data": "MVN2/edge_data.csv",
-        "csv_path_boundary_data": "MVN2/node_boundary_data.csv",
+        "csv_path_vertex_data": "MVN1/node_data.csv",
+        "csv_path_edge_data": "MVN1/edge_data.csv",
+        "csv_path_boundary_data": "MVN1/node_boundary_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
@@ -85,12 +85,12 @@ PARAMETERS = MappingProxyType(
         "write_override_initial_graph": False,  # todo: currently does not do anything
         "write_path_igraph": "/Users/cucciolo/Desktop/microBlooM/data/out/mvn1.vtp",
         # only required for "write_network_option" 2
-        "save": False,
-        "path_for_graph": "/Users/cucciolo/Desktop/microBlooM/data/out",
+        "save": True,
+        "path_for_graph": "data/out",
 
         # Write option in case of print in output file (.txt)
-        "path_output_file": "data/out/output_chryso.txt",
-        "network_name": "b6_B_pre_stroke"
+        "path_output_file": "data/out/outputMVN1.txt",
+        "network_name": "MVN1"
 
     }
 )

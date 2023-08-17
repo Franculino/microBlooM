@@ -4,7 +4,7 @@ import sys
 
 import math
 import numpy as np
-#from line_profiler_pycharm import profile
+# from line_profiler_pycharm import profile
 from math import e
 import copy
 from collections import defaultdict
@@ -295,7 +295,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
         return x_0, A, B
 
-    #@profile
+    # @profile
     def get_erythrocyte_fraction(self, hemat_par, diam_par, diam_a, diam_b,
                                  flow_parent, flow_a, flow_b,
                                  fractional_a_qRBCs, fractional_b_qRBCs, fractional_a_blood, fractional_b_blood,
@@ -377,7 +377,10 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 sys.exit()
         return hemat_a, hemat_b
 
-    #@profile
+    def sor_rasmussen2018(self, PARAMETERS, prd_hematocrit, old_hematocrit):
+        return ((1 - PARAMETERS['alpha']) * old_hematocrit) + (PARAMETERS['alpha'] * prd_hematocrit)
+
+    # @profile
     def update_hd(self, flownetwork):
         flownetwork.boundary_hematocrit = self._PARAMETERS["boundary_hematocrit"]
         flownetwork.fractional_a_qRBCs, flownetwork.fractional_b_qRBCs = [], []
@@ -408,6 +411,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         boundary_vs = set(copy.deepcopy(flownetwork.boundary_vs))
         # control for RBC_balance
         rbc_balance = 0
+        # hematocrit for this iteration
 
         if edge_connected_position is None:
             print("Node connection creation: ...")
@@ -420,6 +424,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         if pressure is None:
             flownetwork.hd = copy.deepcopy(flownetwork.ht)
         else:
+            old_hematocrit = copy.deepcopy(flownetwork.hd)
             flow = np.abs(copy.deepcopy(flownetwork.flow_rate))
 
             # [pressure][node] in a single array
@@ -701,64 +706,33 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                                                                                rbc_balance)
                         case 0, _:
                             if len(edge_daughter) == 3:
-                                # if np.sum(flow[edge_daughter] != 0) != 0:
-                                #     print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(edge_daughter[0]) + " " + str(
-                                #         edge_daughter[1]) + " " + str(edge_daughter[2]))
-                                #     print(str(flow[edge_daughter[0]]) + " " + str(flow[edge_daughter[1]]) + " " + str(flow[edge_daughter[2]]))
                                 flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], flownetwork.hd[daughter_c] = 0, 0, 0
 
                             elif len(edge_daughter) == 2:
-                                # if np.sum(flow[edge_daughter] != 0) != 0:
-                                #     print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(edge_daughter[0]) + " " + str(
-                                #         edge_daughter[1]))
-                                #     print(str(flow[edge_daughter[0]]) + " " + str(flow[edge_daughter[1]]))
                                 flownetwork.hd[daughter_a], flownetwork.hd[daughter_b] = 0, 0
 
                             elif len(edge_daughter) == 4:
-                                # if np.sum(flow[edge_daughter] != 0) != 0:
-                                #     print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(edge_daughter[0]) + " " + str(
-                                #         edge_daughter[1]) + " " + str(edge_daughter[2]) + " " + str(edge_daughter[3]))
-                                #     print(str(flow[edge_daughter[0]]) + " " + str(flow[edge_daughter[1]]) + " " + str(flow[edge_daughter[2]]) + " " + str(flow[edge_daughter[3]]))
                                 flownetwork.hd[edge_daughter[0]], flownetwork.hd[edge_daughter[1]], flownetwork.hd[edge_daughter[2]], flownetwork.hd[edge_daughter[3]] = 0, 0, 0, 0
 
                             else:
                                 flownetwork.hd[single_daughter] = 0
-                                # if np.sum(flow[edge_daughter] != 0) != 0:
-                                #     print("The node " + str(node[1]) + " has only outflows in particular the vessel connected are " + str(single_daughter))
-                                #     print(str(flow[single_daughter]))
 
                         case _, 0:
-                            # pass
                             if len(parent_edge) == 3:
-                                # if np.sum(flow[parent_edge] != 0) != 0:
-                                #     print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent_edge[0]) + " " + str(
-                                #     parent_edge[1]) + " " + str(parent_edge[2]))
-                                #     print(str(flow[parent_edge[0]]) + " " + str(flow[parent_edge[1]]) + " " + str(flow[parent_edge[2]]))
-
                                 flownetwork.hd[parent_a], flownetwork.hd[parent_b], flownetwork.hd[parent_c] = 0, 0, 0
 
                             elif len(parent_edge) == 2:
-                                # if np.sum(flow[parent_edge] != 0) != 0:
-                                #     print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent_edge[0]) + " " + str(
-                                #     parent_edge[1]))
-                                #     print(str(flow[parent_edge[0]]) + " " + str(flow[parent_edge[1]]))
                                 flownetwork.hd[parent_a], flownetwork.hd[parent_b] = 0, 0
 
                             elif len(parent_edge) == 4:
-                                # if np.sum(flow[parent_edge] != 0) != 0:
-                                # print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent_edge[0]) + " " + str(
-                                #     parent_edge[1]) + " " + str(parent_edge[2]) + " " + str(parent_edge[3]))
-                                # print(str(flow[parent_edge[0]]) + " " + str(flow[parent_edge[1]]) + " " + str(flow[parent_edge[2]]) + " " + str(flow[parent_edge[3]]))
                                 flownetwork.hd[parent_edge[0]], flownetwork.hd[parent_edge[1]], flownetwork.hd[parent_edge[2]], flownetwork.hd[parent_edge[3]] = 0, 0, 0, 0
+
                             else:
-                                # if np.sum(flow[parent_edge] != 0) != 0:
-                                # print("The node " + str(node[1]) + " has only inflows in particular the vessel connected are " + str(parent))
-                                # print(str(flow[parent]))
                                 flownetwork.hd[parent] = 0
 
-            # with one more tab is possible to have the check at the end of the iteration
             # print("Check RBCs balance: ...")
             if rbc_balance > 0:
                 sys.exit("Check RBCs balance: FAIL -->", rbc_balance)
-        # else:
-        #    print("Check RBCs balance: DONE")
+
+            # update the hematocrit based on the successive over-relaxation from Rasmussen P. 2018
+            flownetwork.hd = self.sor_rasmussen2018(self._PARAMETERS, copy.deepcopy(flownetwork.hd), old_hematocrit)

@@ -7,10 +7,10 @@ import seaborn as sns
 
 class FlowBalance(object):
 
-    def __init__(self, flownetwork: flow_network.FlowNetwork, PARAMETERS: MappingProxyType):
+    def __init__(self, flownetwork: flow_network.FlowNetwork):
 
         self.flownetwork = flownetwork
-        self._PARAMETERS = PARAMETERS
+        #self._PARAMETERS = PARAMETERS
 
     def _get_flow_balance(self):
 
