@@ -1,6 +1,7 @@
 import numpy as np
 
 import source.flow_network as flow_network
+from source.bloodflowmodel.pressure_flow_solver import set_low_flow_threshold
 
 
 class FlowBalance(object):
@@ -52,10 +53,8 @@ class FlowBalance(object):
 
         # zero-flow-threshold
         # The zero flow threshold is set as the max of the mass balance error for the internal nodes
-        if self.flownetwork.zeroFlowThreshold is None:
-            # max of the mass balance error for the internal nodes
-            self.flownetwork.zeroFlowThreshold = np.max(local_balance)
-            # print to check the value of the threshold
-            print("Tolerance :" + str(self.flownetwork.zeroFlowThreshold))
+        # it is computed the new flow inside
+        if self.flownetwork._PARAMETERS["low_flow_vessel"] is True and self.flownetwork.zeroFlowThreshold is None:
+            self.flownetwork.flow_rate = set_low_flow_threshold(self.flownetwork, local_balance)
 
         return
