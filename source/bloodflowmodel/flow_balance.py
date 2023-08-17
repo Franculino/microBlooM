@@ -1,23 +1,47 @@
-import numpy as np
+from abc import ABC
+from types import MappingProxyType
 
+import numpy as np
+from abc import ABC, abstractmethod
 import source.flow_network as flow_network
 
 
-class FlowBalance(object):
+class FlowBalance(ABC):
+    """
+    Abstract base class for the implementations related to flow balance.
+    """
 
-    def __init__(self, flownetwork: flow_network.FlowNetwork):
+    def __init__(self, PARAMETERS: MappingProxyType):
+        """
+        Constructor of FlowBalance
+        :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
+        :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
+        """
+        self._PARAMETERS = PARAMETERS
 
-        self.flownetwork = flownetwork
+    @abstractmethod
+    def _get_flow_balance(self, flownetwork):
+        """
+        Abstract method to get the flow_balance
+        """
 
-    def _get_flow_balance(self):
+    @abstractmethod
+    def check_flow_balance(self, flownetwork):
+        """
+        Abstract method to get the check flow_balance
+        """
 
-        nr_of_vs = self.flownetwork.nr_of_vs
-        nr_of_es = self.flownetwork.nr_of_es
 
-        edge_list = self.flownetwork.edge_list
+class FlowBalanceClass(FlowBalance):
+    def _get_flow_balance(self, flownetwork):
+
+        nr_of_vs = flownetwork.nr_of_vs
+        nr_of_es = flownetwork.nr_of_es
+
+        edge_list = flownetwork.edge_list
 
         flow_balance = np.zeros(nr_of_vs)
-        flow_rate = self.flownetwork.flow_rate
+        flow_rate = flownetwork.flow_rate
 
         for eid in range(nr_of_es):
             flow_balance[edge_list[eid, 0]] += flow_rate[eid]
@@ -25,13 +49,13 @@ class FlowBalance(object):
 
         return flow_balance
 
-    def check_flow_balance(self, tol=1.00E-05):
+    def check_flow_balance(self, flownetwork, tol=1.00E-05):
 
-        nr_of_vs = self.flownetwork.nr_of_vs
-        flow_rate = self.flownetwork.flow_rate
-        boundary_vs = self.flownetwork.boundary_vs
+        nr_of_vs = flownetwork.nr_of_vs
+        flow_rate = flownetwork.flow_rate
+        boundary_vs = flownetwork.boundary_vs
 
-        flow_balance = self._get_flow_balance()
+        flow_balance = self._get_flow_balance(flownetwork)
 
         ref_flow = np.abs(flow_rate[boundary_vs[0]])
         tol_flow = tol * ref_flow
@@ -51,4 +75,3 @@ class FlowBalance(object):
             sys.exit("Is globally balanced: " + str(is_globally_balanced) + "(with tol " + str(tol_flow) + ")")
 
         return
-

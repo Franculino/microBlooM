@@ -6,6 +6,7 @@ import source.bloodflowmodel.transmissibility as transmissibility
 import source.bloodflowmodel.pressure_flow_solver as pressureflowsolver
 import source.bloodflowmodel.build_system as buildsystem
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
+import source.bloodflowmodel.flow_balance as flow_balance
 from types import MappingProxyType
 
 
@@ -16,6 +17,7 @@ class FlowNetwork(object):
                  imp_tube_hd: dischargehaematocrit.DischargeHaematocrit,
                  imp_transmiss: transmissibility.Transmissibility, imp_buildsystem: buildsystem.BuildSystem,
                  imp_solver: pressureflowsolver.PressureFlowSolver, imp_rbcvelocity: rbc_velocity.RbcVelocity,
+                 imp_balance: flow_balance.FlowBalance,
                  PARAMETERS: MappingProxyType):
         # Network attributes
         self.nr_of_vs = None
@@ -37,13 +39,13 @@ class FlowNetwork(object):
         self.rbc_velocity = None
 
         # Network boundaries
-        self.boundary_vs = None # vertex ids of boundaries (1d np.array)
-        self.boundary_val =  None # boundary values (1d np.array)
-        self.boundary_type = None # boundary type (1: pressure, 2: flow rate)
+        self.boundary_vs = None  # vertex ids of boundaries (1d np.array)
+        self.boundary_val = None  # boundary values (1d np.array)
+        self.boundary_type = None  # boundary type (1: pressure, 2: flow rate)
 
         # Solver
-        self.system_matrix = None # system matrix of linear system of equations
-        self.rhs = None # right hand side of linear system of equations
+        self.system_matrix = None  # system matrix of linear system of equations
+        self.rhs = None  # right hand side of linear system of equations
 
         # "References" to implementations
         self._imp_readnetwork = imp_readnetwork
@@ -54,6 +56,7 @@ class FlowNetwork(object):
         self._imp_buildsystem = imp_buildsystem
         self._imp_solver = imp_solver
         self._imp_rbcvelocity = imp_rbcvelocity
+        self._imp_balance = imp_balance
 
         # "Reference" to parameter dict
         self._PARAMETERS = PARAMETERS
@@ -87,4 +90,8 @@ class FlowNetwork(object):
         self._imp_solver.update_pressure_flow(self)
         self._imp_rbcvelocity.update_velocity(self)
 
-
+    def check_flow_balance(self):
+        """
+        Solve a linear system for updating pressures, flow rates and red blood cell velocities.
+        """
+        self._imp_balance.check_flow_balance(self)

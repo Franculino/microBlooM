@@ -15,6 +15,7 @@ import source.inverseproblemmodules.adjoint_method_solver as adjoint_method_solv
 import source.inverseproblemmodules.alpha_restriction as alpha_mapping
 import source.fileio.read_distensibility_parameters as read_distensibility_parameters
 import source.distensibilitymodules.distensibility_law as distensibility_law
+import source.bloodflowmodel.flow_balance as flow_balance
 import sys
 
 
@@ -40,6 +41,7 @@ class SetupSimulation(Setup):
     """
     Class for setting up a simulation that only includes the blood flow model
     """
+
     def setup_bloodflow_model(self, PARAMETERS):
         """
         Set up the simulation and returns various implementations of the blood flow model
@@ -109,8 +111,8 @@ class SetupSimulation(Setup):
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
-        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
-
+        imp_balance = flow_balance.FlowBalanceClass(PARAMETERS)
+        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver, imp_balance
 
     def setup_inverse_model(self, PARAMETERS):
         """
