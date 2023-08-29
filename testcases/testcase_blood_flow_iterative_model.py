@@ -52,7 +52,7 @@ PARAMETERS = MappingProxyType(
         "machine_error": 1E-15,
 
         # Alpha for relaxation factor of SOR
-        "alpha": 0.8,
+        "alpha": 0.4,
         "epsilon": 5E-25,
         "epsilon_second_method": 1E-10,
 
@@ -68,9 +68,9 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "MVN1/node_data.csv",
-        "csv_path_edge_data": "MVN1/edge_data.csv",
-        "csv_path_boundary_data": "MVN1/node_boundary_data.csv",
+        "csv_path_vertex_data": "MVN2/node_data.csv",
+        "csv_path_edge_data": "MVN2/edge_data.csv",
+        "csv_path_boundary_data": "MVN2/node_boundary_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
@@ -84,14 +84,14 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "/Users/cucciolo/Desktop/microBlooM/data/out/mvn1.vtp",
+        "write_path_igraph": "data/out/MVN2.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out",
+        "path_for_graph": "data/out/plot/29_01",
 
         # Write option in case of print in output file (.txt)
-        "path_output_file": "data/out/outputMVN1.txt",
-        "network_name": "MVN1"
+        "path_output_file": "data/out/log_file/29_01/",
+        "network_name": "MVN2 threshold a 1e-3 e 25-10"
 
     }
 )
@@ -99,14 +99,13 @@ PARAMETERS = MappingProxyType(
 # Create object to set up the simulation and initialise the simulation
 setup_blood_flow = setup.SetupSimulation()
 # Initialise the implementations based on the parameters specified
-imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver, imp_iterative = setup_blood_flow.setup_bloodflow_model(
-    PARAMETERS)
+imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
+    imp_solver, imp_iterative, imp_balance = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
-                           imp_solver, imp_velocity, imp_iterative, PARAMETERS)
-flow_balance = FlowBalance(flow_network)
+                           imp_solver, imp_velocity, imp_iterative, imp_balance, PARAMETERS)
 
 # Import or generate the network
 print("Read network: ...")
@@ -123,8 +122,9 @@ print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
+# Check flow balance
 print("Check flow balance: ...")
-flow_balance.check_flow_balance()
+flow_network.check_flow_balance()
 print("Check flow balance: DONE")
 
 # Write the results to file

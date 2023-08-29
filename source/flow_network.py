@@ -7,6 +7,7 @@ import source.bloodflowmodel.pressure_flow_solver as pressureflowsolver
 import source.bloodflowmodel.build_system as buildsystem
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
 import source.bloodflowmodel.iterative as iterative_routine
+import source.bloodflowmodel.flow_balance as flow_balance
 from types import MappingProxyType
 
 
@@ -17,7 +18,8 @@ class FlowNetwork(object):
                  imp_tube_hd: dischargehaematocrit.DischargeHaematocrit,
                  imp_transmiss: transmissibility.Transmissibility, imp_buildsystem: buildsystem.BuildSystem,
                  imp_solver: pressureflowsolver.PressureFlowSolver, imp_rbcvelocity: rbc_velocity.RbcVelocity,
-                 imp_iterative: iterative_routine.IterativeRoutine, PARAMETERS: MappingProxyType):
+                 imp_iterative: iterative_routine.IterativeRoutine, imp_balance: flow_balance.FlowBalance,
+                 PARAMETERS: MappingProxyType):
         # Network attributes
         self.min_flow = None
         self.eps_eff = None
@@ -62,6 +64,7 @@ class FlowNetwork(object):
         self._imp_buildsystem = imp_buildsystem
         self._imp_solver = imp_solver
         self._imp_rbcvelocity = imp_rbcvelocity
+        self._imp_balance = imp_balance
         self.imp_iterative = imp_iterative
 
         # Threshold for zero-loops
@@ -69,6 +72,12 @@ class FlowNetwork(object):
 
         # "Reference" to parameter dict
         self._PARAMETERS = PARAMETERS
+
+        self.alpha = PARAMETERS['alpha']
+
+        self.avg_check = 0
+        self.max_check = 0
+        self.avg_old = 0
         return
 
     def read_network(self):
@@ -100,3 +109,8 @@ class FlowNetwork(object):
         self._imp_rbcvelocity.update_velocity(self)
         self.imp_iterative.iterative_function(self)
 
+    def check_flow_balance(self):
+        """
+        Check flow balance
+        """
+        self._imp_balance.check_flow_balance(self)

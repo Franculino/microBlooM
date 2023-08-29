@@ -221,11 +221,11 @@ class ReadNetworkCsv(ReadNetwork):
         flownetwork.boundary_type = df_boundary_data[self._PARAMETERS["csv_boundary_type"]].to_numpy().astype(np.int)
         flownetwork.boundary_val = df_boundary_data[self._PARAMETERS["csv_boundary_value"]].multiply(133.322).to_numpy()  # 133.3223684
 
+        print(f"Network {self._PARAMETERS['network_name']}")
         print("Number of  vs: " + str(flownetwork.nr_of_vs))
         print("Number of boundary vs: " + str(len(flownetwork.boundary_vs)))
-        # print(flownetwork.boundary_vs)
-        # print(flownetwork.boundary_val)
         print("Number of  es: " + str(flownetwork.nr_of_es))
+
 
 
 class ReadNetworkIgraph(ReadNetwork):
@@ -289,6 +289,7 @@ class ReadNetworkIgraph(ReadNetwork):
         flownetwork.boundary_vs = np.arange(flownetwork.nr_of_vs)[
             np.logical_or(boundary_types == 1, boundary_types == 2)]
 
+        print(f"Network {self._PARAMETERS['network_name']}")
         print("Number of  vs: " + str(flownetwork.nr_of_vs))
         print("Number of boundary vs: " + str(len(flownetwork.boundary_vs)))
         print("Number of  es: " + str(flownetwork.nr_of_es))

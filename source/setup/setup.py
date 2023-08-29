@@ -9,6 +9,7 @@ import source.bloodflowmodel.pressure_flow_solver as pressure_flow_solver
 import source.bloodflowmodel.build_system as build_system
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
 import source.bloodflowmodel.iterative as iterative_routine
+import source.bloodflowmodel.flow_balance as flow_balance
 import source.fileio.read_target_values as read_target_values
 import source.fileio.read_parameters as read_parameters
 import source.inverseproblemmodules.adjoint_method_implementations as adjoint_method_parameters
@@ -57,7 +58,7 @@ class SetupSimulation(Setup):
             case 3:
                 imp_read = read_network.ReadNetworkIgraph(PARAMETERS)  # Imports a graph from igraph file (pickle file)
             case 4:
-                imp_read = read_network.ReadNetworkSingleHexagon(PARAMETERS) # Initialises a single hexagonal 2D network
+                imp_read = read_network.ReadNetworkSingleHexagon(PARAMETERS)  # Initialises a single hexagonal 2D network
             case 5:
                 imp_read = read_network.ReadNetworkSingleHexagonTrifurcation(PARAMETERS)  # Initialises a single hexagonal 2D network with trifurcation
             case 6:
@@ -128,10 +129,15 @@ class SetupSimulation(Setup):
                 imp_iterative = iterative_routine.IterativeRoutineNone(PARAMETERS)
             case 2:
                 imp_iterative = iterative_routine.IterativeRoutineMultipleIteration(PARAMETERS)
+            case 3:
+                imp_iterative = iterative_routine.IterativeRoutineRasmussen2018(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option for the iterative routine (iterative_routine)")
 
-        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver, imp_iterative
+        # flow balance
+        imp_balance = flow_balance.FlowBalanceClass(PARAMETERS)
+
+        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver, imp_iterative, imp_balance
 
     def setup_inverse_model(self, PARAMETERS):
         """

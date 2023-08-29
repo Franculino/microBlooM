@@ -1,3 +1,5 @@
+import os
+
 import igraph as ig
 from igraph import Graph, Plot
 
@@ -15,7 +17,7 @@ def _logit(x):
 
 def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
     x_o_init = 0.964  # micrometers
-    A_o_init = 13.29  # micrometers
+    A_o_init = -13.29  # micrometers
     B_o_init = 6.98  # micrometers
 
     diam_a, diam_b, diam_par = diam_a * 1E6, diam_b * 1E6, diam_par * 1E6
@@ -27,9 +29,9 @@ def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
 
     x_0 = x_o_init * (1 - hemat_par) / diam_par
 
-    A = (-A_o_init) * ((pow(diam_a, 2) - pow(diam_b, 2)) / (pow(diam_a, 2) + pow(diam_b, 2))) * (
-            1 - hemat_par) / diam_par
-
+    # A = A_o_init * ((pow(diam_a, 2) - pow(diam_b, 2)) / (pow(diam_a, 2) + pow(diam_b, 2))) * (1 - hemat_par) / diam_par
+    A = A_o_init * ((diam_a - diam_b) / (diam_a + diam_b)) * ((1 - hemat_par) / diam_par)
+    # A = A_o_init * np.log(diam_a + diam_b) / diam_par
     B = 1 + (B_o_init * (1 - hemat_par)) / diam_par
 
     if fractional_flow_a <= x_0:
@@ -97,8 +99,12 @@ def s_curve_util(PARAMETERS, flownetwork):
     lista, list_b, listc, listd, liste, listf, listg, listh, cc, dd, ee, ff, gg, hh, ii, kk = [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
     plt.figure(figsize=(13, 13), dpi=200)
     plt.style.use('seaborn-whitegrid')
+
+    parent, Da, Db = 8E-6, 7E-6, 5E-6
+    title = f"S-Curve Dp= {parent:.2e} Da= {Da} Db= {Db} Thesis"
+
     for i in arange(0, 1, 0.01):
-        a, b, c, d = s_curve(0.1, i, 5E-6, 5E-6, 5E-6, flownetwork.hd[0] * flownetwork.flow_rate[0])
+        a, b, c, d = s_curve(0.1, i, parent, Da, Db, flownetwork.hd[0] * flownetwork.flow_rate[0])
         lista.append(a)
         list_b.append(b)
         cc.append(c)
@@ -107,7 +113,7 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.plot(list_b, lista, 'r')
 
     for i in arange(0, 1, 0.01):
-        a, b, c, d = s_curve(0.3, i, 5E-6, 5E-6, 5E-6, flownetwork.hd[0] * flownetwork.flow_rate[0])
+        a, b, c, d = s_curve(0.3, i, parent, Da, Db, flownetwork.hd[0] * flownetwork.flow_rate[0])
         listc.append(a)
         listd.append(b)
         ee.append(c)
@@ -116,7 +122,7 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.plot(listd, listc, 'b')
 
     for i in arange(0, 1, 0.01):
-        a, b, c, d = s_curve(0.5, i, 5E-6, 5E-6, 5E-6, flownetwork.hd[0] * flownetwork.flow_rate[0])
+        a, b, c, d = s_curve(0.5, i, parent, Da, Db, flownetwork.hd[0] * flownetwork.flow_rate[0])
         liste.append(a)
         listf.append(b)
         gg.append(c)
@@ -125,7 +131,7 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.plot(listf, liste, 'g')
 
     for i in arange(0, 1, 0.01):
-        a, b, c, d = s_curve(0.7, i, 5E-6, 5E-6, 5E-6, flownetwork.hd[0] * flownetwork.flow_rate[0])
+        a, b, c, d = s_curve(0.7, i, parent, Da, Db, flownetwork.hd[0] * flownetwork.flow_rate[0])
         listg.append(a)
         listh.append(b)
         ii.append(c)
@@ -136,19 +142,25 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.plot(flownetwork.fractional_a_blood, flownetwork.fractional_a_qRBCs, "o")
     plt.plot(flownetwork.fractional_b_blood, flownetwork.fractional_b_qRBCs, "o")
 
-    plt.title("S-Curve ")
-    plt.xlabel("fractional blood flow")
-    plt.ylabel("fractional erythrocity flow")
-    plt.legend(["HD:0.1", "HD:0.1 ", "HD:0.3", "HD:0.3", "HD:0.5", "HD:0.5", "HD:0.7", "HD:0.7"])
+    plt.title(title, fontsize=25)
+    plt.xlabel("Fractional Blood Flow", fontsize=20)
+    plt.ylabel("Fractional Erythrocity Flow", fontsize=20)
+    plt.legend(["HD:0.1", "HD:0.1 ", "HD:0.3", "HD:0.3", "HD:0.5", "HD:0.5", "HD:0.7", "HD:0.7"], fontsize=20)
     plt.ylim(0, 1)
     plt.xlim(0, 1)
-    plt.xticks(np.arange(0, 1.1, 0.20))
-    plt.yticks(np.arange(0, 1.1, 0.20))
+    plt.xticks(np.arange(0, 1.1, 0.20), fontsize=20)
+    plt.yticks(np.arange(0, 1.1, 0.20), fontsize=20)
 
-    # if PARAMETERS['save']:
-    #     plt.savefig(
-    #         PARAMETERS['path_for_graph'] + '/iteration_graph/s_curve.png')
-    # plt.show()
+    if PARAMETERS['save']:
+        path = PARAMETERS['path_for_graph'] + '/s_curve/'
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+
+        plt.savefig(
+            PARAMETERS['path_for_graph'] + '/s_curve/' + title + '.png')
+    #plt.show()
 
 
 def s_curve_personalized_thersholds(flownetwork, PARAMETERS, interval):
@@ -211,7 +223,7 @@ def s_curve_personalized_thersholds(flownetwork, PARAMETERS, interval):
     plt.style.use('seaborn-whitegrid')
     plt.title("S-Curve refer to parent hematocrit of " + str(interval) + " in a interval of ± " + str(threshold))
     plt.xlabel("Fractional Blood Flow")
-    plt.ylabel("Fractional Erythrocity Flow")
+    plt.ylabel("Fractional Erythrocyte Flow")
 
     plt.ylim(0, 1)
     plt.xlim(0, 1)
@@ -313,8 +325,8 @@ def util_display_graph(g, PARAMETERS, flownetwork):
     plt.show()
 
 
-def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS, title, path_title):
-    # plt.figure(figsize=(15, 15), dpi=100)
+def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS, title, path_title, name):
+    plt.figure(figsize=(15, 15), dpi=300)
 
     plt.style.use('seaborn-whitegrid')
     # title = "Convergence plot after " + str(flownetwork.iteration) + " iteration"
@@ -323,12 +335,62 @@ def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS, title, path_t
     plt.xlabel("Iteration", fontsize=10)
     plt.ylabel("Error difference in %", fontsize=10)
     plt.yscale("log")
-    plt.xticks(range((flownetwork.iteration - 100), flownetwork.iteration, 10))
-    # plt.xticks(fontsize=10)
+    plt.xticks(range((flownetwork.iteration - 100), flownetwork.iteration, 10), fontsize=20)
+    plt.yticks(fontsize=20)
 
     if PARAMETERS['save']:
-        plt.savefig(
-            PARAMETERS['path_for_graph'] + '/iteration_graph/' + PARAMETERS["network_name"] + '/' + path_title + '_cnv_' + str(flownetwork.iteration) + '.png')
+        path = PARAMETERS['path_for_graph'] + '/iteration_graph/' + PARAMETERS["network_name"] + '/' + path_title
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+        plt.savefig(path + name + '_cnv_' + str(flownetwork.iteration) + '.png')
+    plt.close()
+    # plt.show()
+
+
+def percentage_vessel_plot(flownetwork, iteration_plot, PARAMETERS, title, path_title):
+    plt.figure(figsize=(15, 15), dpi=300)
+
+    plt.style.use('seaborn-whitegrid')
+    # title = "Convergence plot after " + str(flownetwork.iteration) + " iteration"
+    plt.plot(range(0, flownetwork.iteration), iteration_plot, "-")  # , '-ok')
+    plt.title(title, fontsize=10)
+    plt.xlabel("Iteration", fontsize=10)
+    plt.ylabel("% of vessel", fontsize=10)
+    plt.xticks(range(0, flownetwork.iteration, 10), fontsize=20)
+    plt.yticks(fontsize=20)
+
+    if PARAMETERS['save']:
+        path = PARAMETERS['path_for_graph'] + '/convergence_vessel/' + PARAMETERS["network_name"] + '/' + path_title
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+        plt.savefig(path + "/" + str(flownetwork.iteration) + "_" + path_title + '.png')
+    plt.close()
+    # plt.show()
+
+
+def util_convergence_plot_final(flownetwork, iteration_plot, PARAMETERS, title, path_title, name):
+    plt.figure(figsize=(15, 15), dpi=300)
+
+    plt.style.use('seaborn-whitegrid')
+    plt.plot(range(0, flownetwork.iteration), iteration_plot, "-")  # , '-ok')
+    plt.title(title, fontsize=10)
+    plt.xlabel("Iteration", fontsize=10)
+    plt.ylabel("Error difference in %", fontsize=10)
+    plt.yscale("log")
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+
+    if PARAMETERS['save']:
+        path = PARAMETERS['path_for_graph'] + '/iteration_graph/' + PARAMETERS["network_name"] + '/' + path_title
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+        plt.savefig(path + name + '_cnv_' + str(flownetwork.iteration) + '.png')
     plt.close()
     # plt.show()
 

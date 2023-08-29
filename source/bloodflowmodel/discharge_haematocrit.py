@@ -377,9 +377,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 sys.exit()
         return hemat_a, hemat_b
 
-    def sor_rasmussen2018(self, PARAMETERS, prd_hematocrit, old_hematocrit):
-        return ((1 - PARAMETERS['alpha']) * old_hematocrit) + (PARAMETERS['alpha'] * prd_hematocrit)
-
     # @profile
     def update_hd(self, flownetwork):
         flownetwork.boundary_hematocrit = self._PARAMETERS["boundary_hematocrit"]
@@ -417,6 +414,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
             print("Node connection creation: ...")
             flownetwork.edge_connected_position, flownetwork.node_connected = edge_connected_dict(edge_list)  # edge_connected
             print("Node connection creation: DONE")
+            check = True
         else:
             edge_connected_position = copy.deepcopy(flownetwork.edge_connected_position)
             node_connected = copy.deepcopy(flownetwork.node_connected)
@@ -712,7 +710,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 flownetwork.hd[daughter_a], flownetwork.hd[daughter_b] = 0, 0
 
                             elif len(edge_daughter) == 4:
-                                flownetwork.hd[edge_daughter[0]], flownetwork.hd[edge_daughter[1]], flownetwork.hd[edge_daughter[2]], flownetwork.hd[edge_daughter[3]] = 0, 0, 0, 0
+                                flownetwork.hd[edge_daughter[0]], flownetwork.hd[edge_daughter[1]], flownetwork.hd[edge_daughter[2]], flownetwork.hd[
+                                    edge_daughter[3]] = 0, 0, 0, 0
 
                             else:
                                 flownetwork.hd[single_daughter] = 0
@@ -733,6 +732,45 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
             # print("Check RBCs balance: ...")
             if rbc_balance > 0:
                 sys.exit("Check RBCs balance: FAIL -->", rbc_balance)
+            flownetwork.hd = sor_rasmussen2018(flownetwork, flownetwork.hd, old_hematocrit, self._PARAMETERS)
 
-            # update the hematocrit based on the successive over-relaxation from Rasmussen P. 2018
-            flownetwork.hd = self.sor_rasmussen2018(self._PARAMETERS, copy.deepcopy(flownetwork.hd), old_hematocrit)
+
+def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit, PARAMETERS):
+    if flownetwork.avg_old is None:
+        flownetwork.avg_old = 0
+    # controllo l'andamento dell'hematocrito
+    cnvg_hem = np.abs(old_hematocrit - prd_hematocrit) / old_hematocrit * 100
+    cnvg_hem_avg_per = np.average(cnvg_hem[np.isfinite(cnvg_hem)])
+    cnvg_hem_max_per = np.max(cnvg_hem[np.isfinite(cnvg_hem)])
+
+    with open(PARAMETERS['path_output_file'] + "/" + PARAMETERS['network_name'] + ".txt", 'a') as file:
+        file.write(f"Average: {cnvg_hem_avg_per}  Max: {cnvg_hem_max_per} \n")
+
+    if np.abs(flownetwork.avg_old - cnvg_hem_avg_per) <= 1e-3:
+        flownetwork.avg_check += 1
+    else:
+        flownetwork.avg_check = 0
+
+    if cnvg_hem_max_per <= 100:
+        flownetwork.max_check += 1
+    else:
+        flownetwork.max_check = 0
+    flownetwork.avg_old = cnvg_hem_avg_per
+
+    if flownetwork.avg_check >= 25 and flownetwork.max_check >= 10:
+        with open(PARAMETERS['path_output_file'] + "/" + PARAMETERS['network_name'] + ".txt", 'a') as file:
+            file.write(f"\n BURN BABY BURN \n \n")
+        result = prd_hematocrit
+    elif flownetwork.iteration % 50 == 0 and flownetwork.iteration != 0:
+        flownetwork.alpha = round(flownetwork.alpha * 0.9, 4)
+        result = (round(1 - flownetwork.alpha, 4) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)
+    else:
+        result = (round(1 - flownetwork.alpha, 4) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)
+
+    return result
+
+
+def sor_rasmussen2018_adaptive(flownetwork, prd_hematocrit, old_hematocrit):
+    flownetwork.alpha = flownetwork.alpha + (flownetwork.alpha * 0.2)
+
+    return ((1 - flownetwork.alpha) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)

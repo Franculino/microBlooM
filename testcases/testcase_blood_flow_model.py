@@ -14,7 +14,6 @@ from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
 
-
 # MappingProxyType is basically a const dict.
 # todo: read parameters from file; need a good way to import from human readable file (problem: json does not support
 #  comments, which we would like to have in the text file; need better solution...)
@@ -22,23 +21,23 @@ PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
         "read_network_option": 2,  # 1: generate hexagonal graph
-                                   # 2: import graph from csv files
-                                   # 3: import graph from igraph file (pickle file)
-                                   # 4: todo import graph from edge_data and vertex_data pickle files
+        # 2: import graph from csv files
+        # 3: import graph from igraph file (pickle file)
+        # 4: todo import graph from edge_data and vertex_data pickle files
         "write_network_option": 1,  # 1: do not write anything
-                                    # 2: write to igraph format # todo: handle overwriting data from import file
-                                    # 3-...: todo other file formats.
+        # 2: write to igraph format # todo: handle overwriting data from import file
+        # 3-...: todo other file formats.
         "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
-                                       # 2: Constant haematocrit
-                                       # 3: todo: RBC tracking
-                                       # 4-...: todo: steady state RBC laws
+        # 2: Constant haematocrit
+        # 3: todo: RBC tracking
+        # 4-...: todo: steady state RBC laws
         "rbc_impact_option": 3,  # 1: No RBCs (hd=0)
-                                 # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-                                 # 3: Laws by Pries and Secomb (2005)
-                                 # 4-...: todo: Other laws. in vivo?
+        # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
+        # 3: Laws by Pries and Secomb (2005)
+        # 4-...: todo: Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
-                             # 2: PyAMG solver
-                             # 3-...: other solvers
+        # 2: PyAMG solver
+        # 3-...: other solvers
 
         # Blood properties
         "ht_constant": 0.3,  # only required if RBC impact is considered
@@ -78,13 +77,12 @@ PARAMETERS = MappingProxyType(
 setup_blood_flow = setup.SetupSimulation()
 # Initialise the implementations based on the parameters specified
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
+    imp_solver, imp_iterative, imp_balance = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
-                           imp_solver, imp_velocity, PARAMETERS)
-flow_balance = FlowBalance(flow_network)
+                           imp_solver, imp_velocity, imp_iterative, imp_balance, PARAMETERS)
 
 # Import or generate the network
 print("Read network: ...")
@@ -101,8 +99,9 @@ print("Update flow, pressure and velocity: ...")
 flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
+# Check flow balance
 print("Check flow balance: ...")
-flow_balance.check_flow_balance()
+flow_network.check_flow_balance()
 print("Check flow balance: DONE")
 
 # Write the results to file
