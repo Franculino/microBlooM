@@ -65,18 +65,18 @@ class SolutionMonitoring(object):
         # Export a csv file for the current values with target value - precision measurements
         data_target = {}
         if np.size(current_flow_rate) > 0 and np.size(current_rbc_velocity) > 0:
-            data_target["eid_target"] = edge_id_target[is_target_type_1]
+            data_target["eid_target"] = np.append(edge_id_target[is_target_type_1], edge_id_target[is_target_type_2])
             data_target["type"] = np.append(np.ones(np.size(current_flow_rate), dtype=int), np.ones(np.size(current_rbc_velocity))*2, dtype=int)
             data_target["current"] = np.append(current_flow_rate,current_rbc_velocity)
             data_target["target"] = np.append(target_values_flow_rate, target_values_rbc_velocity)
         elif np.size(current_flow_rate) > 0:
             data_target["eid_target"] = edge_id_target[is_target_type_1]
-            data_target["type"] = np.ones(np.size(current_flow_rate))
+            data_target["type"] = np.ones(np.size(current_flow_rate), dtype=int)
             data_target["current"] = current_flow_rate
             data_target["target"] = target_values_flow_rate
         elif np.size(current_rbc_velocity) > 0:
             data_target["eid_target"] = edge_id_target[is_target_type_2]
-            data_target["type"] = np.ones(np.size(current_rbc_velocity)) * 2
+            data_target["type"] = np.ones(np.size(current_rbc_velocity), dtype=int) * 2
             data_target["current"] = current_rbc_velocity
             data_target["target"] = target_values_rbc_velocity
 
@@ -97,7 +97,7 @@ class SolutionMonitoring(object):
         # Export a csv file for the current values with target ranges
         data_range = {}
         if np.size(current_flow_rate_range) > 0 and np.size(current_rbc_velocity_range) > 0:
-            data_range["eid_range"] = edge_id_target[is_range_type_1]
+            data_range["eid_range"] = np.append(edge_id_target[is_range_type_1], edge_id_target[is_range_type_2])
             data_range["type"] = np.append(np.ones(np.size(current_flow_rate_range), dtype=int), np.ones(np.size(current_rbc_velocity_range))*2, dtype=int)
             data_range["current"] = np.append(current_flow_rate_range, current_rbc_velocity_range)
             data_range["mean"] = np.append(mean_values_flow_rate, mean_values_rbc_velocity)
