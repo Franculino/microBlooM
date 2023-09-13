@@ -63,26 +63,15 @@ class SolutionMonitoring(object):
         target_values_rbc_velocity = edge_constraint_value[is_target_type_2]
 
         # Export a csv file for the current values with target value - precision measurements
-        data_target = {}
-        if np.size(current_flow_rate) > 0 and np.size(current_rbc_velocity) > 0:
+        if np.size(current_flow_rate) > 0 or np.size(current_rbc_velocity) > 0:
+            data_target = {}
             data_target["eid_target"] = np.append(edge_id_target[is_target_type_1], edge_id_target[is_target_type_2])
             data_target["type"] = np.append(np.ones(np.size(current_flow_rate), dtype=int), np.ones(np.size(current_rbc_velocity), dtype=int) * 2)
             data_target["current"] = np.append(current_flow_rate,current_rbc_velocity)
             data_target["target"] = np.append(target_values_flow_rate, target_values_rbc_velocity)
-        elif np.size(current_flow_rate) > 0:
-            data_target["eid_target"] = edge_id_target[is_target_type_1]
-            data_target["type"] = np.ones(np.size(current_flow_rate), dtype=int)
-            data_target["current"] = current_flow_rate
-            data_target["target"] = target_values_flow_rate
-        elif np.size(current_rbc_velocity) > 0:
-            data_target["eid_target"] = edge_id_target[is_target_type_2]
-            data_target["type"] = np.ones(np.size(current_rbc_velocity), dtype=int) * 2
-            data_target["current"] = current_rbc_velocity
-            data_target["target"] = target_values_rbc_velocity
-
-        df_target = [pd.DataFrame({k: v}) for k, v in data_target.items()]
-        df_target = pd.concat(df_target, axis=1)
-        df_target.to_csv(filepath_target, index=False)
+            df_target = [pd.DataFrame({k: v}) for k, v in data_target.items()]
+            df_target = pd.concat(df_target, axis=1)
+            df_target.to_csv(filepath_target, index=False)
 
         # For the constraint edges with target ranges, so that the constraint range (edge_tar_range_pm) is not zero
         is_range_type_1 = np.logical_and(edge_constraint_type == 1, np.logical_not(edge_constraint_range == 0.))
@@ -95,29 +84,16 @@ class SolutionMonitoring(object):
         range_values_rbc_velocity = edge_constraint_range[is_range_type_2]
 
         # Export a csv file for the current values with target ranges
-        data_range = {}
-        if np.size(current_flow_rate_range) > 0 and np.size(current_rbc_velocity_range) > 0:
+        if np.size(current_flow_rate_range) > 0 or np.size(current_rbc_velocity_range) > 0:
+            data_range = {}
             data_range["eid_range"] = np.append(edge_id_target[is_range_type_1], edge_id_target[is_range_type_2])
             data_range["type"] = np.append(np.ones(np.size(current_flow_rate_range), dtype=int), np.ones(np.size(current_rbc_velocity_range), dtype=int) * 2)
             data_range["current"] = np.append(current_flow_rate_range, current_rbc_velocity_range)
             data_range["mean"] = np.append(mean_values_flow_rate, mean_values_rbc_velocity)
             data_range["range"] = np.append(range_values_flow_rate,range_values_rbc_velocity)
-        elif np.size(current_flow_rate_range) > 0:
-            data_range["eid_range"] = edge_id_target[is_range_type_1]
-            data_range["type"] = np.ones(np.size(current_flow_rate_range), dtype=int)
-            data_range["current"] = current_flow_rate_range
-            data_range["mean"] = mean_values_flow_rate
-            data_range["range"] = range_values_flow_rate
-        elif np.size(current_rbc_velocity_range) > 0:
-            data_range["eid_range"] = edge_id_target[is_range_type_2]
-            data_range["type"] = np.ones(np.size(current_rbc_velocity_range), dtype=int) * 2
-            data_range["current"] = current_rbc_velocity_range
-            data_range["mean"] = mean_values_rbc_velocity
-            data_range["range"] = range_values_rbc_velocity
-
-        df_range = [pd.DataFrame({k: v}) for k, v in data_range.items()]
-        df_range = pd.concat(df_range, axis=1)
-        df_range.to_csv(filepath_range, index=False)
+            df_range = [pd.DataFrame({k: v}) for k, v in data_range.items()]
+            df_range = pd.concat(df_range, axis=1)
+            df_range.to_csv(filepath_range, index=False)
 
         # Export a csv file for cost function vs iterations
         data = {}
