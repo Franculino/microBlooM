@@ -219,6 +219,9 @@ class ReadNetworkCsv(ReadNetwork):
 
 
 class ReadNetworkIgraph(ReadNetwork):
+    """
+    Class for reading a vascular network from igraph file (pickle file).
+    """
     def read(self, flownetwork):
         """
         Import a network from igraph file (pickle file)

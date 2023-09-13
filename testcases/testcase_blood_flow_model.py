@@ -21,11 +21,11 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,  # 1: generate hexagonal graph
+        "read_network_option": 3,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
-        "write_network_option": 1,  # 1: do not write anything
+        "write_network_option": 4,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
                                     # 3: write to vtp format
                                     # 4: write to two csv files
@@ -64,14 +64,14 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "data/network/B6_B_01/b6_B_pre_stroke.pkl",
-        "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
+        "pkl_path_igraph": "data/networks_pre_stroke_Robert/B6_B_init_061.pkl",
+        "ig_diameter": "diameter_tuned_pre", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "data/network/b6_B_pre_061_simulated.pkl"  # only required for "write_network_option" 2
+        "write_path_igraph": "output/networks_pre_stroke_Robert/B6_B_init_061/B6_B_init_061_results"  # only required for "write_network_option" 2
     }
 )
 
