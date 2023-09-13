@@ -64,14 +64,21 @@ class SolutionMonitoring(object):
 
         # Export a csv file for the current values with target value - precision measurements
         data_target = {}
-        if np.size(current_flow_rate) > 0:
-            data_target["eid_target_flow_rate"] = edge_id_target[is_target_type_1]
-            data_target["current_flow_rate"] = current_flow_rate
-            data_target["target_flow_rate"] = target_values_flow_rate
+        if np.size(current_flow_rate) > 0 and np.size(current_rbc_velocity) > 0:
+            data_target["eid_target"] = edge_id_target[is_target_type_1]
+            data_target["type"] = np.append(np.ones(np.size(current_flow_rate), dtype=int), np.ones(np.size(current_rbc_velocity))*2, dtype=int)
+            data_target["current"] = np.append(current_flow_rate,current_rbc_velocity)
+            data_target["target"] = np.append(target_values_flow_rate, target_values_rbc_velocity)
+        elif np.size(current_flow_rate) > 0:
+            data_target["eid_target"] = edge_id_target[is_target_type_1]
+            data_target["type"] = np.ones(np.size(current_flow_rate))
+            data_target["current"] = current_flow_rate
+            data_target["target"] = target_values_flow_rate
         elif np.size(current_rbc_velocity) > 0:
-            data_target["eid_target_rbc_velocity"] = edge_id_target[is_target_type_2]
-            data_target["current_rbc_velocity"] = current_rbc_velocity
-            data_target["target_rbc_velocity"] = target_values_rbc_velocity
+            data_target["eid_target"] = edge_id_target[is_target_type_2]
+            data_target["type"] = np.ones(np.size(current_rbc_velocity)) * 2
+            data_target["current"] = current_rbc_velocity
+            data_target["target"] = target_values_rbc_velocity
 
         df_target = [pd.DataFrame({k: v}) for k, v in data_target.items()]
         df_target = pd.concat(df_target, axis=1)
@@ -89,16 +96,24 @@ class SolutionMonitoring(object):
 
         # Export a csv file for the current values with target ranges
         data_range = {}
-        if np.size(current_flow_rate_range) > 0:
-            data_range["eid_range_flow_rate"] = edge_id_target[is_range_type_1]
-            data_range["current_flow_rate"] = current_flow_rate_range
-            data_range["mean_flow_rate"] = mean_values_flow_rate
-            data_range["range_flow_rate"] = range_values_flow_rate
+        if np.size(current_flow_rate_range) > 0 and np.size(current_rbc_velocity_range) > 0:
+            data_range["eid_range"] = edge_id_target[is_range_type_1]
+            data_range["type"] = np.append(np.ones(np.size(current_flow_rate_range), dtype=int), np.ones(np.size(current_rbc_velocity_range))*2, dtype=int)
+            data_range["current"] = np.append(current_flow_rate_range, current_rbc_velocity_range)
+            data_range["mean"] = np.append(mean_values_flow_rate, mean_values_rbc_velocity)
+            data_range["range"] = np.append(range_values_flow_rate,range_values_rbc_velocity)
+        elif np.size(current_flow_rate_range) > 0:
+            data_range["eid_range"] = edge_id_target[is_range_type_1]
+            data_range["type"] = np.ones(np.size(current_flow_rate_range), dtype=int)
+            data_range["current"] = current_flow_rate_range
+            data_range["mean"] = mean_values_flow_rate
+            data_range["range"] = range_values_flow_rate
         elif np.size(current_rbc_velocity_range) > 0:
-            data_range["eid_range_rbc_velocity"] = edge_id_target[is_range_type_2]
-            data_range["current_rbc_velocity"] = current_rbc_velocity_range
-            data_range["mean_rbc_velocity"] = mean_values_rbc_velocity
-            data_range["range_rbc_velocity"] = range_values_rbc_velocity
+            data_range["eid_range"] = edge_id_target[is_range_type_2]
+            data_range["type"] = np.ones(np.size(current_rbc_velocity_range), dtype=int) * 2
+            data_range["current"] = current_rbc_velocity_range
+            data_range["mean"] = mean_values_rbc_velocity
+            data_range["range"] = range_values_rbc_velocity
 
         df_range = [pd.DataFrame({k: v}) for k, v in data_range.items()]
         df_range = pd.concat(df_range, axis=1)
