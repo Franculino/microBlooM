@@ -44,6 +44,7 @@ PARAMETERS = MappingProxyType(
         "ht_constant": 4E-01,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
         "boundary_hematocrit": [0.4] * 2000,
+        "network_name": "roba2",
 
         # if True set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -87,11 +88,11 @@ PARAMETERS = MappingProxyType(
         "write_path_igraph": "data/out/MVN2.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/plot/29_01",
+        "path_for_graph": "data/out/plot/30_08",
 
         # Write option in case of print in output file (.txt)
-        "path_output_file": "data/out/log_file/29_01/",
-        "network_name": "MVN2 threshold a 1e-3 e 25-10"
+        "path_output_file": "data/out/log_file/30_08/",
+
 
     }
 )

@@ -155,11 +155,11 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
 
             flownetwork.iteration += 1
 
-            if cnvg_flow_avg_per < 0.5 and cnvg_flow_max_per < 1 and cnvg_rbc_avg_per < 0.5 and cnvg_rbc_max_per < 1:
+            if cnvg_hem_avg_per < 0.5 and cnvg_hem_max_per < 1:  # (cnvg_flow_avg_per < 0.5 and cnvg_flow_max_per < 1 and cnvg_rbc_avg_per < 0.5 and cnvg_rbc_max_per < 1 and
                 with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'a') as file:
                     file.write(f"\n-----------------------------\nIteration number {flownetwork.iteration} and data: "
-                                   f"FLOW {cnvg_flow_avg_per:.5e} {cnvg_flow_max_per:.5e}  RBC {cnvg_rbc_avg_per:.5e} {cnvg_rbc_max_per:.5e}  HEMATOCRIT {cnvg_hem_avg_per:.5e}"
-                                   f" {cnvg_hem_max_per:.5e} ALPHA {flownetwork.alpha} VESSEL >1% flow:{vessel_flow:.5e}% rbc:{vessel_rbc:.5e}% hd:{vessel_hd:.5e}%\n-----------------------------")
+                               f"FLOW {cnvg_flow_avg_per:.5e} {cnvg_flow_max_per:.5e}  RBC {cnvg_rbc_avg_per:.5e} {cnvg_rbc_max_per:.5e}  HEMATOCRIT {cnvg_hem_avg_per:.5e}"
+                               f" {cnvg_hem_max_per:.5e} ALPHA {flownetwork.alpha} VESSEL >1% flow:{vessel_flow:.5e}% rbc:{vessel_rbc:.5e}% hd:{vessel_hd:.5e}%\n-----------------------------")
 
                 util_convergence_plot_final(flownetwork, save_data_max_flow, self._PARAMETERS, f"Convergence plot of max flow error(%) after {flownetwork.iteration}",
                                             "final/", "final_flow_max")
@@ -175,14 +175,21 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                 util_convergence_plot_final(flownetwork, save_data_avg_hemat, self._PARAMETERS, f"Convergence plot of average hemat error(%) after {flownetwork.iteration}",
                                             "final/", "final_hemat_avg")
 
-                util_convergence_plot(flownetwork, save_data_max_flow[-100:], self._PARAMETERS, f" flow error % max for all vessel", "final/", "flow_max")
-                util_convergence_plot(flownetwork, save_data_max_rbc[-100:], self._PARAMETERS, f" rbc error % max for all vessel", "final/", "rbc_max")
-                util_convergence_plot(flownetwork, save_data_max_hemat[-100:], self._PARAMETERS, f" hemat error % max for all vessel", "final/", "hemat_max")
-                util_convergence_plot(flownetwork, save_data_avg_flow[-100:], self._PARAMETERS, f" flow error % avg for all vessel", "final/", "flow_avg")
-                util_convergence_plot(flownetwork, save_data_avg_rbc[-100:], self._PARAMETERS, f" rbc error % avg for all vessel", "final/", "rbc_avg")
-                util_convergence_plot(flownetwork, save_data_avg_hemat[-100:], self._PARAMETERS, f" hemat error % avg for all vessel", "final/", "hemat_avg")
-
+                # util_convergence_plot(flownetwork, save_data_max_flow[-100:], self._PARAMETERS, f" flow error % max for all vessel", "final/", "flow_max")
+                # util_convergence_plot(flownetwork, save_data_max_rbc[-100:], self._PARAMETERS, f" rbc error % max for all vessel", "final/", "rbc_max")
+                # util_convergence_plot(flownetwork, save_data_max_hemat[-100:], self._PARAMETERS, f" hemat error % max for all vessel", "final/", "hemat_max")
+                # util_convergence_plot(flownetwork, save_data_avg_flow[-100:], self._PARAMETERS, f" flow error % avg for all vessel", "final/", "flow_avg")
+                # util_convergence_plot(flownetwork, save_data_avg_rbc[-100:], self._PARAMETERS, f" rbc error % avg for all vessel", "final/", "rbc_avg")
+                # util_convergence_plot(flownetwork, save_data_avg_hemat[-100:], self._PARAMETERS, f" hemat error % avg for all vessel", "final/", "hemat_avg")
+                #
                 flownetwork.convergence_check = True
+
+                percentage_vessel_plot(flownetwork, save_data_vessel_flow, self._PARAMETERS, f" Percentage of vessel with change under the threshold - FLOW",
+                                       "vessel_flow")
+                percentage_vessel_plot(flownetwork, save_data_vessel_hemat, self._PARAMETERS, f" Percentage of vessel with change under the threshold - HEMATOCRIT",
+                                       "vessel_hd")
+                percentage_vessel_plot(flownetwork, save_data_vessel_rbc, self._PARAMETERS, f" Percentage of vessel with change under the threshold - RBC", "vessel_rbc")
+
 
             else:
 
@@ -203,13 +210,13 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
 
                 if flownetwork.iteration % 5 == 0:
                     with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'a') as file:
-                        file.write(f"Itr {flownetwork.iteration} and data: "
+                        file.write(f"\nItr {flownetwork.iteration} and data: "
                                    f"FLOW {cnvg_flow_avg_per:.5e} {cnvg_flow_max_per:.5e}  RBC {cnvg_rbc_avg_per:.5e} {cnvg_rbc_max_per:.5e}  HEMATOCRIT {cnvg_hem_avg_per:.5e}"
                                    f" {cnvg_hem_max_per:.5e} ALPHA {flownetwork.alpha} VESSEL >1% flow:{vessel_flow:.5e}% rbc:{vessel_rbc:.5e}% hd:{vessel_hd:.5e}% ")
 
                 flownetwork.convergence_check = False
 
-        print("Convergence: DONE in -> " + str(flownetwork.iteration))
+        print(f"Convergence: DONE in -> {flownetwork.iteration} \nAlpha -> {flownetwork.alpha} ")
 
         s_curve_util(self._PARAMETERS, flownetwork)
 
@@ -217,5 +224,6 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
         s_curve_personalized_thersholds(flownetwork, self._PARAMETERS, 0.3)
         s_curve_personalized_thersholds(flownetwork, self._PARAMETERS, 0.5)
         s_curve_personalized_thersholds(flownetwork, self._PARAMETERS, 0.7)
+        s_curve_personalized_thersholds(flownetwork, self._PARAMETERS, 0.9)
 
         s_curve_util_trifurcation(self._PARAMETERS, flownetwork)

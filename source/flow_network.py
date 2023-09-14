@@ -74,10 +74,12 @@ class FlowNetwork(object):
         self._PARAMETERS = PARAMETERS
 
         self.alpha = PARAMETERS['alpha']
+        self.sor = True
 
         self.avg_check = 0
         self.max_check = 0
         self.avg_old = 0
+        self.iterationExit = 0
         return
 
     def read_network(self):

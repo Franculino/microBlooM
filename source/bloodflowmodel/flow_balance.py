@@ -80,4 +80,3 @@ class FlowBalanceClass(FlowBalance):
         # it is computed the new flow inside
         if flownetwork._PARAMETERS["low_flow_vessel"] is True and flownetwork.zeroFlowThreshold is None:
             flownetwork.flow_rate = set_low_flow_threshold(flownetwork, local_balance)
-            print("entrato")

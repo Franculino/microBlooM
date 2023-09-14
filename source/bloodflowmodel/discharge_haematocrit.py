@@ -4,7 +4,7 @@ import sys
 
 import math
 import numpy as np
-# from line_profiler_pycharm import profile
+
 from math import e
 import copy
 from collections import defaultdict
@@ -288,9 +288,9 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
         x_0 = self.x_o_init * (1 - hemat_par) / diam_par
 
-        A = (-self.A_o_init) * ((pow(diam_a, 2) - pow(diam_b, 2)) / (pow(diam_a, 2) + pow(diam_b, 2))) * (
-                1 - hemat_par) / diam_par
-
+        # A = (-self.A_o_init) * ((pow(diam_a, 2) - pow(diam_b, 2)) / (pow(diam_a, 2) + pow(diam_b, 2))) * (
+        #         1 - hemat_par) / diam_par
+        A = -self.A_o_init * ((diam_a - diam_b) / (diam_a + diam_b)) * ((1 - hemat_par) / diam_par)
         B = 1 + (self.B_o_init * (1 - hemat_par) / diam_par)
 
         return x_0, A, B
@@ -736,36 +736,59 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
 
 def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit, PARAMETERS):
-    if flownetwork.avg_old is None:
-        flownetwork.avg_old = 0
-    # controllo l'andamento dell'hematocrito
     cnvg_hem = np.abs(old_hematocrit - prd_hematocrit) / old_hematocrit * 100
-    cnvg_hem_avg_per = np.average(cnvg_hem[np.isfinite(cnvg_hem)])
-    cnvg_hem_max_per = np.max(cnvg_hem[np.isfinite(cnvg_hem)])
+    valid_indices = np.isfinite(cnvg_hem)
+    cnvg_hem_avg_per = np.average(cnvg_hem[valid_indices])
+    cnvg_hem_max_per = np.max(cnvg_hem[valid_indices])
+    output_data = f"Average: {cnvg_hem_avg_per}  Max: {cnvg_hem_max_per}\n"
+    output_file_path = f"{PARAMETERS['path_output_file']}/{PARAMETERS['network_name']}.txt"
+    burn_message = "\n BURN BABY BURN \n"
 
-    with open(PARAMETERS['path_output_file'] + "/" + PARAMETERS['network_name'] + ".txt", 'a') as file:
-        file.write(f"Average: {cnvg_hem_avg_per}  Max: {cnvg_hem_max_per} \n")
+    match flownetwork.sor:
 
-    if np.abs(flownetwork.avg_old - cnvg_hem_avg_per) <= 1e-3:
-        flownetwork.avg_check += 1
-    else:
-        flownetwork.avg_check = 0
+        case True:
+            with open(output_file_path, 'a') as file:
+                file.write(output_data)
 
-    if cnvg_hem_max_per <= 100:
-        flownetwork.max_check += 1
-    else:
-        flownetwork.max_check = 0
-    flownetwork.avg_old = cnvg_hem_avg_per
+            if np.abs(flownetwork.avg_old - cnvg_hem_avg_per) <= 1e-5:
+                flownetwork.avg_check += 1
+            else:
+                flownetwork.avg_check = 0
 
-    if flownetwork.avg_check >= 25 and flownetwork.max_check >= 10:
-        with open(PARAMETERS['path_output_file'] + "/" + PARAMETERS['network_name'] + ".txt", 'a') as file:
-            file.write(f"\n BURN BABY BURN \n \n")
-        result = prd_hematocrit
-    elif flownetwork.iteration % 50 == 0 and flownetwork.iteration != 0:
-        flownetwork.alpha = round(flownetwork.alpha * 0.9, 4)
-        result = (round(1 - flownetwork.alpha, 4) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)
-    else:
-        result = (round(1 - flownetwork.alpha, 4) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)
+            if cnvg_hem_max_per <= 100:
+                flownetwork.max_check += 1
+            else:
+                flownetwork.max_check = 0
+
+            flownetwork.avg_old = cnvg_hem_avg_per
+
+            if (flownetwork.iteration % 300 == 0 and flownetwork.iteration != 0) or \
+                    (flownetwork.avg_check >= 50 and flownetwork.max_check >= 50):
+                with open(output_file_path, 'a') as file:
+                    file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- exit from the update with alpha  \n \n")
+                result = prd_hematocrit
+                flownetwork.sor = False
+                flownetwork.iterationExit += 1
+            elif flownetwork.iteration % 50 == 0 and flownetwork.iteration != 0:
+                flownetwork.alpha = round(flownetwork.alpha * 0.9, 4)
+                result = (round(1 - flownetwork.alpha, 4) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)
+            else:
+                result = (round(1 - flownetwork.alpha, 4) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)
+
+        case False:
+            result = prd_hematocrit
+            with open(output_file_path, 'a') as file:
+                file.write(output_data)
+
+            if flownetwork.iterationExit >= 3:
+                flownetwork.sor = True
+                flownetwork.iterationExit = 0
+                with open(output_file_path, 'a') as file:
+                    file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- go back from the update with alpha\n \n")
+                # it is necessary to update the alpha because we exti at 300
+                flownetwork.alpha = round(flownetwork.alpha * 0.9, 4)
+            else:
+                flownetwork.iterationExit += 1
 
     return result
 
