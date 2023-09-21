@@ -50,7 +50,7 @@ class InverseModel(object):
         self.alpha_pm_range = None
 
         self.transmiss_baselinevalue = None  # baseline transmissibility (1d np.array)
-        self.diameter_baselinevalue = None
+        self.diameter_baselinevalue = None  # baseline diameter (1d np.array)
 
         self.boundary_pressure_baselinevalue = None
 
@@ -58,19 +58,19 @@ class InverseModel(object):
         self.transmiss_tilde = None
 
         # Inverse model parameters
-        self.gamma = None
-        self.phi = None
+        self.gamma = None  # constant learning rate
+        self.phi = None  # constant parameter to tune the shape of the function between alpha and alpha_prime
 
         # Inverse model cost terms
         self.f_h = None  # Cost of hard constraint
 
-        # Adjoint method vectors and matrices
+        # Adjoint method vectors and matrices - derivatives
         self.d_f_d_alpha = None  # Vector
         self.d_f_d_pressure = None  # Vector
         self.d_g_d_alpha = None  # coo_matrix
         self._lambda = None  # Vector
 
-        # Gradient
+        # Gradient descent
         self.gradient_alpha = None
         self.gradient_alpha_prime = None
 
@@ -81,7 +81,7 @@ class InverseModel(object):
         self._imp_adjointmethodsolver = imp_adjointmethodsolver
         self._imp_alphamapping = imp_alphamapping
 
-        # Solution monitoring - Visualisation
+        # Simulation monitoring - Visualisation
         self.current_iteration = 0
         self.iteration_array = np.array([])
         self.f_h_array = np.array([])
