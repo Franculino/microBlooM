@@ -64,14 +64,14 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "data/networks_pre_stroke_Robert/B6_B_init_061.pkl",
-        "ig_diameter": "diameter_tuned_pre", "ig_length": "length", "ig_coord_xyz": "coords",
+        "pkl_path_igraph": "testcase_autoregulation/passive_autoregulation_curve/data/B6_C_init_001/B6_C_init_001.pkl",
+        "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "output/networks_pre_stroke_Robert/B6_B_init_061/B6_B_init_061_results"  # only required for "write_network_option" 2
+        "write_path_igraph": "testcase_autoregulation/passive_autoregulation_curve/output/B6_C_init_001/pin100/B6_C_init_001_results"  # only required for "write_network_option" 2
     }
 )
 
