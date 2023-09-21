@@ -11,9 +11,9 @@ import source.inverse_model as inverse_model
 from types import MappingProxyType
 
 
-class SolutionMonitoring(object):
+class SimulationMonitoring(object):
     """
-    Class for monitoring the solution for the inverse model.
+    Class for monitoring the simulation for the inverse model.
     """
 
     def __init__(self, flownetwork: flow_network.FlowNetwork, inversemodel: inverse_model.InverseModel,
@@ -32,7 +32,7 @@ class SolutionMonitoring(object):
         and the current values of the edge ids which have target ranges.
         """
 
-        csv_path = self._PARAMETERS["csv_path_solution_monitoring"]
+        csv_path = self._PARAMETERS["csv_path_simulation_monitoring"]
         current_iteration = self.inversemodel.current_iteration
 
         filepath_target = csv_path + "data_convergence_target_" + str(current_iteration) + ".csv"
@@ -107,10 +107,10 @@ class SolutionMonitoring(object):
 
     def plot_cost_fuction_vs_iterations(self):
         """
-        Plot the cost function vs iterations.
+        Export a plot of the cost function vs iterations.
         """
 
-        png_path = self._PARAMETERS["png_path_solution_monitoring"]
+        png_path = self._PARAMETERS["png_path_simulation_monitoring"]
         current_iteration = self.inversemodel.current_iteration
 
         filepath_png = png_path + "cost_function_vs_iterations_" + str(current_iteration) + ".png"
@@ -134,10 +134,10 @@ class SolutionMonitoring(object):
 
     def export_sim_data_node_edge_csv(self):
         """
-        Export two different csv files for the simulation values for each node and edge.
+        Export two different csv files for the current simulation values for each node and edge.
         """
 
-        csv_path = self._PARAMETERS["csv_path_solution_monitoring"]
+        csv_path = self._PARAMETERS["csv_path_simulation_monitoring"]
         current_iteration = self.inversemodel.current_iteration
 
         filepath_vs = csv_path + "data_vs_" + str(current_iteration) + ".csv"
@@ -184,8 +184,11 @@ class SolutionMonitoring(object):
         return
 
     def export_network_pkl(self):
+        """
+        Export a pickle file for the current network.
+        """
 
-        pkl_path = self._PARAMETERS["pkl_path_solution_monitoring"]
+        pkl_path = self._PARAMETERS["pkl_path_simulation_monitoring"]
         current_iteration = self.inversemodel.current_iteration
 
         filepath = pkl_path + "network_" + str(current_iteration) + ".pkl"

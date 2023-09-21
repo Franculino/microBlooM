@@ -9,6 +9,7 @@ class Distensibility(object):
     def __init__(self, flownetwork: flow_network.FlowNetwork,
                  imp_distensibilitylaw: distensibility_law.DistensibilityLaw,
                  imp_read_distensibility_parameters: read_distensibility_parameters.ReadDistensibilityParameters):
+
         # "Reference" to flow network
         self._flow_network = flownetwork
 

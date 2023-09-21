@@ -51,7 +51,7 @@ class SetupSimulation(Setup):
         Set up the simulation and returns various implementations of the blood flow model
         :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
         :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
-        :returns: the implementation objects. Error if invalid option is chosen. todo return specification
+        :returns: the implementation objects. Error if invalid option is chosen.
         """
 
         # Initialise the class to read / generate a network
