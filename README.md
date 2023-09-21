@@ -154,9 +154,7 @@ The possible formats are igraph format (in a `.pkl` file), `vtp` format or `CSV`
 
 ### Test cases
 The simulation can be fitted for a specific network by the user that can modify the following parameter:
-<details> 
-<summary> </summary>
-</detail>
+
 
 
 
