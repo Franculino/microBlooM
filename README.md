@@ -1,8 +1,8 @@
 # microBlooM
 
-**MicroBloomM** is an open-source simulation framework that has been generated to improve our understanding of the flow characteristics in a microvasculature. The numerical simulations computate the blood flow in microvascular networks, considering the impact of red blood cells (Fåhraeus-Linquist effects) [1,2]. The elasticity of the blood vessels has been included, allowing the simulation of passive vascular diameter adaptations with respect to pressure changes [3].
+**MicroBloomM** is an open-source simulation framework that has been generated to improve our understanding of the flow characteristics in a microvasculature. The numerical simulations compute the blood flow in microvascular networks, considering the impact of red blood cells (Fåhraeus-Linquist effects) [1,2]. The elasticity of the blood vessels has been included, allowing the simulation of passive vascular diameter adaptations with respect to pressure changes [3].
 
-Furthermore a novel _inverse model_ has been developed for microvascular blood flow that is capable of inferring vascular parameters such as vascular diameter and transmissibility based on prescribed flow characteristics. In addition, the inverse model has been extended to predict the network boundary conditions that are required to obtain the desired flow characteristics.
+Furthermore, a novel _inverse model_ has been developed for microvascular blood flow that is capable of inferring vascular parameters such as vascular diameter and transmissibility based on prescribed flow characteristics. In addition, the inverse model has been extended to predict the network boundary conditions that are required to obtain the desired flow characteristics.
 
 The simulations are associated with test cases that can be modified by the user (see [Usage](#usage)). The following list reports the designed test case:
 
@@ -11,7 +11,7 @@ The simulations are associated with test cases that can be modified by the user 
 - [`testcase_inverse_problem.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_inverse_problem.py): an inverse model approach for estimating vascular parameters such as diameters and transmissibilities of microvascular networks based on given flow rates and velocities in selected vessels.
 - [`testcase_bc_tuning.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_bc_tuning.py): an inverse model approach for estimating network boundary conditions based on given flow rates and velocities in selected vessels.
 
-Please find a more detailed description for each test case in the corresponding testcases file.
+Please find a more detailed description for each test case in the corresponding test cases file.
 
 **NOTE: all parameters are in S.I. units**
 
@@ -53,7 +53,7 @@ cd microBlooM
 python3 main.py
 ```
 
-The framework does not have yet an executable file to launch the program and select the desire outcome, refer to [Usage](#usage) for further information.
+The framework does not have yet an executable file to launch the program and select the desired outcome, refer to [Usage](#usage) for further information.
 
 ## Usage
 
@@ -63,7 +63,7 @@ The available simulation can be run from [`main.py`](https://github.com/Franculi
 
 ### Input files
 
-The framework could accept as input files: graph in igraph format (stored in pickle file, `.pkl`) or `CSV` files, that need to be store in `data\network` folder and modify the relative path in the choosen test case file. In case there is no network available, it is possible to create a hexagonal network.
+The framework could accept as input files: graph in igraph format (stored in pickle file, `.pkl`) or `CSV` files, that need to be stored in `data\network` folder and modify the relative path in the chosen test case file. In case there is no network available, it is possible to create a hexagonal network.
 
 The specific format for both cases is detailed in [`fileio\read_netwowrk.py`](https://github.com/Franculino/microBlooM/blob/main/source/fileio/read_network.py) and below.
 
@@ -118,7 +118,7 @@ one (3 x nv) array, where nv is the number of vertices:
          [xnv, ynv, znv]]
 ```
 
-_Edge data_: At least two attribute are required to describe the diameters and lengths of all edges.
+_Edge data_: At least two attributes are required to describe the diameters and lengths of all edges.
 
 ```
 two (1 x ne) arrays, where ne is number of edges:
@@ -141,7 +141,7 @@ two (1 x nv) arrays, where nv is number of vertices:
 
  <summary>  Hexagonal Network </summary>
 
-The hexagonal network properties can be modify from the `testcase` file of the choose simulation. Here an example of possible values:
+The hexagonal network properties can be modified from the `testcase` file of the choose simulation. Here an example of possible values:
 
         "nr_of_hexagon_x": 3,
         "nr_of_hexagon_y": 3,
@@ -151,7 +151,7 @@ The hexagonal network properties can be modify from the `testcase` file of the c
         "hexa_boundary_values": [2, 1],
         "hexa_boundary_types": [1, 1],
 
-Note: the number od hexagon must be odd.
+Note: the number odd hexagon must be odd.
 
 </details>
 
