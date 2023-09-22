@@ -1,8 +1,9 @@
 # microBlooM
 
-**MicroBloomM** is an open-source simulation framework that has been generated to improve our understanding of the flow characteristics in a microvasculature. The numerical simulations compute the blood flow in microvascular networks, considering the impact of red blood cells (Fåhraeus-Linquist effects) [1,2]. The elasticity of the blood vessels has been included, allowing the simulation of passive vascular diameter adaptations with respect to pressure changes [3].
+**MicroBloomM** 
+is an open-source simulation framework to study flow characteristics in the microvasculature. The numerical model computes blood flow in microvascular networks for pure plasma flow or considering the impact of red blood cells (Fåhraeus-Linqvist effect) [5,6]. Equations are derived based on Poiseuille’s law and the continuity equation. The microvascular network is represented by a 1D-graph. The elasticity of the blood vessels has been included, allowing the simulation of passive vascular diameter adaptations with respect to pressure changes [7].
 
-Furthermore, a novel _inverse model_ has been developed for microvascular blood flow that is capable of inferring vascular parameters such as vascular diameter and transmissibility based on prescribed flow characteristics. In addition, the inverse model has been extended to predict the network boundary conditions that are required to obtain the desired flow characteristics.
+Furthermore, different inverse models are available. One version can infer vascular parameters such as vascular diameter and transmissibility based on prescribed flow characteristics [3,4]. Another version can be used to predict pressure boundary conditions required to obtain the prescribed flow characteristics.
 
 The simulations are associated with test cases that can be modified by the user (see [Usage](#usage)). The following list reports the designed test case:
 
@@ -59,22 +60,21 @@ The framework does not have yet an executable file to launch the program and sel
 
 ### Run the simulation
 
-The available simulation can be run from [`main.py`](https://github.com/Franculino/microBlooM/blob/main/main.py) and in order to select the desired simulation it is necessary to uncomment the specific test cases.
+The available simulation can be run from [`main.py`](https://github.com/Franculino/microBlooM/blob/main/main.py). In order to select the desired simulation it is necessary to uncomment the specific test cases.
 
 ### Input files
 
-The framework could accept as input files: graph in igraph format (stored in pickle file, `.pkl`) or `CSV` files, that need to be stored in `data\network` folder and modify the relative path in the chosen test case file. In case there is no network available, it is possible to create a hexagonal network.
+A prerequisite to run the simulation is the vascular network in graph format. The graph can be loaded in igraph format either stored in pickle file (.pkl) or CSV, that need to be stored in `data\network` folder and modify the relative path in the chosen test case file. In case there is no network available, it is possible to create a hexagonal network.
 
 The specific format for both cases is detailed in [`fileio\read_netwowrk.py`](https://github.com/Franculino/microBlooM/blob/main/source/fileio/read_network.py) and below.
 
 <details>
  <summary>  CSV </summary>
 
-Import a network from the three csv text files containing vertex, edge and boundary data.
+Import a network from three csv text files containing vertex, edge and boundary data.
 
 _Vertex (vx) data_: At least three columns are required to describe the x, y and z coordinates of all vertices. A
-header for each column has to be provided. Example file structure (order of columns does not matter; additional
-columns are ignored):
+header for each column has to be provided. Example file structure (order of columns does not matter; columns without header are ignored):
 
         x_coord, y_coord, z_coord
         x_coord_of_vx_0,y_coord_of_vx_0,z_coord_of_vx_0
@@ -82,9 +82,9 @@ columns are ignored):
                 :      ,        :      ,        :
                 :      ,        :      ,        :
 
-_Edge data_: At least four columns are required to describe the incidence vertices (requires two columns, i.e.,
+_Edge data_: At least four columns are required to describe the connectivity (requires two columns, i.e.,
 one for each incidence vertex per edge), diameters and lengths of all edges. A header for each column has to be
-provided. Example file structure (order of columns does not matter; additional columns are ignored):
+provided. Example file structure (order of columns does not matter; columns without header are ignored):
 
         vx_incident_1, vertex_incident_2, diameter, length
         incident_vx_1_of_edge_0,incident_vx_2_of_edge_0,diameter_of_edge_0,length_of_edge_0
@@ -94,7 +94,7 @@ provided. Example file structure (order of columns does not matter; additional c
 
 _Boundary data_: At least three columns are required to prescribe the vertex indices of boundary conditions,
 the boundary type (1: pressure, 2: flow rate) and the boundary values (can be pressure or flow rate).
-Example file structure (order of columns does not matter; additional columns are ignored):
+Example file structure (order of columns does not matter; columns without header are ignored):
 
         vx_id_of_boundary, boundary_type, boundary_value
         vx_id_boundary_0,boundary_type_0,boundary_value_0
@@ -107,7 +107,9 @@ Example file structure (order of columns does not matter; additional columns are
 <details>
  <summary>  Igraph (.pkl) </summary>
 
-_Vertex data_: At least one attribute is required to describe the x, y and z coordinates of all vertices.
+ The loaded igraph needs to contain the following vertex and edge attributes. The name of the respective attributes can be modified in the test case files. The default names are stated below. Note the boundary data is also stored as vertex attribute, i.e. in total there are at least three vertex attributes.
+
+_Vertex data_: At least one attribute is required to describe the x, y and z coordinates of all vertices ("coords").
 
 ```
 one (3 x nv) array, where nv is the number of vertices:
@@ -118,7 +120,7 @@ one (3 x nv) array, where nv is the number of vertices:
          [xnv, ynv, znv]]
 ```
 
-_Edge data_: At least two attributes are required to describe the diameters and lengths of all edges.
+_Edge data_: At least two attributes are required to describe the diameters ("diameter") and lengths ("length") of all edges.
 
 ```
 two (1 x ne) arrays, where ne is number of edges:
@@ -126,8 +128,7 @@ two (1 x ne) arrays, where ne is number of edges:
         length: [l0, l1, ..., lne ]
 ```
 
-_Boundary data_: At least two vertex attributes are required to prescribe the boundary type (1: pressure, 2: flow rate, None: otherwise) and the boundary values (can be pressure or flow rate,
-None: otherwise).
+_Boundary data_: At least two vertex attributes are required to prescribe the boundary type (1: pressure, 2: flow rate, None: otherwise, "boundaryType") and the boundary values (can be pressure or flow rate, None: otherwise, "boundaryValue").
 
 ```
 two (1 x nv) arrays, where nv is number of vertices:
@@ -157,33 +158,39 @@ Note: the number odd hexagon must be odd.
 
 ### Output Network files
 
-The simulation can provide as output the resulting network if the parameter has been set in the test case file.
+If switched on in the test case file, the simulation output can be saved.
 The possible formats are igraph format (in a `.pkl` file), `vtp` format or `CSV` file. It is necessary to set the relative path with the desired output folder in the test case file.
 
-### Test cases
-
-The simulation can be fitted for a specific network by the user. The parameter that can be modified can be found in the description of each test case.
 
 ## Contributing
 
 **microBlooM** has been developed by Franca Schmid (FS), Robert Epp (RE) and Chryso Lambride (CL).
 
-Please cite the repository and the following papers when using it:
+Please cite the repository and the following papers when using the blood flow model [1] and when using the inverse model [2,3,4] (See Bibliography).
 
-1. Schmid, F., Tsai, P. S., Kleinfeld, D., Jenny, P., & Weber, B. (2017). [Depth-dependent flow and pressure characteristics in cortical microvascular networks](https://doi.org/10.1371/journal.pcbi.1005392). PLoS Computational Biology, 13(2), e1005392.
-
-2. Epp, R., Schmid, F., Weber, B., Jenny, P. (2020). [Predicting vessel diameter changes to up-regulate bi-phasic blood flow during activation in realistic microvascular networks.](https://doi.org/10.3389/fphys.2020.566303) Frontiers in Physiology, 11, 1132.
 
 ## LICENCE
 
 This project is licensed under the terms of the [GNU General Public License v3.0](https://github.com/Franculino/microBlooM/blob/main/LICENSE)
 
 
+## Contact
+
+Please contact FS in case of questions or requests (franca.schmid@unibe.ch).
+
+
 ## Bibliography
 
-[1] Pries, A. R., Neuhaus, D., & Gaehtgens, P. (1992). [Blood viscosity in tube flow: dependence on diameter and hematocrit](https://doi.org/10.1152/ajpheart.1992.263.6.H1770). The American journal of physiology, 263(6 Pt 2), H1770–H1778. 
+[1] Schmid, F., Tsai, P. S., Kleinfeld, D., Jenny, P., & Weber, B. (2017). [Depth-dependent flow and pressure characteristics in cortical microvascular networks](https://doi.org/10.1371/journal.pcbi.1005392). PLoS Computational Biology, 13(2), e1005392.
 
+[2] Epp, R., Schmid, F., Weber, B., Jenny, P. (2020). [Predicting vessel diameter changes to up-regulate bi-phasic blood flow during activation in realistic microvascular networks.](https://doi.org/10.3389/fphys.2020.566303) Frontiers in Physiology, 11, 1132.
 
-[2] Pries, A. R., & Secomb, T. W. (2005). [Microvascular blood viscosity in vivo and the endothelial surface layer](https://doi.org/10.1152/ajpheart.00297.2005). American journal of physiology. Heart and circulatory physiology, 289(6), H2657–H2664. 
+[3] Epp, R., Glück, C., Binder, N.F,, El Amki, M., Weber, B., Wegener, S., Jenny, P., Schmid, F., 2023. [The role of leptomeningeal collaterals in redistributing blood flow during stroke](https://doi.org/toBeAdded). PLoS Computational Biology.
 
-[3] Sherwin, S.J., Franke, V., Peiro, J., Parker, K., 2003. [One-dimensional modelling of a vascular network in space- time variables](https://doi.org/10.1023/B:ENGI.0000007979.32871.e2). Journal of Engineering Mathematics 47(3), 217-250.
+[4] Epp, R., Schmid, F. , Jenny, P., 2022. [Hierarchical regularization of solution ambiguity in underdetermined inverse optimization problems](https://doi.org/10.1016/j.jcpx.2022.100105). Journal of Computational Physics: X, 13(100105).
+
+[5] Pries, A. R., Neuhaus, D., & Gaehtgens, P. (1992). [Blood viscosity in tube flow: dependence on diameter and hematocrit](https://doi.org/10.1152/ajpheart.1992.263.6.H1770). The American journal of physiology, 263(6 Pt 2), H1770–H1778. 
+
+[6] Pries, A. R., & Secomb, T. W. (2005). [Microvascular blood viscosity in vivo and the endothelial surface layer](https://doi.org/10.1152/ajpheart.00297.2005). American journal of physiology. Heart and circulatory physiology, 289(6), H2657–H2664. 
+
+[7] Sherwin, S.J., Franke, V., Peiro, J., Parker, K., 2003. [One-dimensional modelling of a vascular network in space- time variables](https://doi.org/10.1023/B:ENGI.0000007979.32871.e2). Journal of Engineering Mathematics 47(3), 217-250.
