@@ -185,7 +185,7 @@ Please contact FS in case of questions or requests (franca.schmid@unibe.ch).
 
 [2] Epp, R., Schmid, F., Weber, B., Jenny, P. (2020). [Predicting vessel diameter changes to up-regulate bi-phasic blood flow during activation in realistic microvascular networks.](https://doi.org/10.3389/fphys.2020.566303) Frontiers in Physiology, 11, 1132.
 
-[3] Epp, R., Glück, C., Binder, N.F,, El Amki, M., Weber, B., Wegener, S., Jenny, P., Schmid, F., 2023. [The role of leptomeningeal collaterals in redistributing blood flow during stroke](https://doi.org/toBeAdded). PLoS Computational Biology.
+[3] Epp, R., Glück, C., Binder, N.F,, El Amki, M., Weber, B., Wegener, S., Jenny, P., Schmid, F., 2023. [The role of leptomeningeal collaterals in redistributing blood flow during stroke](https://doi.org/10.1371/journal.pcbi.1011496). PLoS Computational Biology.
 
 [4] Epp, R., Schmid, F. , Jenny, P., 2022. [Hierarchical regularization of solution ambiguity in underdetermined inverse optimization problems](https://doi.org/10.1016/j.jcpx.2022.100105). Journal of Computational Physics: X, 13(100105).
 
