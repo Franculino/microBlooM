@@ -9,6 +9,7 @@ class Distensibility(object):
     def __init__(self, flownetwork: flow_network.FlowNetwork,
                  imp_distensibilitylaw: distensibility_law.DistensibilityLaw,
                  imp_read_distensibility_parameters: read_distensibility_parameters.ReadDistensibilityParameters):
+
         # "Reference" to flow network
         self._flow_network = flownetwork
 
@@ -18,7 +19,7 @@ class Distensibility(object):
         self.wall_thickness = None  # Vessel wall thickness
         self.eid_vessel_distensibility = None  # Eids that have a vessel distensibility
         self.nu = 0.5  # Poisson ratio of the vessel wall. nu = 0.5, if vessel walls are incompressible
-        self.pressure_external = None
+        self.pressure_external = None  # Extravascular pressure
 
         # Reference values
         self.pressure_ref = None
