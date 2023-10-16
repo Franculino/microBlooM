@@ -124,7 +124,8 @@ def edge_connected_dict(edge_list):
 
 
 class DischargeHaematocritPries1990(DischargeHaematocrit):
-    def qRCS(self, case, flow_a_par, flow_b_par, flow_c_par, flow_a_d, flow_b_d, flow_c_d, hemat_a_par, hemat_b_par, hemat_c_par, hemat_a_d, hemat_b_d, hemat_c_d, **kwargs):
+    def qRCS(self, case, flow_a_par, flow_b_par, flow_c_par, flow_a_d, flow_b_d, flow_c_d, hemat_a_par, hemat_b_par, hemat_c_par, hemat_a_d, hemat_b_d,
+             hemat_c_d, **kwargs):
         """
         check the RBC balance
         qRBC = q * Hdt
@@ -208,18 +209,21 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         rbc_balance += self.qRCS(1, flow_parent, None, None, flow_daughter, None, None, hemat_parent, None, None, hematocrit, None, None, )
         return hematocrit, rbc_balance
 
-    def hematocrit_1_3(self, flow_parent, hemat_parent, flow_daughter_a, flow_daughter_b, flow_daughter_c, rbc_balance, fractional_trifurc_RBCs, fractional_trifurc_blood):
+    def hematocrit_1_3(self, flow_parent, hemat_parent, flow_daughter_a, flow_daughter_b, flow_daughter_c, rbc_balance, fractional_trifurc_RBCs,
+                       fractional_trifurc_blood):
         if hemat_parent == 0 or flow_parent == 0:
             hematocrit_a, hematocrit_b, hematocrit_c = 0, 0, 0
         else:
             hematocrit_a, hematocrit_b, hematocrit_c = hemat_parent, hemat_parent, hemat_parent
 
             qRBC_parent = flow_parent * hemat_parent
-            fractional_trifurc_RBCs.extend([(flow_daughter_a * hematocrit_a) / qRBC_parent, (flow_daughter_b * hematocrit_b) / qRBC_parent, (flow_daughter_c * hematocrit_c)
-                                            / qRBC_parent])
+            fractional_trifurc_RBCs.extend(
+                [(flow_daughter_a * hematocrit_a) / qRBC_parent, (flow_daughter_b * hematocrit_b) / qRBC_parent, (flow_daughter_c * hematocrit_c)
+                 / qRBC_parent])
             fractional_trifurc_blood.extend([flow_daughter_a / flow_parent, flow_daughter_b / flow_parent, flow_daughter_c / flow_parent])
 
-        rbc_balance += self.qRCS(3, flow_parent, None, None, flow_daughter_a, flow_daughter_b, flow_daughter_c, hemat_parent, None, None, hematocrit_a, hematocrit_b,
+        rbc_balance += self.qRCS(3, flow_parent, None, None, flow_daughter_a, flow_daughter_b, flow_daughter_c, hemat_parent, None, None, hematocrit_a,
+                                 hematocrit_b,
                                  hematocrit_c)
         return hematocrit_a, hematocrit_b, hematocrit_c, rbc_balance
 
@@ -248,7 +252,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
         return diameter_parent, flow_parent, hemat_parent
 
-    def hematocrit_1_2(self, flow_parent, hemat_parent, flow_daughter_a, flow_daughter_b, rbc_balance, diameter_parent, diameter_a, diameter_b, fractional_a_qRBCs,
+    def hematocrit_1_2(self, flow_parent, hemat_parent, flow_daughter_a, flow_daughter_b, rbc_balance, diameter_parent, diameter_a, diameter_b,
+                       fractional_a_qRBCs,
                        fractional_b_qRBCs, fractional_a_blood, fractional_b_blood, hemat_parent_plot):
 
         if hemat_parent == 0 and flow_parent == 0:
@@ -275,10 +280,12 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
             hematocrit = 0
         else:
             # computation of the hematocrit for the daughter vessel
-            hematocrit = ((flow_parent_a * hemat_parent_a) + (flow_parent_b * hemat_parent_b) + (flow_parent_c * hemat_parent_c)) / (flow_parent_a + flow_parent_b +
-                                                                                                                                     flow_parent_c)
+            hematocrit = ((flow_parent_a * hemat_parent_a) + (flow_parent_b * hemat_parent_b) + (flow_parent_c * hemat_parent_c)) / (
+                        flow_parent_a + flow_parent_b +
+                        flow_parent_c)
 
-        rbc_balance += self.qRCS(5, flow_parent_a, flow_parent_b, flow_parent_c, flow_daughter, None, None, hemat_parent_a, hemat_parent_b, hemat_parent_c, hematocrit, None,
+        rbc_balance += self.qRCS(5, flow_parent_a, flow_parent_b, flow_parent_c, flow_daughter, None, None, hemat_parent_a, hemat_parent_b, hemat_parent_c,
+                                 hematocrit, None,
                                  None)
 
         return hematocrit, rbc_balance
@@ -400,21 +407,22 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         edge_list = copy.deepcopy(flownetwork.edge_list)
         # base of arrays
         pressure_node = np.zeros((nr_of_vs, 2))
-        # position in the np.array of edge connected with the node
+        # position in the np.array of edge connected with the node - node:{vessel}
         edge_connected_position = copy.deepcopy(flownetwork.edge_connected_position)
-        # node connected with the considered node
+        # node connected with the considered node - node:{nodes}
         node_connected = copy.deepcopy(flownetwork.node_connected)
         # boundary vertex
         boundary_vs = set(copy.deepcopy(flownetwork.boundary_vs))
         # control for RBC_balance
         rbc_balance = 0
         # hematocrit for this iteration
+        # hd_i
+        hd_i = copy.deepcopy(flownetwork.hd_i)
 
         if edge_connected_position is None:
             print("Node connection creation: ...")
             flownetwork.edge_connected_position, flownetwork.node_connected = edge_connected_dict(edge_list)  # edge_connected
             print("Node connection creation: DONE")
-            check = True
         else:
             edge_connected_position = copy.deepcopy(flownetwork.edge_connected_position)
             node_connected = copy.deepcopy(flownetwork.node_connected)
@@ -431,6 +439,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
             # ordered in base of pressure [pressure][node]
             pressure_node = pressure_node[np.argsort(pressure_node[:, 0])[::-1]]
+
+            flownetwork.pressure_node = copy.deepcopy(pressure_node)
 
             # ordered_node = pressure_node[:, 1]
             # iterate over the nodes, ordered by pressure
@@ -511,9 +521,11 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                             hemat_parent = flownetwork.boundary_hematocrit[np.where(flownetwork.boundary_vs == node[1])[0][0]]
 
                             # compute hematocrit for daughter vessel and check RBCs value
-                            flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], rbc_balance = self.hematocrit_1_2(flow_parent, hemat_parent, flow[daughter_a],
+                            flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], rbc_balance = self.hematocrit_1_2(flow_parent, hemat_parent,
+                                                                                                                      flow[daughter_a],
                                                                                                                       flow[daughter_b],
-                                                                                                                      rbc_balance, diameter_parent, diameter[daughter_a],
+                                                                                                                      rbc_balance, diameter_parent,
+                                                                                                                      diameter[daughter_a],
                                                                                                                       diameter[daughter_b],
                                                                                                                       fractional_a_qRBCs,
                                                                                                                       fractional_b_qRBCs, fractional_a_blood,
@@ -534,7 +546,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 # hematocrit ghost parent: value of boundary hematocrit of that node
                                 hematocrit_ghost = flownetwork.boundary_hematocrit[np.where(flownetwork.boundary_vs == node[1])[0][0]]
                                 # compute hematocrit for daughter vessel and check RBCs value
-                                flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_2_1(flow[parent], flow_ghost, flow[single_daughter], flownetwork.hd[parent],
+                                flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_2_1(flow[parent], flow_ghost, flow[single_daughter],
+                                                                                                   flownetwork.hd[parent],
                                                                                                    hematocrit_ghost, rbc_balance)
                             # (-ø<)
                             # ghost OUTflow
@@ -572,16 +585,21 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                             # (>ø<)
                             # OUTflow ghost
                             else:
+                                print(parent_a, parent_b, single_daughter)
                                 # flow ghost daughter: surplus flow between the parents and daughter vessel
                                 flow_daughter_ghost = (flow[parent_a] + flow[parent_b]) - flow[single_daughter]
                                 # combine parent value to consider them as one
-                                diameter_parent, flow_parent, hemat_parent = self.hematocrit_2_2_aux(flownetwork.hd[parent_a], flownetwork.hd[parent_b], flow[parent_a],
+                                diameter_parent, flow_parent, hemat_parent = self.hematocrit_2_2_aux(flownetwork.hd[parent_a], flownetwork.hd[parent_b],
+                                                                                                     flow[parent_a],
                                                                                                      flow[parent_b], diameter[parent_a], diameter[parent_b])
                                 # compute hematocrit for daughter vessel and check RBCs value
-                                flownetwork.hd[daughter_a], hemat_ghost_daughter, rbc_balance = self.hematocrit_1_2(flow_parent, hemat_parent, flow[single_daughter],
+                                flownetwork.hd[daughter_a], hemat_ghost_daughter, rbc_balance = self.hematocrit_1_2(flow_parent, hemat_parent,
+                                                                                                                    flow[single_daughter],
                                                                                                                     flow_daughter_ghost,
-                                                                                                                    rbc_balance, diameter_parent, diameter[single_daughter],
-                                                                                                                    diameter[single_daughter], fractional_a_qRBCs,
+                                                                                                                    rbc_balance, diameter_parent,
+                                                                                                                    diameter[single_daughter],
+                                                                                                                    diameter[single_daughter],
+                                                                                                                    fractional_a_qRBCs,
                                                                                                                     fractional_b_qRBCs, fractional_a_blood,
                                                                                                                     fractional_b_blood,
                                                                                                                     hemat_parent_plot)
@@ -598,13 +616,14 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                             # flow ghost parent: absolute sum of the daughters vessel
                             flow_parent_ghost = flow[daughter_a] + flow[daughter_b] + flow[daughter_c]
                             # compute hematocrit for daughter vessel and check RBCs value
-                            flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], flownetwork.hd[daughter_c], rbc_balance = self.hematocrit_1_3(flow_parent_ghost,
-                                                                                                                                                  hematocrit_ghost_parent,
-                                                                                                                                                  flow[daughter_a],
-                                                                                                                                                  flow[daughter_b],
-                                                                                                                                                  flow[daughter_c], rbc_balance,
-                                                                                                                                                  fractional_trifurc_RBCs,
-                                                                                                                                                  fractional_trifurc_blood)
+                            flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], flownetwork.hd[daughter_c], rbc_balance = self.hematocrit_1_3(
+                                flow_parent_ghost,
+                                hematocrit_ghost_parent,
+                                flow[daughter_a],
+                                flow[daughter_b],
+                                flow[daughter_c], rbc_balance,
+                                fractional_trifurc_RBCs,
+                                fractional_trifurc_blood)
 
                         case 1, 2:
 
@@ -616,14 +635,15 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 # flow ghost daughter: surplus flow between parent and daughters vessel
                                 flow_ghost_daughter = flow[parent] - (flow[daughter_a] + flow[daughter_b])
                                 # compute hematocrit for daughter vessel and check RBCs value
-                                flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], hematocrit_ghost_daughter, rbc_balance = self.hematocrit_1_3(flow[parent],
-                                                                                                                                                     flownetwork.hd[parent],
-                                                                                                                                                     flow[daughter_a],
-                                                                                                                                                     flow[daughter_b],
-                                                                                                                                                     flow_ghost_daughter,
-                                                                                                                                                     rbc_balance,
-                                                                                                                                                     fractional_trifurc_RBCs,
-                                                                                                                                                     fractional_trifurc_blood)
+                                flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], hematocrit_ghost_daughter, rbc_balance = self.hematocrit_1_3(
+                                    flow[parent],
+                                    flownetwork.hd[parent],
+                                    flow[daughter_a],
+                                    flow[daughter_b],
+                                    flow_ghost_daughter,
+                                    rbc_balance,
+                                    fractional_trifurc_RBCs,
+                                    fractional_trifurc_blood)
 
                             # (>ø<)
                             # INflow ghost
@@ -634,11 +654,15 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 diameter_parent, flow_parent, hemat_parent = self.hematocrit_2_2_aux(flownetwork.hd[parent], flownetwork.boundary_hematocrit[
                                     np.where(flownetwork.boundary_vs == node[1])[0][0]], flow[parent], flow_ghost, diameter[parent], diameter[parent])
                                 # compute phase separation and chek RBC balance
-                                flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], rbc_balance = self.hematocrit_1_2(flow_parent, hemat_parent, flow[daughter_a],
+                                flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], rbc_balance = self.hematocrit_1_2(flow_parent, hemat_parent,
+                                                                                                                          flow[daughter_a],
                                                                                                                           flow[daughter_b],
-                                                                                                                          rbc_balance, diameter_parent, diameter[daughter_a],
-                                                                                                                          diameter[daughter_b], fractional_a_qRBCs,
-                                                                                                                          fractional_b_qRBCs, fractional_a_blood,
+                                                                                                                          rbc_balance, diameter_parent,
+                                                                                                                          diameter[daughter_a],
+                                                                                                                          diameter[daughter_b],
+                                                                                                                          fractional_a_qRBCs,
+                                                                                                                          fractional_b_qRBCs,
+                                                                                                                          fractional_a_blood,
                                                                                                                           fractional_b_blood,
                                                                                                                           hemat_parent_plot)
                         case _, _:
@@ -651,14 +675,17 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                         # (-ø-)
                         case 1, 1:
                             # compute hematocrit and check RBC balance
-                            flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_1_1(flownetwork.hd[parent], flow[parent], flow[single_daughter], rbc_balance)
+                            flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_1_1(flownetwork.hd[parent], flow[parent], flow[single_daughter],
+                                                                                               rbc_balance)
 
                         # (-<)
                         case 1, 2:
                             # compute phase separation and check RBC balance
-                            flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], rbc_balance = self.hematocrit_1_2(flow[parent], flownetwork.hd[parent], flow[daughter_a],
+                            flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], rbc_balance = self.hematocrit_1_2(flow[parent], flownetwork.hd[parent],
+                                                                                                                      flow[daughter_a],
                                                                                                                       flow[daughter_b],
-                                                                                                                      rbc_balance, diameter[parent], diameter[daughter_a],
+                                                                                                                      rbc_balance, diameter[parent],
+                                                                                                                      diameter[daughter_a],
                                                                                                                       diameter[daughter_b], fractional_a_qRBCs,
                                                                                                                       fractional_b_qRBCs, fractional_a_blood,
                                                                                                                       fractional_b_blood,
@@ -668,29 +695,38 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                         case 1, 3:
                             # compute hematocrit and check RBC balance
                             flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], flownetwork.hd[daughter_c], rbc_balance = self.hematocrit_1_3(flow[parent],
-                                                                                                                                                  flownetwork.hd[parent],
-                                                                                                                                                  flow[daughter_a],
-                                                                                                                                                  flow[daughter_b],
-                                                                                                                                                  flow[daughter_c], rbc_balance,
+                                                                                                                                                  flownetwork.hd[
+                                                                                                                                                      parent],
+                                                                                                                                                  flow[
+                                                                                                                                                      daughter_a],
+                                                                                                                                                  flow[
+                                                                                                                                                      daughter_b],
+                                                                                                                                                  flow[
+                                                                                                                                                      daughter_c],
+                                                                                                                                                  rbc_balance,
                                                                                                                                                   fractional_trifurc_RBCs,
                                                                                                                                                   fractional_trifurc_blood)
 
                         # (>ø-)
                         case 2, 1:
                             # compute hematocrit and check RBC balance
-                            flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_2_1(flow[parent_a], flow[parent_b], flow[single_daughter], flownetwork.hd[parent_a],
+                            flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_2_1(flow[parent_a], flow[parent_b], flow[single_daughter],
+                                                                                               flownetwork.hd[parent_a],
                                                                                                flownetwork.hd[parent_b], rbc_balance)
 
                         # (>ø<)
                         case 2, 2:
 
                             # combine parent value to consider them as one
-                            diameter_parent, flow_parent, hemat_parent = self.hematocrit_2_2_aux(flownetwork.hd[parent_a], flownetwork.hd[parent_b], flow[parent_a], flow[
-                                parent_b], diameter[parent_a], diameter[parent_b])
+                            diameter_parent, flow_parent, hemat_parent = self.hematocrit_2_2_aux(flownetwork.hd[parent_a], flownetwork.hd[parent_b],
+                                                                                                 flow[parent_a], flow[
+                                                                                                     parent_b], diameter[parent_a], diameter[parent_b])
                             # compute phase separation and chek RBC balance
-                            flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], rbc_balance = self.hematocrit_1_2(flow_parent, hemat_parent, flow[daughter_a],
+                            flownetwork.hd[daughter_a], flownetwork.hd[daughter_b], rbc_balance = self.hematocrit_1_2(flow_parent, hemat_parent,
+                                                                                                                      flow[daughter_a],
                                                                                                                       flow[daughter_b],
-                                                                                                                      rbc_balance, diameter_parent, diameter[daughter_a],
+                                                                                                                      rbc_balance, diameter_parent,
+                                                                                                                      diameter[daughter_a],
                                                                                                                       diameter[daughter_b], fractional_a_qRBCs,
                                                                                                                       fractional_b_qRBCs, fractional_a_blood,
                                                                                                                       fractional_b_blood,
@@ -699,8 +735,10 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                         # (∃ø-)
                         case 3, 1:
                             # combine parent value to consider them as one, compute hematocrit and RBCs balance
-                            flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_3_1(flow[parent_a], flow[parent_b], flow[parent_c], flow[single_daughter],
-                                                                                               flownetwork.hd[parent_a], flownetwork.hd[parent_b], flownetwork.hd[parent_c],
+                            flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_3_1(flow[parent_a], flow[parent_b], flow[parent_c],
+                                                                                               flow[single_daughter],
+                                                                                               flownetwork.hd[parent_a], flownetwork.hd[parent_b],
+                                                                                               flownetwork.hd[parent_c],
                                                                                                rbc_balance)
                         case 0, _:
                             if len(edge_daughter) == 3:
@@ -724,76 +762,132 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 flownetwork.hd[parent_a], flownetwork.hd[parent_b] = 0, 0
 
                             elif len(parent_edge) == 4:
-                                flownetwork.hd[parent_edge[0]], flownetwork.hd[parent_edge[1]], flownetwork.hd[parent_edge[2]], flownetwork.hd[parent_edge[3]] = 0, 0, 0, 0
+                                flownetwork.hd[parent_edge[0]], flownetwork.hd[parent_edge[1]], flownetwork.hd[parent_edge[2]], flownetwork.hd[
+                                    parent_edge[3]] = 0, 0, 0, 0
 
                             else:
                                 flownetwork.hd[parent] = 0
 
-            # print("Check RBCs balance: ...")
             if rbc_balance > 0:
                 sys.exit("Check RBCs balance: FAIL -->", rbc_balance)
-            flownetwork.hd = sor_rasmussen2018(flownetwork, flownetwork.hd, old_hematocrit, self._PARAMETERS)
+
+            # to save and check Hd_predict (i)
+            flownetwork.hd_i = flownetwork.hd
+
+            # Relaxation factor
+            if flownetwork.iteration > 1:
+                flownetwork.hd = sor_rasmussen2018(flownetwork, flownetwork.hd, old_hematocrit, self._PARAMETERS, hd_i)
 
 
-def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit, PARAMETERS):
-    cnvg_hem = np.abs(old_hematocrit - prd_hematocrit) / old_hematocrit * 100
-    valid_indices = np.isfinite(cnvg_hem)
-    cnvg_hem_avg_per = np.average(cnvg_hem[valid_indices])
-    cnvg_hem_max_per = np.max(cnvg_hem[valid_indices])
-    output_data = f"Average: {cnvg_hem_avg_per}  Max: {cnvg_hem_max_per}\n"
+def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit, PARAMETERS, hd_i):
+    # Hd_i+1_predicted and H_i
+    # [old]
+    # cnvg_hem = np.abs(old_hematocrit - prd_hematocrit) / old_hematocrit * 100
+    # valid_indices = np.isfinite(cnvg_hem)
+    # cnvg_hem_avg_per = np.average(cnvg_hem[valid_indices])
+    # cnvg_hem_max_per = np.max(cnvg_hem[valid_indices])
+    # # Hd_i+1_predicted and H_i_predicted
+    # cnvg_h_i = np.abs(hd_i - prd_hematocrit) / hd_i * 100
+    # valid_indices_i = np.isfinite(cnvg_h_i)
+    # cnvg_hem_avg_per_i = np.average(cnvg_h_i[valid_indices_i])
+    # cnvg_hem_max_per_i = np.max(cnvg_h_i[valid_indices_i])
+    #
+
+    # # tolgo i troppo bassi
+    # cnvg_hem = np.abs(old_hematocrit - prd_hematocrit) / old_hematocrit * 100
+    # # # new approach
+    # cnvg_hem_assolute = np.abs(old_hematocrit - prd_hematocrit)
+    # cnvg_hem[cnvg_hem_assolute <= 1e-2] = 0  # 1e-5
+    # cnvg_hem_avg_per = np.average(cnvg_hem[np.isfinite(cnvg_hem)])
+    # cnvg_hem_max_per = np.max(cnvg_hem[np.isfinite(cnvg_hem)])
+    #
+    # cnvg_h_i = np.abs(hd_i - prd_hematocrit) / hd_i * 100
+    # cnvg_hem_assolute_h_i = np.abs(hd_i - prd_hematocrit)
+    # cnvg_h_i[cnvg_hem_assolute_h_i <= 1e-2] = 0  # 1e-5
+    # cnvg_hem_avg_per_i = np.average(cnvg_h_i[np.isfinite(cnvg_h_i)])
+    # cnvg_hem_max_per_i = np.max(cnvg_h_i[np.isfinite(cnvg_h_i)])
+    #
+    # # output message and file
+    # output_data = f"Avg: {cnvg_hem_avg_per}  Max: {cnvg_hem_max_per} Hd_i Avg:{cnvg_hem_avg_per_i} Max:{cnvg_hem_max_per_i}\n"
     output_file_path = f"{PARAMETERS['path_output_file']}/{PARAMETERS['network_name']}.txt"
-    burn_message = "\n BURN BABY BURN \n"
 
     match flownetwork.sor:
-
         case True:
-            with open(output_file_path, 'a') as file:
-                file.write(output_data)
+            # write in the file the result of previous operation
+            # with open(output_file_path, 'a') as file:
+            #     file.write(output_data)
 
-            if np.abs(flownetwork.avg_old - cnvg_hem_avg_per) <= 1e-5:
-                flownetwork.avg_check += 1
-            else:
-                flownetwork.avg_check = 0
+            # # check if the difference between current and previous relative mean is under the threshold
+            # if np.abs(flownetwork.avg_old - cnvg_hem_avg_per) <= 1e-5:  # or cnvg_hem_avg_per <= 5e-2:
+            #     flownetwork.avg_check += 1
+            # else:
+            #     flownetwork.avg_check = 0
+            #
+            # # check if the maximum error is under 100%
+            # if cnvg_hem_max_per <= 100:
+            #     flownetwork.max_check += 1
+            # else:
+            #     flownetwork.max_check = 0
+            #
+            # if cnvg_hem_avg_per_i == 0 and cnvg_hem_max_per_i == 0:
+            #     flownetwork.i += 1
+            # else:
+            #     flownetwork.i = 0
+            #
+            # # save the current relative mean
+            # flownetwork.avg_old = cnvg_hem_avg_per
+            #
+            # # if the value remain still for more than 50 iteration the relaxation factor is disabled
+            # if (flownetwork.avg_check >= 50 and flownetwork.max_check >= 50) or (flownetwork.i > 2) or (flownetwork.iteration % 300 == 0 and flownetwork.iteration != 0):  # or (
+            #     # cnvg_hem_avg_per_i < 1e-4
+            #     # and
+            #     #  cnvg_hem_max_per_i < 1):
+            #     with open(output_file_path, 'a') as file:
+            #         file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- exit from the update with alpha  \n \n")
+            #     # result equal to the hematocrit given as input Hd_predicted_i+1
+            #     result = prd_hematocrit
+            #     # to pass in the other match case without alpha update
+            #     flownetwork.sor = False
+            #     flownetwork.iterationExit += 1
 
-            if cnvg_hem_max_per <= 100:
-                flownetwork.max_check += 1
-            else:
-                flownetwork.max_check = 0
+            # every 50 iteration the alpha is updated and decreased of 1% percent
 
-            flownetwork.avg_old = cnvg_hem_avg_per
-
-            if (flownetwork.iteration % 300 == 0 and flownetwork.iteration != 0) or \
-                    (flownetwork.avg_check >= 50 and flownetwork.max_check >= 50):
-                with open(output_file_path, 'a') as file:
-                    file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- exit from the update with alpha  \n \n")
-                result = prd_hematocrit
-                flownetwork.sor = False
-                flownetwork.iterationExit += 1
-            elif flownetwork.iteration % 50 == 0 and flownetwork.iteration != 0:
+            # if flownetwork.upAlpha:
+            #     flownetwork.alpha = 0.4
+            #     flownetwork.upAlpha = False
+            # el
+            if flownetwork.iteration % 50 == 0 and flownetwork.iteration != 0:
                 flownetwork.alpha = round(flownetwork.alpha * 0.9, 4)
+                # ha già uno dentro
+                flownetwork.alphaSave = np.append(flownetwork.alphaSave, flownetwork.alpha)
+                # with open(output_file_path, 'a') as file:
+                #     file.write(f"\n Iteration: {flownetwork.iteration} ALPHA {flownetwork.alpha}\n")
                 result = (round(1 - flownetwork.alpha, 4) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)
             else:
                 result = (round(1 - flownetwork.alpha, 4) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)
 
-        case False:
-            result = prd_hematocrit
-            with open(output_file_path, 'a') as file:
-                file.write(output_data)
-
-            if flownetwork.iterationExit >= 3:
-                flownetwork.sor = True
-                flownetwork.iterationExit = 0
-                with open(output_file_path, 'a') as file:
-                    file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- go back from the update with alpha\n \n")
-                # it is necessary to update the alpha because we exti at 300
-                flownetwork.alpha = round(flownetwork.alpha * 0.9, 4)
-            else:
-                flownetwork.iterationExit += 1
+        # case False:
+        #     # result equal to the hematocrit given as input Hd_predicted_i+1
+        #     result = prd_hematocrit
+        #
+        #     with open(output_file_path, 'a') as file:
+        #         file.write(output_data)
+        #
+        #     if cnvg_hem_avg_per < 0.5 and cnvg_hem_max_per < 1:
+        #         flownetwork.convergence_check = True
+        #     # if the exit is in a multiple of 300 the alpha need to be updated
+        #     # if flownetwork.iteration % 300 == 0:
+        #     #     flownetwork.alpha = round(flownetwork.alpha * 0.9, 4)
+        #     #     with open(output_file_path, 'a') as file:
+        #     #         file.write(f"\n NEW ALPHA: {flownetwork.alpha} (prepared in future step)\n")
+        #
+        #     # if the iteration are more than 3 the alpha is set back
+        #     elif flownetwork.iterationExit >= 3:
+        #         flownetwork.sor = True
+        #         flownetwork.iterationExit = 0
+        #         with open(output_file_path, 'a') as file:
+        #             file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- go back from the update with alpha\n \n")
+        #     else:
+        #         flownetwork.iterationExit += 1
 
     return result
-
-
-def sor_rasmussen2018_adaptive(flownetwork, prd_hematocrit, old_hematocrit):
-    flownetwork.alpha = flownetwork.alpha + (flownetwork.alpha * 0.2)
-
-    return ((1 - flownetwork.alpha) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)

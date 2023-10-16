@@ -21,6 +21,7 @@ class FlowNetwork(object):
                  imp_iterative: iterative_routine.IterativeRoutine, imp_balance: flow_balance.FlowBalance,
                  PARAMETERS: MappingProxyType):
         # Network attributes
+
         self.min_flow = None
         self.eps_eff = None
         self.nr_of_vs = None
@@ -80,6 +81,24 @@ class FlowNetwork(object):
         self.max_check = 0
         self.avg_old = 0
         self.iterationExit = 0
+        self.hd_i = 0
+        self.iteration = 0
+        self.cnvg_rbc = 0
+        self.cnvg_flow = 0
+        self.alphaOn = True
+        self.residualOverIteration, self.residualFlowOverIteration, self.i = [], [], 0
+        self.residualOverIterationMax = []
+        self.residualOverIterationNorm = []
+        self.alphaSave = [1]
+        self.stop, self.n_stop = False, 0
+        self.all_positions = None
+        self.node_values = None
+        self.flagFlow, self.flagFlowM1 = None, None
+        self.pressure_node, self.families_dict, self.vessel_general = None, None, None
+        self.node_identifiers = [74, 187, 232, 515, 759, 766, 370, 449]
+        self.vessel_value_hd, self.vessel_value_flow = None, None
+        self.node_values_hd, self.node_values_flow = None, None
+
         return
 
     def read_network(self):

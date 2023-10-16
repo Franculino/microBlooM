@@ -1,4 +1,5 @@
 import os
+import sys
 
 import igraph as ig
 from igraph import Graph, Plot
@@ -31,7 +32,7 @@ def s_curve(hemat_par, fractional_flow_a, diam_par, diam_a, diam_b, qRBCp):
 
     A = A_o_init * ((pow(diam_a, 2) - pow(diam_b, 2)) / (pow(diam_a, 2) + pow(diam_b, 2))) * (1 - hemat_par) / diam_par
     # A = A_o_init * ((diam_a - diam_b) / (diam_a + diam_b)) * ((1 - hemat_par) / diam_par)
-    #A = A_o_init * np.log(diam_a / diam_b) * (1/ diam_par)
+    # A = A_o_init * np.log(diam_a / diam_b) * (1/ diam_par)
     B = 1 + (B_o_init * (1 - hemat_par)) / diam_par
 
     if fractional_flow_a <= x_0:
@@ -101,8 +102,8 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.figure(figsize=(13, 13), dpi=200)
     plt.style.use('seaborn-whitegrid')
 
-    parent, Da, Db = 3E-6, 2E-6, 3E-6
-    title = f"S-Curve Dp= {parent:.2e} Da= {Da} Db= {Db}"
+    parent, Da, Db = 5E-6, 4E-6, 5E-6
+    title = f""  # "S-Curve Dp= {parent:.2e} Da= {Da} Db= {Db}"
 
     for i in arange(0, 1, 0.01):
         a, b, c, d = s_curve(0.1, i, parent, Da, Db, flownetwork.hd[0] * flownetwork.flow_rate[0])
@@ -141,13 +142,13 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.plot(listh, listg, 'm')
 
     for i in arange(0, 1, 0.01):
-        a, b, c, d = s_curve(0.9, i, 5E-6, 5E-6, 5E-6, flownetwork.hd[0] * flownetwork.flow_rate[0])
-        listg.append(a)
-        listh.append(b)
-        ii.append(c)
-        kk.append(d)
-    plt.plot(xx, zz, 'k')
-    plt.plot(listx, listz, 'k')
+        a, b, c, d = s_curve(0.9, i, parent, Da, Db, flownetwork.hd[0] * flownetwork.flow_rate[0])
+        listx.append(a)
+        listz.append(b)
+        xx.append(c)
+        zz.append(d)
+    plt.plot(zz, xx, 'k')
+    plt.plot(listz, listx, 'k')
 
     plt.plot(flownetwork.fractional_a_blood, flownetwork.fractional_a_qRBCs, "o", markersize=3, color='olive')
     plt.plot(flownetwork.fractional_b_blood, flownetwork.fractional_b_qRBCs, "o", markersize=3, color='aquamarine')
@@ -155,7 +156,7 @@ def s_curve_util(PARAMETERS, flownetwork):
     plt.title(title, fontsize=25)
     plt.xlabel("Fractional Blood Flow", fontsize=20)
     plt.ylabel("Fractional Erythrocity Flow", fontsize=20)
-    plt.legend(["HD:0.1", "HD:0.1 ", "HD:0.3", "HD:0.3", "HD:0.5", "HD:0.5", "HD:0.7", "HD:0.7","HD:0.9", "HD:0.9"], fontsize=20)
+    plt.legend(["HD:0.1", "HD:0.1 ", "HD:0.3", "HD:0.3", "HD:0.5", "HD:0.5", "HD:0.7", "HD:0.7", "HD:0.9", "HD:0.9"], fontsize=20)
     plt.ylim(0, 1)
     plt.xlim(0, 1)
     plt.xticks(np.arange(0, 1.1, 0.20), fontsize=20)
@@ -233,12 +234,12 @@ def s_curve_personalized_thersholds(flownetwork, PARAMETERS, interval):
         case 0.9:
             for i in arange(0, 1, 0.01):
                 a, b, c, d = s_curve(0.9, i, 5E-6, 5E-6, 5E-6, flownetwork.hd[0] * flownetwork.flow_rate[0])
-                listg.append(a)
-                listh.append(b)
-                ii.append(c)
-                kk.append(d)
-            plt.plot(xx, zz, 'k')
-            plt.plot(listx, listz, 'k')
+                listx.append(a)
+                listz.append(b)
+                xx.append(c)
+                zz.append(d)
+            plt.plot(zz, xx, 'k')
+            plt.plot(listz, listx, 'k')
             # plt.legend(["daughter a", " daughter b", "HD:0.7"])
 
     plt.style.use('seaborn-whitegrid')
@@ -360,7 +361,7 @@ def util_convergence_plot(flownetwork, iteration_plot, PARAMETERS, title, path_t
     plt.yticks(fontsize=20)
 
     if PARAMETERS['save']:
-        path = PARAMETERS['path_for_graph'] + '/iteration_graph/' + PARAMETERS["network_name"] + '/' + path_title + name
+        path = PARAMETERS['path_for_graph'] + '/iteration_graph/' + PARAMETERS["network_name"] + '/' + path_title + name + "/"
         isExist = os.path.exists(path)
         if not isExist:
             # Create a new directory because it does not exist
@@ -414,6 +415,112 @@ def util_convergence_plot_final(flownetwork, iteration_plot, PARAMETERS, title, 
         plt.savefig(path + '_cnv_' + str(flownetwork.iteration) + '.png')
     plt.close()
     # plt.show()
+
+
+def residual_plot(flownetwork, residualMax, residualNorm, PARAMETERS, title, path_title, name):
+    plt.figure(figsize=(15, 15), dpi=300)
+    plt.style.use('seaborn-whitegrid')
+
+    # Plot lines with labels
+    plt.plot(range(0, flownetwork.iteration), residualMax, "-k", label="residualMax")
+    plt.plot(range(0, flownetwork.iteration), residualNorm, "-g", label="residualMean")
+    x_threshold = np.linspace(0, 10, flownetwork.iteration)
+    plt.plot(range(0, flownetwork.iteration), np.full_like(x_threshold, flownetwork.zeroFlowThreshold), color='r', linestyle=':', label="zeroFlowThreshold")
+
+    plt.title(title, fontsize=10)
+    plt.xlabel("Iteration", fontsize=10)
+    plt.ylabel("Residual value", fontsize=10)
+    plt.yscale("log")
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+    plt.ylim(None, 1e-11)
+
+    x = range(0, flownetwork.iteration)
+    for i, label in enumerate(flownetwork.alphaSave):
+        x_label = x[i * 50] if i * 50 < len(x) else x[-1]
+        y_label = residualNorm[i * 50] if i * 50 < len(residualNorm) else residualNorm[-1]
+        plt.scatter(x_label, y_label, color='red', marker='o')  # Include label parameter here
+        plt.annotate(label, (x_label, y_label), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=20)
+
+    # Create the legend
+    plt.legend(loc='upper right', fontsize=20)
+
+    if PARAMETERS['save']:
+        path = PARAMETERS['path_for_graph'] + '/' + PARAMETERS["network_name"] + '/' + path_title + name
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+        plt.savefig(path + '/' + str(flownetwork.iteration) + '.png')
+    plt.close()
+
+
+def residual_graph(flownetwork, data, PARAMETERS, title, name):
+    plt.figure(figsize=(15, 15), dpi=300)
+    plt.style.use('seaborn-whitegrid')
+    # Plot lines with labels for the last 100 iterations
+    plt.plot(range(0, 100), data, "-k", label=str(name))
+    plt.title(name + str(title), fontsize=10)
+    plt.xlabel("Iteration", fontsize=10)
+    plt.ylabel(name, fontsize=10)
+    plt.yscale("log")
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+
+    # Create the legend
+    plt.legend(loc='upper right', fontsize=20)
+
+    if PARAMETERS['save']:
+        path = PARAMETERS['path_for_graph'] + '/' + PARAMETERS["network_name"] + '/' + name
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+        plt.savefig(path + '/' + str(title) + '.png')
+    plt.close()
+
+    # plt.show()
+
+
+def residual_plot_last_iteration(flownetwork, residualMax, residualNorm, PARAMETERS, title, path_title, name):
+    plt.figure(figsize=(15, 15), dpi=300)
+    plt.style.use('seaborn-whitegrid')
+    # Calculate the starting iteration for the last 100 iterations
+    start_iteration = max(0, flownetwork.iteration - 300)
+
+    # Plot lines with labels for the last 100 iterations
+    plt.plot(range(start_iteration, flownetwork.iteration), residualMax[start_iteration:flownetwork.iteration], "-k", label="residualMax")
+    plt.plot(range(start_iteration, flownetwork.iteration), residualNorm[start_iteration:flownetwork.iteration], "-g", label="residualMean")
+    x_threshold = np.linspace(start_iteration, flownetwork.iteration, flownetwork.iteration - start_iteration)
+    plt.plot(range(start_iteration, flownetwork.iteration), np.full_like(x_threshold, flownetwork.zeroFlowThreshold), color='r', linestyle=':',
+             label="zeroFlowThreshold")
+
+    plt.title(title, fontsize=10)
+    plt.xlabel("Iteration", fontsize=10)
+    plt.ylabel("Residual value", fontsize=10)
+    plt.yscale("log")
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+    plt.ylim(None, 1e-11)
+
+    x = range(start_iteration, flownetwork.iteration)
+    for i, label in enumerate(flownetwork.alphaSave[start_iteration:flownetwork.iteration]):
+        x_label = x[i * 50] if i * 50 < len(x) else x[-1]
+        y_label = residualNorm[start_iteration + i * 50] if start_iteration + i * 50 < len(residualNorm) else residualNorm[-1]
+        plt.scatter(x_label, y_label, color='red', marker='o')  # Include label parameter here
+        plt.annotate(label, (x_label, y_label), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=20)
+
+    # Create the legend
+    plt.legend(loc='upper right', fontsize=20)
+
+    if PARAMETERS['save']:
+        path = PARAMETERS['path_for_graph'] + '/' + PARAMETERS["network_name"] + '/' + path_title + name
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+        plt.savefig(path + '/' + str(flownetwork.iteration) + '.png')
+    plt.close()
 
 
 def percentage_lower_than(data, value):

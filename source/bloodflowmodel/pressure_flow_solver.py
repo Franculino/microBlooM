@@ -53,7 +53,6 @@ class PressureFlowSolver(ABC):
         edge_list = flownetwork.edge_list
         transmiss = flownetwork.transmiss
         pressure = flownetwork.pressure
-        nr_of_es = flownetwork.nr_of_es
 
         # Compute the flow rates based on the transmissibility and pressure.
         pressure_0 = pressure[edge_list[:, 0]]
@@ -62,12 +61,17 @@ class PressureFlowSolver(ABC):
 
         if flownetwork.zeroFlowThreshold is not None:
             # in case we want to exclude the unrealistic lower values in iterative model
-            flownetwork.flow_rate = _update_low_flow(flownetwork, flow_rate)
+            flownetwork.flow_rate = _update_low_flow(self, flownetwork, flow_rate)
         else:
             flownetwork.flow_rate = flow_rate
 
+        # print(f"Residual max: {max(residual)}")
+        # print(f"Residual min: {min(residual)}")
+        # print(f"Residual mean: {np.mean(residual)}")
+        # print(f'Euclidean norm: {np.linalg.norm(residual)}')
 
-def set_low_flow_threshold(flownetwork, local_balance):
+
+def set_low_flow_threshold(self, flownetwork, local_balance):
     # max of the mass balance error for the internal nodes
     flownetwork.zeroFlowThreshold = np.max(local_balance)
 
@@ -80,12 +84,29 @@ def set_low_flow_threshold(flownetwork, local_balance):
     # print to check the value of the threshold
     print("Tolerance :" + str(flownetwork.zeroFlowThreshold))
     # update the flow rate
-    return _update_low_flow(flownetwork, flownetwork.flow_rate)
+
+    with open(flownetwork._PARAMETERS['path_output_file'] + "/" + flownetwork._PARAMETERS['network_name'] + ".txt", 'w') as file:
+        file.write(f"----------------------------------\n"
+                   f"Hematrocrit: {flownetwork.boundary_hematocrit[0]}\n"
+                   f"Tollerance: {flownetwork.zeroFlowThreshold}\n"
+                   f"----------------------------------\n")
+    return _update_low_flow(self, flownetwork, flownetwork.flow_rate)
 
 
-def _update_low_flow(flownetwork, flow_rate):
+def _update_low_flow(self, flownetwork, flow_rate):
+    # to flag the vessel where the threshold is changed
+    initial_flow = copy.deepcopy(flow_rate)
     # Update flow rate based on the zero flow threshold
     flow_rate = np.where(np.abs(flow_rate) < flownetwork.zeroFlowThreshold, 0, flow_rate)
+    # flag the ones that has been changed
+    flownetwork.flagFlow = np.where(flow_rate == initial_flow, 1, 0)
+
+    if flownetwork.n_stop == 99:
+        flag = np.where(flow_rate == initial_flow, 1, 0)
+        flownetwork.flagFlowM1 = flag
+
+        with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'a') as file:
+            file.write(f"Vessel with change in the flow are {len(flow_rate[flag==0])}: {np.where(flag == 0)}\n")
 
     if flownetwork.iteration < 2:
         # check how the flow it is changed

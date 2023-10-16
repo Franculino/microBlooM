@@ -25,7 +25,7 @@ PARAMETERS = MappingProxyType(
                                     # 6: todo import graph from edge_data and vertex_data pickle files
         "write_network_option": 1,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
-                                    # 3-...: todo other file formats.
+                                    # 3: write to vpt format
         "tube_haematocrit_option": 2,   # 1: No RBCs (ht=0)
                                         # 2: Constant hematocrit
                                         # 3: todo: RBC tracking
@@ -41,10 +41,10 @@ PARAMETERS = MappingProxyType(
                                     # 2: Iterative routine
 
         # Blood properties
-        "ht_constant": 4E-01,  # only required if RBC impact is considered
-        "mu_plasma": 0.0012,
-        "boundary_hematocrit": [0.4] * 2000,
-        "network_name": "roba2",
+        "ht_constant": 4E-05,  # only required if RBC impact is considered
+        "mu_plasma": 0.0052,
+        "boundary_hematocrit": [0.7] * 2000,
+        "network_name": "MVN1_07_test",
 
         # if True set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -53,7 +53,7 @@ PARAMETERS = MappingProxyType(
         "machine_error": 1E-15,
 
         # Alpha for relaxation factor of SOR
-        "alpha": 0.4,
+        "alpha": 1,
         "epsilon": 5E-25,
         "epsilon_second_method": 1E-10,
 
@@ -69,9 +69,9 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "MVN2/node_data.csv",
-        "csv_path_edge_data": "MVN2/edge_data.csv",
-        "csv_path_boundary_data": "MVN2/node_boundary_data.csv",
+        "csv_path_vertex_data": "MVN1/node_data.csv",
+        "csv_path_edge_data": "MVN1/edge_data.csv",
+        "csv_path_boundary_data": "MVN1/node_boundary_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
@@ -85,13 +85,13 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/MVN2.vtp",
+        "write_path_igraph": "data/out/log_file/16_10/MVN1_01.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/plot/30_08",
+        "path_for_graph": "data/out/plot/16_10",
 
         # Write option in case of print in output file (.txt)
-        "path_output_file": "data/out/log_file/30_08/",
+        "path_output_file": "data/out/log_file/16_10/",
 
 
     }
