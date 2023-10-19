@@ -95,9 +95,11 @@ class FlowNetwork(object):
         self.node_values = None
         self.flagFlow, self.flagFlowM1 = None, None
         self.pressure_node, self.families_dict, self.vessel_general = None, None, None
-        self.node_identifiers = [74, 187, 232, 515, 759, 766, 370, 449]
+        self.node_identifiers = [1874, 2343, 3093, 6517, 6608, 7615, 8362, 9082, 9742, 10763, 11584, 12006, 9829, 10897]  # MVN1_01
+        # self.node_identifiers = [16, 28, 30, 63, 84, 124, 224, 126, 132]  # MVN2_06
         self.vessel_value_hd, self.vessel_value_flow = None, None
-        self.node_values_hd, self.node_values_flow = None, None
+        self.node_values_hd, self.node_values_flow, self.upAlpha, self.max_magnitude, self.node_relative_residual = None, None, 0, 0, None
+        self.zeroFlowThresholdMagnitude = None
 
         return
 

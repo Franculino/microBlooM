@@ -74,6 +74,10 @@ class PressureFlowSolver(ABC):
 def set_low_flow_threshold(self, flownetwork, local_balance):
     # max of the mass balance error for the internal nodes
     flownetwork.zeroFlowThreshold = np.max(local_balance)
+    # Convert the number to scientific notation
+    scientific_notation = "{:e}".format(np.max(local_balance))
+    # Extract the magnitude based on the exponent
+    flownetwork.zeroFlowThresholdMagnitude = abs(int(scientific_notation.split('e')[1]))
 
     # check how the flow it will change
     # Print to display the percentage of Zero flow vessel
@@ -106,7 +110,7 @@ def _update_low_flow(self, flownetwork, flow_rate):
         flownetwork.flagFlowM1 = flag
 
         with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'a') as file:
-            file.write(f"Vessel with change in the flow are {len(flow_rate[flag==0])}: {np.where(flag == 0)}\n")
+            file.write(f"Vessel with change in the flow are {len(flow_rate[flag == 0])}: {np.where(flag == 0)}\n")
 
     if flownetwork.iteration < 2:
         # check how the flow it is changed

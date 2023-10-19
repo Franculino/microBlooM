@@ -281,8 +281,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         else:
             # computation of the hematocrit for the daughter vessel
             hematocrit = ((flow_parent_a * hemat_parent_a) + (flow_parent_b * hemat_parent_b) + (flow_parent_c * hemat_parent_c)) / (
-                        flow_parent_a + flow_parent_b +
-                        flow_parent_c)
+                    flow_parent_a + flow_parent_b +
+                    flow_parent_c)
 
         rbc_balance += self.qRCS(5, flow_parent_a, flow_parent_b, flow_parent_c, flow_daughter, None, None, hemat_parent_a, hemat_parent_b, hemat_parent_c,
                                  hematocrit, None,
@@ -302,7 +302,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
         return x_0, A, B
 
-    # @profile
+    # 
     def get_erythrocyte_fraction(self, hemat_par, diam_par, diam_a, diam_b,
                                  flow_parent, flow_a, flow_b,
                                  fractional_a_qRBCs, fractional_b_qRBCs, fractional_a_blood, fractional_b_blood,
@@ -384,7 +384,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 sys.exit()
         return hemat_a, hemat_b
 
-    # @profile
+    # 
     def update_hd(self, flownetwork):
         flownetwork.boundary_hematocrit = self._PARAMETERS["boundary_hematocrit"]
         flownetwork.fractional_a_qRBCs, flownetwork.fractional_b_qRBCs = [], []
@@ -846,27 +846,28 @@ def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit, PARAMETERS, h
             #         file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- exit from the update with alpha  \n \n")
             #     # result equal to the hematocrit given as input Hd_predicted_i+1
             #     result = prd_hematocrit
-            #     # to pass in the other match case without alpha update
+            #     # to pass in the other match case without alpha update18.10
             #     flownetwork.sor = False
             #     flownetwork.iterationExit += 1
 
             # every 50 iteration the alpha is updated and decreased of 1% percent
-
-            # if flownetwork.upAlpha:
-            #     flownetwork.alpha = 0.4
-            #     flownetwork.upAlpha = False
+            alpha = flownetwork.alpha
+            # if flownetwork.upAlpha == 1500:
+            #     alpha = 0.4
+            #     flownetwork.upAlpha = 0
+            #     flownetwork.max_magnitude = None
+            #
             # el
             if flownetwork.iteration % 50 == 0 and flownetwork.iteration != 0:
-                flownetwork.alpha = round(flownetwork.alpha * 0.9, 4)
-                # ha già uno dentro
+                # alpha = round(flownetwork.alpha * 0.9, 4)
+                alpha = flownetwork.alpha * 0.9
                 flownetwork.alphaSave = np.append(flownetwork.alphaSave, flownetwork.alpha)
-                # with open(output_file_path, 'a') as file:
-                #     file.write(f"\n Iteration: {flownetwork.iteration} ALPHA {flownetwork.alpha}\n")
-                result = (round(1 - flownetwork.alpha, 4) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)
-            else:
-                result = (round(1 - flownetwork.alpha, 4) * old_hematocrit) + (flownetwork.alpha * prd_hematocrit)
 
-        # case False:
+            one_alpha = 1 - alpha
+            result = (one_alpha * old_hematocrit) + (alpha * prd_hematocrit)
+            flownetwork.alpha = alpha
+
+            # case False:
         #     # result equal to the hematocrit given as input Hd_predicted_i+1
         #     result = prd_hematocrit
         #

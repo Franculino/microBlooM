@@ -17,34 +17,34 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 2,   # 1: generate hexagonal graph
-                                    # 2: import graph from csv files
-                                    # 3: import graph from igraph file (pickle file)
-                                    # 4: generate hexagonal graph composed of a single hexagon
-                                    # 5: generate hexagonal graph composed of a single hexagon for trifurcation
-                                    # 6: todo import graph from edge_data and vertex_data pickle files
-        "write_network_option": 1,  # 1: do not write anything
-                                    # 2: write to igraph format # todo: handle overwriting data from import file
-                                    # 3: write to vpt format
-        "tube_haematocrit_option": 2,   # 1: No RBCs (ht=0)
-                                        # 2: Constant hematocrit
-                                        # 3: todo: RBC tracking
-                                        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 4,     # 1: No RBCs (hd=0)
-                                    # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-                                    # 3: Laws by Pries and Secomb (2005)
-                                    # 4: Laws by Preis (1996)
-        "solver_option": 1,     # 1: Direct solver
-                                # 2: PyAMG solver
-                                # 3-...: other solvers
-        "iterative_routine": 2,     # 1: Single iteration
-                                    # 2: Iterative routine
+        "read_network_option": 2,  # 1: generate hexagonal graph
+        # 2: import graph from csv files
+        # 3: import graph from igraph file (pickle file)
+        # 4: generate hexagonal graph composed of a single hexagon
+        # 5: generate hexagonal graph composed of a single hexagon for trifurcation
+        # 6: todo import graph from edge_data and vertex_data pickle files
+        "write_network_option": 3,  # 1: do not write anything
+        # 2: write to igraph format # todo: handle overwriting data from import file
+        # 3: write to vpt format
+        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
+        # 2: Constant hematocrit
+        # 3: todo: RBC tracking
+        # 4-...: todo: steady state RBC laws
+        "rbc_impact_option": 4,  # 1: No RBCs (hd=0)
+        # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
+        # 3: Laws by Pries and Secomb (2005)
+        # 4: Laws by Preis (1996)
+        "solver_option": 1,  # 1: Direct solver
+        # 2: PyAMG solver
+        # 3-...: other solvers
+        "iterative_routine": 2,  # 1: Single iteration
+        # 2: Iterative routine
 
         # Blood properties
         "ht_constant": 4E-05,  # only required if RBC impact is considered
         "mu_plasma": 0.0052,
-        "boundary_hematocrit": [0.7] * 2000,
-        "network_name": "MVN1_07_test",
+        "boundary_hematocrit": [0.1] * 2000,
+        "network_name": "MVN1_01_dumb",
 
         # if True set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -85,14 +85,13 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/log_file/16_10/MVN1_01.vtp",
+        "write_path_igraph": "data/out/log_file/Sera_18/MVN1_01_flag.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/plot/16_10",
+        "path_for_graph": "data/out/plot/19_10",
 
         # Write option in case of print in output file (.txt)
-        "path_output_file": "data/out/log_file/16_10/",
-
+        "path_output_file": "data/out/log_file/19_10/",
 
     }
 )

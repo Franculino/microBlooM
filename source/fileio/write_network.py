@@ -246,11 +246,6 @@ class WriteNetworkVtp(WriteNetwork):
         if flownetwork.vessel_general is not None:
             graph.vs["not_convergence_node"] = flownetwork.node_identifiers
 
-        if flownetwork.flagFlow is not None:
-            graph.es["flagFlowChange"] = flownetwork.flagFlow
-        if flownetwork.flagFlowM1 is not None:
-            graph.es["flagFlowChangeMinusOne"] = flownetwork.flagFlowM1
-
         # Make a copy of the graph so that modifications are possible, without
         # changing the original. Add indices that can be used for comparison with
         # the original, even after some edges / vertices in the copy have been
@@ -349,5 +344,3 @@ class WriteNetworkVtp(WriteNetwork):
         f.write('</VTKFile>\n')
 
         f.close()
-
-
