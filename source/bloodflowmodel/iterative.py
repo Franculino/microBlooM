@@ -1,3 +1,4 @@
+import pickle
 import sys
 from abc import ABC, abstractmethod
 import os
@@ -7,7 +8,6 @@ from collections import defaultdict
 import numpy as np
 import copy
 from types import MappingProxyType
-
 
 from source.fileio.create_display_plot import s_curve_util, s_curve_personalized_thersholds, util_convergence_plot, s_curve_util_trifurcation, \
     util_convergence_plot_final, \
@@ -78,7 +78,6 @@ class IterativeRoutineNone(IterativeRoutine):
 
 class IterativeRoutineMultipleIteration(IterativeRoutine):
 
-    
     def _iterative_method(self, flownetwork):  # , flow_balance):
         """
         """
@@ -89,17 +88,17 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
 
         print("Convergence: ...")
 
-        # to reconstruct the position of the value
-        # position_array = np.array([i for i in range(flownetwork.nr_of_es)])
-        save_data_max_flow, save_data_max_rbc, save_data_max_hemat = [], [], []
-        save_data_avg_flow, save_data_avg_rbc, save_data_avg_hemat = [], [], []
-        save_data_vessel_flow, save_data_vessel_rbc, save_data_vessel_hemat = [], [], []
-        position_prev_future = {}
-        # the dict with position e quante volte appare
-        # Create a set of all unique positions from both arrays
-        all_positions = set(range(len(flownetwork.hd)))
-        # Create a dictionary to count how many times each position appears in the top 5
-        position_count = defaultdict(int)
+        # # to reconstruct the position of the value
+        # # position_array = np.array([i for i in range(flownetwork.nr_of_es)])
+        # save_data_max_flow, save_data_max_rbc, save_data_max_hemat = [], [], []
+        # save_data_avg_flow, save_data_avg_rbc, save_data_avg_hemat = [], [], []
+        # save_data_vessel_flow, save_data_vessel_rbc, save_data_vessel_hemat = [], [], []
+        # position_prev_future = {}
+        # # the dict with position e quante volte appare
+        # # Create a set of all unique positions from both arrays
+        # all_positions = set(range(len(flownetwork.hd)))
+        # # Create a dictionary to count how many times each position appears in the top 5
+        # position_count = defaultdict(int)
 
         isExist = os.path.exists(self._PARAMETERS['path_output_file'])
         if not isExist:
@@ -112,7 +111,8 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                 f" {flownetwork.nr_of_es} \n")
 
         # with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + "_vessel.txt", 'w') as file:
-        #     file.write(f"Network: {self._PARAMETERS['network_name']} \nnr of vs: {flownetwork.nr_of_vs} - nr of boundary vs: {len(flownetwork.boundary_vs)} - nr of es:"
+        # file.write(f"Network: {self._PARAMETERS['network_name']} \nnr of vs: {flownetwork.nr_of_vs} -
+        # nr of boundary vs: {len(flownetwork.boundary_vs)} - nr of es:"
         #                f" {flownetwork.nr_of_es} \n")
 
         while flownetwork.convergence_check is False:
@@ -172,35 +172,56 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
             #
             # save_data_vessel_hemat = np.append(save_data_vessel_hemat, vessel_hd)
 
-            if flownetwork.iteration % 100 == 0 and flownetwork.iteration > 2:
+            if flownetwork.iteration % 150 == 0 and flownetwork.iteration > 2:
                 residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, flownetwork._PARAMETERS, " ", "",
-                              "final_convergence")
-            if flownetwork.stop:
+                              "convergence")
+
+            # if flownetwork.iteration >= 10010:  # TODO
+            #     flownetwork.convergence_check = True
+            #     residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, flownetwork._PARAMETERS, " ", "",
+            #                   "final_convergence_plot")
+
+            if flownetwork.iteration == 6:  # TODO: if we want to force it 1 and put back if
+                # with open(f"{self._PARAMETERS['path_output_file']}/{self._PARAMETERS['network_name']}.txt", 'a') as file:
+                #     file.write(f'it:{flownetwork.iteration} alpha: {flownetwork.alpha} \n')
+
                 flownetwork.convergence_check = True
+                residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, flownetwork._PARAMETERS,
+                              str(self._PARAMETERS['network_name']), "",
+                              "final_convergence_plot")
+
+                f = open(str(self._PARAMETERS['network_name']) + '.pckl', 'wb')
+                pickle.dump(flownetwork.flow_rate, f)
+                # no because I don't know the position
+                # pickle.dump(flownetwork.local_balance_rbc, f)
+                pickle.dump(flownetwork.node_relative_residual, f)
+                pickle.dump(flownetwork.positions_of_elements_not_in_boundary, f)
+                pickle.dump(flownetwork.node_residual, f)
+                pickle.dump(flownetwork.two_MagnitudeThreshold, f)
+                pickle.dump(flownetwork.node_flow_change, f)
+                pickle.dump(flownetwork.vessel_flow_change, f)
+
+                f.close()
+
+                #
+                # vessel_value_hd, vessel_value_flow, node_values = copy.deepcopy(flownetwork.vessel_value_hd), copy.deepcopy(flownetwork.vessel_value_flow), \
+                #     flownetwork.node_values
+                # node_values_hd, node_values_flow, node_relative_residual = copy.deepcopy(flownetwork.node_values_hd), copy.deepcopy(
+                #     flownetwork.node_values_flow), copy.deepcopy(
+                #     flownetwork.node_relative_residual)
+                # # print dei vessel hd e flow
+                # for vessel in flownetwork.vessel_general:
+                #     residual_graph(flownetwork, vessel_value_hd[vessel], flownetwork._PARAMETERS, vessel, "HD")  # title name
+                #     residual_graph(flownetwork, vessel_value_flow[vessel], flownetwork._PARAMETERS, vessel, "Flow")  # title name
+                #
+                # for node in flownetwork.node_identifiers:
+                #     residual_graph(flownetwork, node_values_hd[node], flownetwork._PARAMETERS, node, "HD_error_for_node")  # title name
+                #     residual_graph(flownetwork, node_values_flow[node], flownetwork._PARAMETERS, node, "Flow_error_for_node")  # title name
+                #     residual_graph(flownetwork, node_relative_residual[node], flownetwork._PARAMETERS, node, "Residual_Relative")  # title name
+                #     residual_graph(flownetwork, node_values[node], flownetwork._PARAMETERS, node, "Residual")  # title name
+
             else:
                 flownetwork.convergence_check = False
-
-            # if flownetwork.iteration == 10000:  # TODO
-            #     flownetwork.convergence_check = True
-            #
-            # elif flownetwork.n_stop == 100:  # TODO: if we want to force it 1 and put back if
-            #     flownetwork.convergence_check = True
-            #     vessel_value_hd, vessel_value_flow = copy.deepcopy(flownetwork.vessel_value_hd), copy.deepcopy(flownetwork.vessel_value_flow)
-            #     node_values_hd, node_values_flow, node_relative_residual = copy.deepcopy(flownetwork.node_values_hd), copy.deepcopy(
-            #         flownetwork.node_values_flow), copy.deepcopy(
-            #         flownetwork.node_relative_residual)
-            #     # print dei vessel hd e flow
-            #     for vessel in flownetwork.vessel_general:
-            #         residual_graph(flownetwork, vessel_value_hd[vessel], flownetwork._PARAMETERS, vessel, "HD")  # title name
-            #         residual_graph(flownetwork, vessel_value_flow[vessel], flownetwork._PARAMETERS, vessel, "Flow")  # title name
-            #
-            #     for node in flownetwork.node_identifiers:
-            #         residual_graph(flownetwork, node_values_hd[node], flownetwork._PARAMETERS, node, "HD_error_for_node")  # title name
-            #         residual_graph(flownetwork, node_values_flow[node], flownetwork._PARAMETERS, node, "Flow_error_for_node")  # title name
-            #         residual_graph(flownetwork, node_relative_residual[node], flownetwork._PARAMETERS, node, "Residual_Relative")  # title name
-            #
-            # else:
-            #     flownetwork.convergence_check = False
 
             if flownetwork.iteration == -5:
                 with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'a') as file:

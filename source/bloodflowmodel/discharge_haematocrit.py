@@ -418,6 +418,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         # hematocrit for this iteration
         # hd_i
         hd_i = copy.deepcopy(flownetwork.hd_i)
+        boundary_inflow = []
 
         if edge_connected_position is None:
             print("Node connection creation: ...")
@@ -504,6 +505,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                             flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_1_1(
                                 flownetwork.boundary_hematocrit[np.where(flownetwork.boundary_vs == node[1])[0][0]],
                                 flow[single_daughter], flow[single_daughter], rbc_balance)
+                            boundary_inflow.append(node[1])
+
                         # (-ø-)
                         # outflows ghost
                         case 1, 0:
@@ -531,6 +534,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                                                                                                       fractional_b_qRBCs, fractional_a_blood,
                                                                                                                       fractional_b_blood,
                                                                                                                       hemat_parent_plot)
+                            boundary_inflow.append(node[1])
 
                         # (>ø-)
                         # outflow ghost
@@ -549,6 +553,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_2_1(flow[parent], flow_ghost, flow[single_daughter],
                                                                                                    flownetwork.hd[parent],
                                                                                                    hematocrit_ghost, rbc_balance)
+
+                                # boundary_inflow.append(node[1])
                             # (-ø<)
                             # ghost OUTflow
                             else:
@@ -582,10 +588,11 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                                                                                    flow[single_daughter], flownetwork.hd[parent_a],
                                                                                                    flownetwork.hd[parent_b], hematocrit_ghost, rbc_balance)
 
+                                # boundary_inflow.append(node[1])
+
                             # (>ø<)
                             # OUTflow ghost
                             else:
-                                print(parent_a, parent_b, single_daughter)
                                 # flow ghost daughter: surplus flow between the parents and daughter vessel
                                 flow_daughter_ghost = (flow[parent_a] + flow[parent_b]) - flow[single_daughter]
                                 # combine parent value to consider them as one
@@ -624,7 +631,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 flow[daughter_c], rbc_balance,
                                 fractional_trifurc_RBCs,
                                 fractional_trifurc_blood)
-
+                            boundary_inflow.append(node[1])
                         case 1, 2:
 
                             # to understand if it is inflow or outflow ghost case
@@ -665,6 +672,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                                                                                                           fractional_a_blood,
                                                                                                                           fractional_b_blood,
                                                                                                                           hemat_parent_plot)
+                            # boundary_inflow.append(node[1])
+
                         case _, _:
                             print("case not in documentation")
 
@@ -774,12 +783,27 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
             # to save and check Hd_predict (i)
             flownetwork.hd_i = flownetwork.hd
 
+            # flow analisys
+            # flownetwork.boundary_inflow = flowAnalysis(self, flownetwork.boundary_inflow, boundary_inflow)
             # Relaxation factor
             if flownetwork.iteration > 1:
-                flownetwork.hd = sor_rasmussen2018(flownetwork, flownetwork.hd, old_hematocrit, self._PARAMETERS, hd_i)
+                flownetwork.hd = sor_rasmussen2018(flownetwork, flownetwork.hd, old_hematocrit, self._PARAMETERS, self)
 
 
-def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit, PARAMETERS, hd_i):
+# def flowAnalysis(self, old_boundary_inflow, new_boundary_inflow):
+#     if sorted(old_boundary_inflow) == sorted(new_boundary_inflow):
+#
+#         print(
+#             f' They are the same and they are: \n {set(sorted(old_boundary_inflow)).symmetric_difference(set(sorted(new_boundary_inflow)))}  lend {len(new_boundary_inflow)}\n')
+#     else:
+#         print(f' Different: \n {set(sorted(old_boundary_inflow)).symmetric_difference(set(sorted(new_boundary_inflow)))} lend {len(new_boundary_inflow)}\n')
+#     # print(sorted(new_boundary_inflow))
+#
+#     return new_boundary_inflow
+
+
+def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit, PARAMETERS, self):
+    iteration = flownetwork.iteration
     # Hd_i+1_predicted and H_i
     # [old]
     # cnvg_hem = np.abs(old_hematocrit - prd_hematocrit) / old_hematocrit * 100
@@ -813,82 +837,78 @@ def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit, PARAMETERS, h
 
     match flownetwork.sor:
         case True:
-            # write in the file the result of previous operation
-            # with open(output_file_path, 'a') as file:
-            #     file.write(output_data)
-
-            # # check if the difference between current and previous relative mean is under the threshold
-            # if np.abs(flownetwork.avg_old - cnvg_hem_avg_per) <= 1e-5:  # or cnvg_hem_avg_per <= 5e-2:
-            #     flownetwork.avg_check += 1
-            # else:
-            #     flownetwork.avg_check = 0
-            #
-            # # check if the maximum error is under 100%
-            # if cnvg_hem_max_per <= 100:
-            #     flownetwork.max_check += 1
-            # else:
-            #     flownetwork.max_check = 0
-            #
-            # if cnvg_hem_avg_per_i == 0 and cnvg_hem_max_per_i == 0:
-            #     flownetwork.i += 1
-            # else:
-            #     flownetwork.i = 0
-            #
-            # # save the current relative mean
-            # flownetwork.avg_old = cnvg_hem_avg_per
-            #
-            # # if the value remain still for more than 50 iteration the relaxation factor is disabled
-            # if (flownetwork.avg_check >= 50 and flownetwork.max_check >= 50) or (flownetwork.i > 2) or (flownetwork.iteration % 300 == 0 and flownetwork.iteration != 0):  # or (
-            #     # cnvg_hem_avg_per_i < 1e-4
-            #     # and
-            #     #  cnvg_hem_max_per_i < 1):
-            #     with open(output_file_path, 'a') as file:
-            #         file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- exit from the update with alpha  \n \n")
-            #     # result equal to the hematocrit given as input Hd_predicted_i+1
-            #     result = prd_hematocrit
-            #     # to pass in the other match case without alpha update18.10
-            #     flownetwork.sor = False
-            #     flownetwork.iterationExit += 1
-
             # every 50 iteration the alpha is updated and decreased of 1% percent
             alpha = flownetwork.alpha
-            # if flownetwork.upAlpha == 1500:
-            #     alpha = 0.4
-            #     flownetwork.upAlpha = 0
-            #     flownetwork.max_magnitude = None
-            #
-            # el
-            if flownetwork.iteration % 50 == 0 and flownetwork.iteration != 0:
+            if iteration % 50 == 0 and iteration != 0:  # and alpha > 1e-3:  # and alpha != 0:
                 # alpha = round(flownetwork.alpha * 0.9, 4)
                 alpha = flownetwork.alpha * 0.9
                 flownetwork.alphaSave = np.append(flownetwork.alphaSave, flownetwork.alpha)
+                with open(f"{self._PARAMETERS['path_output_file']}/{self._PARAMETERS['network_name']}.txt", 'a') as file:
+                    file.write(f'it:{iteration} alpha: {alpha} \n')
 
             one_alpha = 1 - alpha
             result = (one_alpha * old_hematocrit) + (alpha * prd_hematocrit)
             flownetwork.alpha = alpha
 
-            # case False:
-        #     # result equal to the hematocrit given as input Hd_predicted_i+1
-        #     result = prd_hematocrit
-        #
-        #     with open(output_file_path, 'a') as file:
-        #         file.write(output_data)
-        #
-        #     if cnvg_hem_avg_per < 0.5 and cnvg_hem_max_per < 1:
-        #         flownetwork.convergence_check = True
-        #     # if the exit is in a multiple of 300 the alpha need to be updated
-        #     # if flownetwork.iteration % 300 == 0:
-        #     #     flownetwork.alpha = round(flownetwork.alpha * 0.9, 4)
-        #     #     with open(output_file_path, 'a') as file:
-        #     #         file.write(f"\n NEW ALPHA: {flownetwork.alpha} (prepared in future step)\n")
-        #
-        #     # if the iteration are more than 3 the alpha is set back
-        #     elif flownetwork.iterationExit >= 3:
-        #         flownetwork.sor = True
-        #         flownetwork.iterationExit = 0
-        #         with open(output_file_path, 'a') as file:
-        #             file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- go back from the update with alpha\n \n")
-        #     else:
-        #         flownetwork.iterationExit += 1
-
     return result
+
+# write in the file the result of previous operation
+# with open(output_file_path, 'a') as file:
+#     file.write(output_data)
+
+# # check if the difference between current and previous relative mean is under the threshold
+# if np.abs(flownetwork.avg_old - cnvg_hem_avg_per) <= 1e-5:  # or cnvg_hem_avg_per <= 5e-2:
+#     flownetwork.avg_check += 1
+# else:
+#     flownetwork.avg_check = 0
+#
+# # check if the maximum error is under 100%
+# if cnvg_hem_max_per <= 100:
+#     flownetwork.max_check += 1
+# else:
+#     flownetwork.max_check = 0
+#
+# if cnvg_hem_avg_per_i == 0 and cnvg_hem_max_per_i == 0:
+#     flownetwork.i += 1
+# else:
+#     flownetwork.i = 0
+#
+# # save the current relative mean
+# flownetwork.avg_old = cnvg_hem_avg_per
+#
+# # if the value remain still for more than 50 iteration the relaxation factor is disabled
+# if (flownetwork.avg_check >= 50 and flownetwork.max_check >= 50) or (flownetwork.i > 2) or (flownetwork.iteration % 300 == 0 and flownetwork.iteration != 0):  # or (
+#     # cnvg_hem_avg_per_i < 1e-4
+#     # and
+#     #  cnvg_hem_max_per_i < 1):
+#     with open(output_file_path, 'a') as file:
+#         file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- exit from the update with alpha  \n \n")
+#     # result equal to the hematocrit given as input Hd_predicted_i+1
+#     result = prd_hematocrit
+#     # to pass in the other match case without alpha update18.10
+#     flownetwork.sor = False
+#     flownetwork.iterationExit += 1
+
+# case False:
+#     # result equal to the hematocrit given as input Hd_predicted_i+1
+#     result = prd_hematocrit
+#
+#     with open(output_file_path, 'a') as file:
+#         file.write(output_data)
+#
+#     if cnvg_hem_avg_per < 0.5 and cnvg_hem_max_per < 1:
+#         flownetwork.convergence_check = True
+#     # if the exit is in a multiple of 300 the alpha need to be updated
+#     # if flownetwork.iteration % 300 == 0:
+#     #     flownetwork.alpha = round(flownetwork.alpha * 0.9, 4)
+#     #     with open(output_file_path, 'a') as file:
+#     #         file.write(f"\n NEW ALPHA: {flownetwork.alpha} (prepared in future step)\n")
+#
+#     # if the iteration are more than 3 the alpha is set back
+#     elif flownetwork.iterationExit >= 3:
+#         flownetwork.sor = True
+#         flownetwork.iterationExit = 0
+#         with open(output_file_path, 'a') as file:
+#             file.write(f"\n BURN BABY BURN (cit. Margaret Hamilton) ----- go back from the update with alpha\n \n")
+#     else:
+#         flownetwork.iterationExit += 1

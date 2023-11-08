@@ -5,11 +5,14 @@ A python script to simulate stationary blood flow in microvascular networks. Cap
 3. Solve for flow rates, pressures and RBC velocities
 4. Save the results in a file
 """
+import numpy as np
 
 from source.flow_network import FlowNetwork
-from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
+
+# set random seed
+#np.random.seed(42)
 
 # MappingProxyType is basically a const dict.
 # todo: read parameters from file; need a good way to import from human readable file (problem: json does not support
@@ -23,7 +26,7 @@ PARAMETERS = MappingProxyType(
         # 4: generate hexagonal graph composed of a single hexagon
         # 5: generate hexagonal graph composed of a single hexagon for trifurcation
         # 6: todo import graph from edge_data and vertex_data pickle files
-        "write_network_option": 3,  # 1: do not write anything
+        "write_network_option": 1,  # 1: do not write anything
         # 2: write to igraph format # todo: handle overwriting data from import file
         # 3: write to vpt format
         "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
@@ -35,7 +38,7 @@ PARAMETERS = MappingProxyType(
         # 3: Laws by Pries and Secomb (2005)
         # 4: Laws by Preis (1996)
         "solver_option": 1,  # 1: Direct solver
-        # 2: PyAMG solver
+        # 2: PyAMG solvervisual
         # 3-...: other solvers
         "iterative_routine": 2,  # 1: Single iteration
         # 2: Iterative routine
@@ -43,8 +46,9 @@ PARAMETERS = MappingProxyType(
         # Blood properties
         "ht_constant": 4E-05,  # only required if RBC impact is considered
         "mu_plasma": 0.0052,
-        "boundary_hematocrit": [0.1] * 2000,
-        "network_name": "MVN1_01_dumb",
+        "boundary_hematocrit": np.full(2000, 0.5),  # np.random.uniform(low=0.09, high=0.11, size=2000),  # np.full(2000, 0.1)
+        # #: np.array([0.1] * 2000),  #
+        "network_name": "prova",
 
         # if True set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -84,14 +88,14 @@ PARAMETERS = MappingProxyType(
         "ig_boundary_value": "boundaryValue",
 
         # Write options
-        "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/log_file/Sera_18/MVN1_01_flag.vtp",
+        "write_override_initial_graph": True,  # todo: currently does not do anything
+        "write_path_igraph": "data/out/flow/paraview/prova.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/plot/19_10",
+        "path_for_graph": "data/out/flow/prova/plot",
 
         # Write option in case of print in output file (.txt)
-        "path_output_file": "data/out/log_file/19_10/",
+        "path_output_file": "data/out/flow/prova/log_file",
 
     }
 )

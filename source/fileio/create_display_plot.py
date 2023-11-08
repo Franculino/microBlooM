@@ -426,27 +426,33 @@ def residual_plot(flownetwork, residualMax, residualNorm, PARAMETERS, title, pat
     plt.plot(range(0, flownetwork.iteration), residualNorm, "-g", label="residualMean")
     x_threshold = np.linspace(0, 10, flownetwork.iteration)
     plt.plot(range(0, flownetwork.iteration), np.full_like(x_threshold, flownetwork.zeroFlowThreshold), color='r', linestyle=':', label="zeroFlowThreshold")
-
-    plt.title(title, fontsize=10)
-    plt.xlabel("Iteration", fontsize=10)
-    plt.ylabel("Residual value", fontsize=10)
+    second_line = 1 * 10 ** (3 - flownetwork.zeroFlowThresholdMagnitude)
+    plt.plot(range(0, flownetwork.iteration), np.full_like(x_threshold, second_line), color='b', linestyle=':',
+             label="2MagnitudeThreshold")
+    plt.xlim([0, flownetwork.iteration])
+    plt.title(title)  # , fontsize=10)
+    plt.xlabel("Iteration")  # , fontsize=10)
+    plt.ylabel("Residual value")  # , fontsize=10)
     plt.yscale("log")
-    plt.xticks(fontsize=20)
-    plt.yticks(fontsize=20)
-    plt.ylim(None, 1e-11)
+    # plt.xticks(fontsize=20)
+    # plt.yticks(fontsize=20)+
 
-    x = range(0, flownetwork.iteration)
-    for i, label in enumerate(flownetwork.alphaSave):
-        x_label = x[i * 50] if i * 50 < len(x) else x[-1]
-        y_label = residualNorm[i * 50] if i * 50 < len(residualNorm) else residualNorm[-1]
-        plt.scatter(x_label, y_label, color='red', marker='o')  # Include label parameter here
-        plt.annotate(label, (x_label, y_label), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=20)
+    plt.ylim(None, 1e-11)
+    plt.rcParams.update({'font.size': 22})
+
+    # To display Alphas
+    # x = range(0, flownetwork.iteration)
+    # for i, label in enumerate(flownetwork.alphaSave):
+    #     x_label = x[i * 50] if i * 50 < len(x) else x[-1]
+    #     y_label = residualNorm[i * 50] if i * 50 < len(residualNorm) else residualNorm[-1]
+    #     plt.scatter(x_label, y_label, color='red', marker='o')  # Include label parameter here
+    #     plt.annotate(label, (x_label, y_label), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=20)
 
     # Create the legend
     plt.legend(loc='upper right', fontsize=20)
 
     if PARAMETERS['save']:
-        path = PARAMETERS['path_for_graph'] + '/' + PARAMETERS["network_name"] + '/' + path_title + name
+        path = PARAMETERS['path_for_graph'] + '/' + path_title + name  # '/' + PARAMETERS["network_name"]
         isExist = os.path.exists(path)
         if not isExist:
             # Create a new directory because it does not exist
@@ -456,22 +462,23 @@ def residual_plot(flownetwork, residualMax, residualNorm, PARAMETERS, title, pat
 
 
 def residual_graph(flownetwork, data, PARAMETERS, title, name):
-    plt.figure(figsize=(15, 15), dpi=300)
+    plt.figure(figsize=(30, 30), dpi=300)
     plt.style.use('seaborn-whitegrid')
     # Plot lines with labels for the last 100 iterations
-    plt.plot(range(0, 100), data, "-k", label=str(name))
-    plt.title(name + str(title), fontsize=10)
-    plt.xlabel("Iteration", fontsize=10)
-    plt.ylabel(name, fontsize=10)
-    plt.yscale("log")
-    plt.xticks(fontsize=20)
-    plt.yticks(fontsize=20)
-
+    plt.plot(range(0, len(data)), data, "-k", label=str(name))
+    plt.title(name + " " + str(title))  # , fontsize=30)
+    plt.xlabel("Iteration")  # , fontsize=10)
+    plt.ylabel(name)
+    # plt.xticks(fontsize=20)
+    # plt.yticks(fontsize=20)
+    # plt.yscale("logit")
+    plt.ticklabel_format(useOffset=False)
+    plt.rcParams.update({'font.size': 22})
     # Create the legend
-    plt.legend(loc='upper right', fontsize=20)
+    plt.legend(loc='upper right')  # , fontsize=20)
 
     if PARAMETERS['save']:
-        path = PARAMETERS['path_for_graph'] + '/' + PARAMETERS["network_name"] + '/' + name
+        path = PARAMETERS['path_for_graph'] + '/' + name
         isExist = os.path.exists(path)
         if not isExist:
             # Create a new directory because it does not exist

@@ -22,6 +22,14 @@ class FlowNetwork(object):
                  PARAMETERS: MappingProxyType):
         # Network attributes
 
+        self.vessel_flow_change = None
+        self.positions_of_elements_not_in_boundary = None
+        self.node_flow_change = None
+        self.save_change_flow_over_th = None
+        self.node_residual = None
+        self.positions_of_elements_not_in_boundary = None
+        self.two_MagnitudeThreshold = None
+        self.local_balance_rbc = None
         self.min_flow = None
         self.eps_eff = None
         self.nr_of_vs = None
@@ -95,11 +103,13 @@ class FlowNetwork(object):
         self.node_values = None
         self.flagFlow, self.flagFlowM1 = None, None
         self.pressure_node, self.families_dict, self.vessel_general = None, None, None
-        self.node_identifiers = [1874, 2343, 3093, 6517, 6608, 7615, 8362, 9082, 9742, 10763, 11584, 12006, 9829, 10897]  # MVN1_01
-        # self.node_identifiers = [16, 28, 30, 63, 84, 124, 224, 126, 132]  # MVN2_06
+        self.node_identifiers = [75, 193, 238, 377, 456, 522, 771, 778]  # MVN1_01
+        #self.node_identifiers = [361, 405, 407, 576, 713, 950, 968, 1005, 2617]  # MVN2_06
+        # self.node_identifiers = [300, 500]
         self.vessel_value_hd, self.vessel_value_flow = None, None
         self.node_values_hd, self.node_values_flow, self.upAlpha, self.max_magnitude, self.node_relative_residual = None, None, 0, 0, None
-        self.zeroFlowThresholdMagnitude = None
+        self.zeroFlowThresholdMagnitude, self.indices_over, self.indices_over_blue, self.local_balance_rbc_corr = None, None, None, None
+        self.boundary_inflow, self.families_dict_total = [], None
 
         return
 
