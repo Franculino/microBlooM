@@ -21,11 +21,11 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 3,  # 1: generate hexagonal graph
+        "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
-        "write_network_option": 4,  # 1: do not write anything
+        "write_network_option": 1,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
                                     # 3: write to vtp format
                                     # 4: write to two csv files
@@ -55,23 +55,23 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
-        "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
-        "csv_path_boundary_data": "data/network/b6_B_pre_061/boundary_node_data.csv",
+        "csv_path_vertex_data": "data/network/node_data.csv",
+        "csv_path_edge_data": "data/network/edge_data.csv",
+        "csv_path_boundary_data": "data/network/boundary_node_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "testcase_autoregulation/passive_autoregulation_curve/data/B6_C_init_001/B6_C_init_001.pkl",
+        "pkl_path_igraph": "data/network/network_graph.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "testcase_autoregulation/passive_autoregulation_curve/output/B6_C_init_001/pin100/B6_C_init_001_results"  # only required for "write_network_option" 2
+        "write_path_igraph": "data/network/network_simulated"  # only required for "write_network_option" 2
     }
 )
 
