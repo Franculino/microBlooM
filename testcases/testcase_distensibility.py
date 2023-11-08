@@ -12,7 +12,7 @@ import numpy as np
 
 from source.flow_network import FlowNetwork
 from source.bloodflowmodel.flow_balance import FlowBalance
-from source.stroke_model import StrokeModel
+from source.ischaemic_stroke_model import IschaemicStrokeModel
 from source.distensibility import Distensibility
 from types import MappingProxyType
 import source.setup.setup as setup
@@ -54,8 +54,8 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_vertices": [0, 189],
         "hexa_boundary_values": [13330, 1333],
         "hexa_boundary_types": [1, 1],
-        "stroke_edges": [0, 1], # Example: Occlude 2 edges at inflow
-        "diameter_stroke_edges": .5e-6,
+        "stroke_edges": [0, 1],  # Example: Occlude 2 edges at inflow - manually assigning of blocked vessel ids
+        "diameter_blocked_edges": .5e-6,
 
         # Import network from csv options. Only required for "read_network_option" 2
         "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
@@ -80,15 +80,15 @@ PARAMETERS = MappingProxyType(
         # Stroke options
         ##########################
 
-        "induce_stroke_option": 3,      # 1: Don't induce stroke
-                                        # 2: Induce stroke in a hexagonal network - only required for "read_network_option" 1
-                                        # 3: Induce stroke in a network reading diameters at stroke state from a csv file
+        "simulate_ischaemic_stroke_option": 3,      # 1: Don't induce stroke
+                                                    # 2: Induce stroke in a hexagonal network - only required for "read_network_option" 1
+                                                    # 3: Induce stroke in a network reading diameters at stroke state from a csv file
 
         # Parameters for inducing stroke - only required for "induce_stroke_cases" 3
-        "csv_path_diameter_stroke_state": "testcase_sensibility_distensibility/Ref_Pressure/case_high_ref_pressure/"
-                                          "B6_B_01/data/diameter_at_stroke_state.csv",
+        "csv_path_diameters_stroke_state": "testcase_sensibility_distensibility/Ref_Pressure/case_high_ref_pressure/"
+                                           "B6_B_01/data/diameter_at_stroke_state.csv",
 
-        "diameter_stroke_state": "diameter_at_stroke",  # name of the label in the csv file
+        "diameters_stroke_state": "diameter_at_stroke",  # name of the label in the csv file
 
         ##########################
         # Vessel distensibility options
@@ -98,7 +98,7 @@ PARAMETERS = MappingProxyType(
         "read_dist_parameters_option": 2,       # 1: Do not read anything
                                                 # 2: Read from csv file
 
-        "distensibility_ref_state_option": 5,   # 1: No update of diameters due to vessel distensibility
+        "dist_ref_state_option": 3,             # 1: No update of diameters due to vessel distensibility
                                                 # 2: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = p_base,
                                                     # d_ref = d_base
                                                 # 3: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
@@ -108,7 +108,7 @@ PARAMETERS = MappingProxyType(
                                                 # 5: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
                                                     # d_ref computed based on Rammos et al. (1998)
 
-        "distensibility_relation_option": 4,    # 1: No update of diameters due to vessel distensibility
+        "dist_pres_area_relation_option": 2,    # 1: No update of diameters due to vessel distensibility
                                                 # 2: Relation based on Sherwin et al. (2003) - non linear p-A relation
                                                 # 3: Relation based on Urquiza et al. (2006) - non linear p-A relation
                                                 # 4: Relation based on Rammos et al. (1998) - linear p-A relation
@@ -125,10 +125,10 @@ setup_blood_flow = setup.SetupSimulation()
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
     imp_solver = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
 
-imp_read_distensibility_parameters, imp_distensibility_ref_state, imp_distensibility_relation = \
+imp_read_dist_parameters, imp_dist_ref_state, imp_dist_pres_area_relation = \
     setup_blood_flow.setup_distensibility_model(PARAMETERS)
 
-imp_induce_stroke = setup_blood_flow.setup_stroke_model(PARAMETERS)
+imp_sim_ischaemic_stroke = setup_blood_flow.setup_ischaemic_stroke_model(PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file
@@ -137,10 +137,10 @@ flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, im
 
 flow_balance = FlowBalance(flow_network)
 
-distensibility = Distensibility(flow_network, imp_distensibility_ref_state, imp_read_distensibility_parameters,
-                                imp_distensibility_relation)
+distensibility = Distensibility(flow_network, imp_dist_ref_state, imp_read_dist_parameters,
+                                imp_dist_pres_area_relation)
 
-stroke_model = StrokeModel(flow_network, distensibility, imp_induce_stroke, PARAMETERS)
+ischaemic_stroke_model = IschaemicStrokeModel(flow_network, distensibility, imp_sim_ischaemic_stroke, PARAMETERS)
 
 # Import or generate the network - Import data for the pre-stroke state
 print("Read network: ...")
@@ -164,11 +164,11 @@ print("Initialise distensibility model based on baseline results: ...")
 distensibility.initialise_distensibility()
 print("Initialise distensibility model based on baseline results: DONE")
 
-# Add stroke. Diameters at stroke state.
-print("Induce stroke to the network based on diameter changes: ...")
-stroke_model.add_stroke()
-flow_network.diameter = stroke_model.diameter_at_stroke
-print("Induce stroke to the network based on diameter changes: ...")
+# Simulate stroke. Diameters at stroke state.
+print("Simulate ischaemic stroke based on diameter changes: ...")
+ischaemic_stroke_model.simulate_ischaemic_stroke()
+flow_network.diameter = ischaemic_stroke_model.diameters_stroke
+print("Simulate ischaemic stroke based on diameter changes: ...")
 
 # Update diameters and iterate (has to be improved)
 print("Update the diameters based on Distensibility Law: ...")

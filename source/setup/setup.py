@@ -15,7 +15,7 @@ import source.inverseproblemmodules.adjoint_method_solver as adjoint_method_solv
 import source.inverseproblemmodules.alpha_restriction as alpha_mapping
 import source.fileio.read_distensibility_parameters as read_distensibility_parameters
 import source.distensibilitymodules.distensibility_law as distensibility_law
-import source.strokemodules.stroke_state as stroke_state
+import source.strokemodules.ischaemic_stroke_state as ischaemic_stroke_state
 import sys
 
 
@@ -43,9 +43,9 @@ class Setup(ABC):
         """
 
     @abstractmethod
-    def setup_stroke_model(self, PARAMETERS):
+    def setup_ischaemic_stroke_model(self, PARAMETERS):
         """
-        Abstract method to set up the distensibility model
+        Abstract method to set up the ischaemic stroke model
         """
 
 class SetupSimulation(Setup):
@@ -141,8 +141,7 @@ class SetupSimulation(Setup):
                 imp_readtargetvalues = read_target_values.ReadTargetValuesEdge(PARAMETERS)
                 imp_readparameters = read_parameters.ReadParametersEdges(PARAMETERS)
             case 11:  # Tune boundary pressures
-                imp_adjointparameter = adjoint_method_parameters.AdjointMethodImplementationsAbsBoundaryPressure(
-                    PARAMETERS)
+                imp_adjointparameter = adjoint_method_parameters.AdjointMethodImplementationsAbsBoundaryPressure(PARAMETERS)
                 imp_readtargetvalues = read_target_values.ReadTargetValuesEdge(PARAMETERS)
                 imp_readparameters = read_parameters.ReadParametersVertices(PARAMETERS)
             case _:
@@ -176,62 +175,56 @@ class SetupSimulation(Setup):
 
         match PARAMETERS["read_dist_parameters_option"]:
             case 1:  # Do not read anything
-                imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersNothing(
-                    PARAMETERS)
+                imp_read_dist_parameters = read_distensibility_parameters.ReadDistensibilityParametersNothing(PARAMETERS)
             case 2:  # Read distensibility porameters from csv file
-                imp_read_distensibility_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(
-                    PARAMETERS)
+                imp_read_dist_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to read distensibility porameters (read_dist_parameters_option)")
 
-        match PARAMETERS["distensibility_ref_state_option"]:
+        match PARAMETERS["dist_ref_state_option"]:
             case 1:  # No update of diameters due to vessel distensibility
-                imp_distensibility_ref_state = distensibility_law.DistensibilityInitialiseNothing(PARAMETERS)
+                imp_dist_ref_state = distensibility_law.DistensibilityInitialiseNothing(PARAMETERS)
             case 2:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
-                imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceBaselinePressure(
-                    PARAMETERS)
+                imp_dist_ref_state = distensibility_law.DistensibilityLawPassiveReferenceBaselinePressure(PARAMETERS)
             case 3:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Sherwin et al. (2003).
-                imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureSherwin(
-                    PARAMETERS)
+                imp_dist_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureSherwin(PARAMETERS)
             case 4:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Urquiza et al. (2006).
-                imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureUrquiza(
-                    PARAMETERS)
-            case 5:
-                imp_distensibility_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureRammos(
-                    PARAMETERS)
+                imp_dist_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureUrquiza(PARAMETERS)
+            case 5:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Rammos et al. (1998).
+                imp_dist_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureRammos(PARAMETERS)
             case _:
-                sys.exit("Error: Choose valid option to define the reference state (distensibility_ref_state_option)")
+                sys.exit("Error: Choose valid option to define the reference state (dist_ref_state_option)")
 
-        match PARAMETERS["distensibility_relation_option"]:
+        match PARAMETERS["dist_pres_area_relation_option"]:
             case 1:  # No update of diameters due to vessel distensibility
-                imp_distensibility_relation = distensibility_law.DistensibilityLawUpdateNothing(PARAMETERS)
+                imp_dist_pres_area_relation = distensibility_law.DistensibilityLawUpdateNothing(PARAMETERS)
             case 2:  # Update of diameters based on a non-linear p-A ralation proposed by Sherwin et al. (2003).
-                imp_distensibility_relation = distensibility_law.DistensibilityLawUpdatePassiveSherwin(PARAMETERS)
+                imp_dist_pres_area_relation = distensibility_law.DistensibilityLawUpdatePassiveSherwin(PARAMETERS)
             case 3:  # Update of diameters based on a non-linear p-A ralation proposed by Urquiza et al. (2006).
-                imp_distensibility_relation = distensibility_law.DistensibilityLawUpdatePassiveUrquiza(PARAMETERS)
-            case 4:  # Update of diameters based on a non-linear p-A ralation proposed by Rammos et al. (1998).
-                imp_distensibility_relation = distensibility_law.DistensibilityLawUpdatePassiveRammos(PARAMETERS)
+                imp_dist_pres_area_relation = distensibility_law.DistensibilityLawUpdatePassiveUrquiza(PARAMETERS)
+            case 4:  # Update of diameters based on a linear p-A ralation proposed by Rammos et al. (1998).
+                imp_dist_pres_area_relation = distensibility_law.DistensibilityLawUpdatePassiveRammos(PARAMETERS)
             case _:
-                sys.exit("Error: Choose valid option to define the reference state (distensibility_relation)")
+                sys.exit("Error: Choose valid option to define the p-A ralation (dist_pres_area_relation_option)")
 
-        return imp_read_distensibility_parameters, imp_distensibility_ref_state, imp_distensibility_relation
+        return imp_read_dist_parameters, imp_dist_ref_state, imp_dist_pres_area_relation
 
 
-    def setup_stroke_model(self, PARAMETERS):
+    def setup_ischaemic_stroke_model(self, PARAMETERS):
         """
-        Set up the stroke model and returns various implementations of the stroke model
+        Set up the ischaemic stroke model and returns various implementations of the stroke model
         :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
         :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
         :returns: the implementation objects. Error if invalid option is chosen.
         """
-        match PARAMETERS["induce_stroke_option"]:
+        match PARAMETERS["simulate_ischaemic_stroke_option"]:
             case 1:  # Not induce stroke
-                imp_induce_stroke = stroke_state.StrokeStateNothing(PARAMETERS)
+                imp_sim_ischaemic_stroke = ischaemic_stroke_state.StrokeStateNothing(PARAMETERS)
             case 2:  # Induce stroke in a hexagonal network
-                imp_induce_stroke = stroke_state.StrokeStateHexagonalNetwork(PARAMETERS)
+                imp_sim_ischaemic_stroke = ischaemic_stroke_state.StrokeStateHexagonalNetwork(PARAMETERS)
             case 3:  # Induce stroke in a network reading diameters at stroke state from a csv file
-                imp_induce_stroke = stroke_state.StrokeStateFromFile(PARAMETERS)
+                imp_sim_ischaemic_stroke = ischaemic_stroke_state.StrokeStateDiametersCSVFile(PARAMETERS)
             case _:
-                sys.exit("Error: Choose valid option to induce stroke (induce_stroke_option)")
+                sys.exit("Error: Choose valid option to simulate stroke (simulate_ischaemic_stroke_option)")
 
-        return imp_induce_stroke
+        return imp_sim_ischaemic_stroke
