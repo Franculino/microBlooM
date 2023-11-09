@@ -221,6 +221,7 @@ class ReadNetworkCsv(ReadNetwork):
         flownetwork.boundary_type = df_boundary_data[self._PARAMETERS["csv_boundary_type"]].to_numpy().astype(np.int)
         flownetwork.boundary_val = df_boundary_data[self._PARAMETERS["csv_boundary_value"]].multiply(133.322).to_numpy()  # 133.3223684
 
+        flownetwork.boundary_hematocrit = np.full(len(flownetwork.boundary_vs), self._PARAMETERS["boundary_hematocrit"])
         print(f"Network {self._PARAMETERS['network_name']}")
         print("Number of  vs: " + str(flownetwork.nr_of_vs))
         print("Number of boundary vs: " + str(len(flownetwork.boundary_vs)))

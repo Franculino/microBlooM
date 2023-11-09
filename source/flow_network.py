@@ -1,3 +1,5 @@
+import numpy as np
+
 import source.fileio.read_network as readnetwork
 import source.fileio.write_network as writenetwork
 import source.bloodflowmodel.tube_haematocrit as tubehaematocrit
@@ -21,7 +23,10 @@ class FlowNetwork(object):
                  imp_iterative: iterative_routine.IterativeRoutine, imp_balance: flow_balance.FlowBalance,
                  PARAMETERS: MappingProxyType):
         # Network attributes
-
+        self.maxBalance = None
+        self.node_flow_change_total = None
+        self.node_residual_plot = None
+        self.node_relative_residual_plot = None
         self.vessel_flow_change = None
         self.positions_of_elements_not_in_boundary = None
         self.node_flow_change = None
@@ -104,13 +109,13 @@ class FlowNetwork(object):
         self.flagFlow, self.flagFlowM1 = None, None
         self.pressure_node, self.families_dict, self.vessel_general = None, None, None
         self.node_identifiers = [75, 193, 238, 377, 456, 522, 771, 778]  # MVN1_01
-        #self.node_identifiers = [361, 405, 407, 576, 713, 950, 968, 1005, 2617]  # MVN2_06
+        # self.node_identifiers = [361, 405, 407, 576, 713, 950, 968, 1005, 2617]  # MVN2_06
         # self.node_identifiers = [300, 500]
         self.vessel_value_hd, self.vessel_value_flow = None, None
         self.node_values_hd, self.node_values_flow, self.upAlpha, self.max_magnitude, self.node_relative_residual = None, None, 0, 0, None
         self.zeroFlowThresholdMagnitude, self.indices_over, self.indices_over_blue, self.local_balance_rbc_corr = None, None, None, None
         self.boundary_inflow, self.families_dict_total = [], None
-
+        self.increment = 0
         return
 
     def read_network(self):

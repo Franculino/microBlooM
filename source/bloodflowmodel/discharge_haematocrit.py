@@ -386,7 +386,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
     # 
     def update_hd(self, flownetwork):
-        flownetwork.boundary_hematocrit = self._PARAMETERS["boundary_hematocrit"]
+        flownetwork.boundary_hematocrit = copy.deepcopy(flownetwork.boundary_hematocrit)
         flownetwork.fractional_a_qRBCs, flownetwork.fractional_b_qRBCs = [], []
         flownetwork.fractional_a_blood, flownetwork.fractional_b_blood = [], []
         flownetwork.fractional_trifurc_RBCs, flownetwork.fractional_trifurc_blood = [], []

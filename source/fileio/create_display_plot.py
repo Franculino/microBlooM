@@ -547,37 +547,40 @@ def percentage_lower_than(data, value):
     return percentage
 
 
-def frequency_plot(flownetwork, data, title, x_axis, color_plot):
+def frequency_plot(flownetwork, data, title, x_axis, color_plot, bin_count,pathSave):
     mean_val = np.mean(data)
     median_val = np.median(data)
     max_val = np.max(data)
 
-    # print("The value for " + str(title) + " of: median = " + str(median_val) + " mean = " + str(mean_val) + " min = " + str(np.min(data[data != 0])) + " max = " + str(max_val))
-
-    percentage = percentage_lower_than(np.abs(data), flownetwork.zeroFlowThreshold)
-
-    bin_count = 20000
-
+    plt.figure(figsize=(25, 15), dpi=300)
+    # bin_heights, _ = np.histogram(data, bins=bin_count)
     sns.histplot(data, bins=bin_count, kde=False, color=color_plot, edgecolor='white', stat="percent")
 
-    plt.xlabel(x_axis)
-    plt.ylabel('Percentage (%)')
-    plt.title(title)
+    plt.xlabel(x_axis, fontsize=30)
+    plt.ylabel('Percentage (%)', fontsize=30)
+    plt.title(title, fontsize=35)
     sns.despine(left=True)
     plt.grid(axis='y', alpha=0.5)
-    plt.xticks(fontsize=8)
+    plt.xticks(fontsize=25)
+    plt.yticks(fontsize=25)
     plt.tick_params(axis='y', which='both', color='#f0f0f0')
 
-    bin_heights, _ = np.histogram(data, bins=bin_count)
-
-    plt.axvline(mean_val, color='red', linestyle='dashed', label='Mean', linewidth=1)
-    plt.axvline(median_val, color='blue', linestyle='dashed', label='Median', linewidth=1)
-    plt.axvline(max_val, color='green', linestyle='dashed', label='Max', linewidth=1)
-    plt.axvline(flownetwork.zeroFlowThreshold, color='orange', linestyle='dashed', label='Tolerance', linewidth=1)
+    plt.axvline(mean_val, color='red', linestyle='dashed', label='Mean', linewidth=3)
+    plt.axvline(median_val, color='blue', linestyle='dashed', label='Median', linewidth=3)
+    plt.axvline(max_val, color='green', linestyle='dashed', label='Max', linewidth=3)
+    plt.axvline(flownetwork.two_MagnitudeThreshold, color='black', linestyle='dashed', label='Tolerance', linewidth=3)
 
     plt.xscale('log')
-
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper left', fontsize=25)
     plt.gca().set_facecolor('#f0f0f0')
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+
+    if flownetwork._PARAMETERS['save']:
+        path = flownetwork._PARAMETERS['path_for_graph'] + '/' + pathSave
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+        plt.savefig(path + '/' + str(title) + '.png')
+    plt.close()

@@ -46,9 +46,9 @@ PARAMETERS = MappingProxyType(
         # Blood properties
         "ht_constant": 4E-05,  # only required if RBC impact is considered
         "mu_plasma": 0.0052,
-        "boundary_hematocrit": np.full(2000, 0.5),  # np.random.uniform(low=0.09, high=0.11, size=2000),  # np.full(2000, 0.1)
+        "boundary_hematocrit": 0.1,  # np.random.uniform(low=0.09, high=0.11, size=2000),  # np.full(2000, 0.1)
         # #: np.array([0.1] * 2000),  #
-        "network_name": "prova",
+        "network_name": "MVN1_01_prova_incremento",
 
         # if True set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -73,9 +73,9 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "MVN1/node_data.csv",
-        "csv_path_edge_data": "MVN1/edge_data.csv",
-        "csv_path_boundary_data": "MVN1/node_boundary_data.csv",
+        "csv_path_vertex_data": "MVN2/node_data.csv",
+        "csv_path_edge_data": "MVN2/edge_data.csv",
+        "csv_path_boundary_data": "MVN2/node_boundary_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
@@ -89,13 +89,13 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/flow/paraview/prova.vtp",
+        "write_path_igraph": "data/out/9_11/paraview/MVN1_01_prova_incremento.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/flow/prova/plot",
+        "path_for_graph": "data/out/9_11/MVN1_01_prova_incremento/plot",
 
         # Write option in case of print in output file (.txt)
-        "path_output_file": "data/out/flow/prova/log_file",
+        "path_output_file": "data/out/9_11/MVN1_01_prova_incremento/log_file",
 
     }
 )
