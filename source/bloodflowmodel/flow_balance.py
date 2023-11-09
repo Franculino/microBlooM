@@ -75,7 +75,7 @@ class FlowBalanceClass(FlowBalance):
         nr_of_vs = flownetwork.nr_of_vs
         flow_rate = flownetwork.flow_rate
         boundary_vs = flownetwork.boundary_vs
-
+        iteration = flownetwork.iteration
         flow_balance = self._get_flow_balance(flownetwork)
 
         ref_flow = np.abs(flow_rate[boundary_vs[0]])
@@ -106,40 +106,44 @@ class FlowBalanceClass(FlowBalance):
         flow_rbcs = self._get_flow_balance_rbcs(flownetwork)
         local_balance_rbc = np.abs(flow_rbcs[is_inside_node])
         maxBalance, meanBalance = max(local_balance_rbc), np.mean(local_balance_rbc)
+        flownetwork.maxBalance = maxBalance
         flownetwork.residualOverIterationMax = np.append(flownetwork.residualOverIterationMax, maxBalance)
         flownetwork.residualOverIterationNorm = np.append(flownetwork.residualOverIterationNorm, meanBalance)
 
-        if flownetwork.iteration > 2:
+        if iteration > 2:
             flownetwork.families_dict, flownetwork.vessel_general = copy.deepcopy(dict_for_families(flownetwork))
 
-        if flownetwork.node_values_flow is None and flownetwork.iteration > 2:
+        if flownetwork.node_values_flow is None and iteration > 2:
             flownetwork.node_values = {node: [] for node in flownetwork.node_identifiers}
-            flownetwork.node_relative_residual = {node: [] for node in flownetwork.positions_of_elements_not_in_boundary}
             flownetwork.node_values_hd = {node: [] for node in flownetwork.node_identifiers}
             flownetwork.node_values_flow = {node: [] for node in flownetwork.node_identifiers}
             flownetwork.vessel_value_hd = {vessel: [] for vessel in flownetwork.vessel_general}
             flownetwork.vessel_value_flow = {vessel: [] for vessel in flownetwork.vessel_general}
 
-        if flownetwork.stop:
-            flownetwork.n_stop += 1
-            knoledge(self, flownetwork, flownetwork.n_stop, local_balance_rbc, maxBalance, flownetwork.positions_of_elements_not_in_boundary)
+        if iteration > 2:
+            flownetwork.node_relative_residual = {node: [] for node in flownetwork.positions_of_elements_not_in_boundary}
+            flownetwork.two_MagnitudeThreshold = 1 * 10 ** (3 - flownetwork.zeroFlowThresholdMagnitude)
 
-        elif flownetwork.zeroFlowThreshold is not None and flownetwork.iteration > 3:
+        if flownetwork.stop:
+            knoledge(self, flownetwork, flownetwork.n_stop, local_balance_rbc)
+
+        elif flownetwork.zeroFlowThreshold is not None and iteration == 100:
             flownetwork.stop = True
-            flownetwork.n_stop = 1
-            knoledge(self, flownetwork, flownetwork.n_stop, local_balance_rbc, maxBalance, flownetwork.positions_of_elements_not_in_boundary)
-        elif flownetwork.iteration > 1:
+            knoledge(self, flownetwork, flownetwork.n_stop, local_balance_rbc)
+
+        elif iteration > 1:
             flownetwork.families_dict_total = copy.deepcopy(dict_for_families_total(flownetwork))
 
         flownetwork.local_balance_rbc = local_balance_rbc
 
 
-def knoledge(self, flownetwork, n_stop, local_balance_rbc, maxBalance, positions_of_elements_not_in_boundary):
+def knoledge(self, flownetwork, local_balance_rbc, positions_of_elements_not_in_boundary):
     # variable needed
     vessel_general = copy.deepcopy(flownetwork.vessel_general)
     node_relative_residual = copy.deepcopy(flownetwork.node_relative_residual)
     node_residual = copy.deepcopy(flownetwork.node_relative_residual)
-    node_flow_change, vessel_flow_change, node_flow_change_total, vessel_flow_change_total = [], [], [], []
+    node_flow_change, vessel_flow_change, node_flow_change_total, vessel_flow_change_total, node_relative_residual_plot, node_residual_plot = [], [], [], [], \
+        [], []
     # errori negli hd e nei flow
 
     vessel_value_hd = copy.deepcopy(flownetwork.vessel_value_hd)
@@ -147,7 +151,6 @@ def knoledge(self, flownetwork, n_stop, local_balance_rbc, maxBalance, positions
     flow_rate = abs(copy.deepcopy(flownetwork.flow_rate))
 
     families_dict_total = copy.deepcopy(dict_for_families_total(flownetwork))
-    blue_Threshold = 1 * 10 ** (3 - flownetwork.zeroFlowThresholdMagnitude)
 
     # salvo i valori di hd e flow per ogni vessel coinvolto
     for vessel in vessel_general:
@@ -169,17 +172,21 @@ def knoledge(self, flownetwork, n_stop, local_balance_rbc, maxBalance, positions
             flow_dgs += flow_rate[dato]
 
         index = np.where(positions_of_elements_not_in_boundary == node)
-        relative_residual = local_balance_rbc[index] / np.average(flow_par + flow_dgs)
+        relative_residual = local_balance_rbc[index][0] / np.average(flow_par + flow_dgs)
+        if not np.isnan(relative_residual):
+            node_relative_residual_plot.append(relative_residual)
+            node_residual_plot.append(local_balance_rbc[index][0])
+
         node_relative_residual[node].append(relative_residual)
         node_residual[node] = local_balance_rbc[index]
-    flownetwork.node_relative_residual, flownetwork.node_residual, flownetwork.positions_of_elements_not_in_boundary = node_relative_residual, node_residual, positions_of_elements_not_in_boundary
+    flownetwork.node_relative_residual, flownetwork.node_residual, flownetwork.positions_of_elements_not_in_boundary, flownetwork.node_relative_residual_plot, flownetwork.node_residual_plot \
+        = node_relative_residual, node_residual, positions_of_elements_not_in_boundary, np.array(node_relative_residual_plot), np.array(node_residual_plot)
 
-    flownetwork.two_MagnitudeThreshold = blue_Threshold
     indices_over_blue, d = [], 0
 
     for node in positions_of_elements_not_in_boundary:
         index = np.where(positions_of_elements_not_in_boundary == node)
-        if local_balance_rbc[index] > blue_Threshold and local_balance_rbc[index] != 0:
+        if local_balance_rbc[index] > flownetwork.two_MagnitudeThreshold and local_balance_rbc[index] != 0:
             indices_over_blue.append(node)
 
     indices_over_blue = np.array(indices_over_blue)
@@ -187,7 +194,6 @@ def knoledge(self, flownetwork, n_stop, local_balance_rbc, maxBalance, positions
     # I have the pure magnitudes for each values of the local balance (position not real nodes)
     data = magnitude_f(local_balance_rbc, positions_of_elements_not_in_boundary, flownetwork.zeroFlowThresholdMagnitude, indices_over_blue)
     values_array = []
-
     # WRITING PART
     with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'a') as file:
         file.write(f"\n\n------------------------ Iteration {flownetwork.iteration} ------------------------\n\n "
@@ -224,10 +230,7 @@ def knoledge(self, flownetwork, n_stop, local_balance_rbc, maxBalance, positions
                     file.write(f"{flownetwork.flow_rate[element]} ")
                     flow_par += abs(flow_rate[element])
                 file.write(f"\n")
-
-                node = np.where(positions_of_elements_not_in_boundary == index)[0][0]
-                relative_residual = local_balance_rbc[node] / np.average(flow_par)
-                file.write(f"Relative Residual: {relative_residual}")
+                file.write(f"Relative Residual: {node_relative_residual[index]}\n")
 
                 # only the one over the threshold
                 if index in indices_over_blue:
@@ -238,8 +241,9 @@ def knoledge(self, flownetwork, n_stop, local_balance_rbc, maxBalance, positions
                 node_flow_change_total.append(index)
                 vessel_flow_change_total.append(vessel)
 
-                flownetwork.indices_over_blue, flownetwork.families_dict_total, flownetwork.node_flow_change, flownetwork.vesel_flow_change, flownetwork.node_flow_change_total, flownetwork.vesel_flow_change_total = \
-                    indices_over_blue, families_dict_total, node_flow_change, vessel_flow_change, node_flow_change_total, vessel_flow_change_total
+        flownetwork.indices_over_blue, flownetwork.families_dict_total, flownetwork.node_flow_change, flownetwork.vesel_flow_change, \
+            flownetwork.node_flow_change_total, flownetwork.vesel_flow_change_total = \
+            indices_over_blue, families_dict_total, np.array(node_flow_change), vessel_flow_change, np.array(node_flow_change_total), vessel_flow_change_total
         file.write(f"\nThe node that have the change of flow and are over the threshold are {node_flow_change_total}\n")
         file.write(f"------------------------------------------------------------\n")
 
@@ -251,10 +255,37 @@ def knoledge(self, flownetwork, n_stop, local_balance_rbc, maxBalance, positions
             for vessel in vessel_flow_change:
                 for node in positions_of_elements_not_in_boundary:
                     if vessel in families_dict_total[node]["par"] or vessel in families_dict_total[node]["dgs"]:
+                        file.write(f"-------------------------\n")
                         file.write(f'{node}:{families_dict_total[node]}\n')
+                        if node not in node_flow_change:
+                            # print flow in par and daughters
+                            file.write(f'Flow rate par: ')
+                            if len(families_dict_total[node]["par"]) != 0:
+                                for element in families_dict_total[node]["par"]:
+                                    file.write(f"{flownetwork.flow_rate[element]} ")
+                            else:
+                                file.write(f'No par')
+
+                            if len(families_dict_total[node]["dgs"]) != 0:
+                                file.write(f' dgs: ')
+                                for element in families_dict_total[node]["dgs"]:
+                                    file.write(f"{flownetwork.flow_rate[element]} ")
+                            else:
+                                file.write(f' no dgs')
+
+                            file.write(f"\n")
+                            # print relative residual at that node
+                            index = np.where(positions_of_elements_not_in_boundary == node)[0][0]
+                            file.write(f'Relative Residual {node_relative_residual[node]}\n'
+                                       f'Residual at node {node}: {local_balance_rbc[index]}\n')
+                            file.write(f"-------------------------\n")
+
+                            # print residual at that node
 
         file.write(f"\n------------------------------------------------------------\n")
-         # def knoledge_original(self, flownetwork, n_stop, local_balance_rbc, maxBalance, positions_of_elements_not_in_boundary):
+        # print histograms?
+
+        # def knoledge_original(self, flownetwork, n_stop, local_balance_rbc, maxBalance, positions_of_elements_not_in_boundary):
         #     # varibale needed
         #     threshold = flownetwork.zeroFlowThreshold
         #     position_count = np.zeros(flownetwork.nr_of_vs, dtype=int)
