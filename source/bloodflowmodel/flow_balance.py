@@ -125,11 +125,11 @@ class FlowBalanceClass(FlowBalance):
             flownetwork.two_MagnitudeThreshold = 1 * 10 ** (3 - flownetwork.zeroFlowThresholdMagnitude)
 
         if flownetwork.stop:
-            knoledge(self, flownetwork, flownetwork.n_stop, local_balance_rbc)
+            knoledge(self, flownetwork, local_balance_rbc, flownetwork.positions_of_elements_not_in_boundary)
 
-        elif flownetwork.zeroFlowThreshold is not None and iteration == 100:
+        elif flownetwork.zeroFlowThreshold is not None and iteration == 4000:
             flownetwork.stop = True
-            knoledge(self, flownetwork, flownetwork.n_stop, local_balance_rbc)
+            knoledge(self, flownetwork,   local_balance_rbc, flownetwork.positions_of_elements_not_in_boundary)
 
         elif iteration > 1:
             flownetwork.families_dict_total = copy.deepcopy(dict_for_families_total(flownetwork))

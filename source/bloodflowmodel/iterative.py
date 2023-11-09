@@ -148,7 +148,6 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                      flownetwork.two_MagnitudeThreshold, flownetwork.node_flow_change, flownetwork.vessel_flow_change], f)
                 f.close()
 
-
             else:
                 flownetwork.convergence_check = False
 
