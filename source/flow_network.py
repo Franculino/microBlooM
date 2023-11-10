@@ -89,7 +89,7 @@ class FlowNetwork(object):
 
         self.alpha = PARAMETERS['alpha']
         self.sor = True
-
+        self.goal = 0.8
         self.avg_check = 0
         self.max_check = 0
         self.avg_old = 0

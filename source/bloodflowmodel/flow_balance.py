@@ -127,7 +127,8 @@ class FlowBalanceClass(FlowBalance):
         if flownetwork.stop:
             knoledge(self, flownetwork, flownetwork.n_stop, local_balance_rbc)
 
-        elif flownetwork.zeroFlowThreshold is not None and maxBalance <= flownetwork.two_MagnitudeThreshold and flownetwork.boundary_hematocrit[0] == 0.2:
+        elif flownetwork.zeroFlowThreshold is not None and maxBalance <= flownetwork.two_MagnitudeThreshold and flownetwork.boundary_hematocrit[0] == \
+                flownetwork.goal:
             flownetwork.stop = True
             knoledge(self, flownetwork, flownetwork.n_stop, local_balance_rbc)
 

@@ -110,7 +110,7 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                 residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, flownetwork._PARAMETERS, " ", "",
                               "convergence")
 
-            if flownetwork.maxBalance <= flownetwork.two_MagnitudeThreshold and flownetwork.boundary_hematocrit[0] != 0.2:
+            if flownetwork.maxBalance <= flownetwork.two_MagnitudeThreshold and flownetwork.boundary_hematocrit[0] != flownetwork.goal:
                 #
                 # TODO: if we want to force
                 # it 1 and
@@ -118,8 +118,23 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                 flownetwork.boundary_hematocrit = np.full(len(flownetwork.boundary_vs), (flownetwork.boundary_hematocrit[0] + 0.01))
                 flownetwork.increment += 1
                 flownetwork.alpha = 0.5
+                # --- save variables ---
+                f = open(str(self._PARAMETERS['network_name']) +str(flownetwork.iteration) + '.pckl', 'wb')
+                pickle.dump(
+                    [flownetwork.flow_rate, flownetwork.node_relative_residual, flownetwork.positions_of_elements_not_in_boundary, flownetwork.node_residual,
+                     flownetwork.two_MagnitudeThreshold, flownetwork.node_flow_change, flownetwork.vessel_flow_change,
+                     flownetwork.node_relative_residual_plot, flownetwork.indices_over_blue, flownetwork.node_flow_change_total], f)
+                f.close()
 
-            elif flownetwork.boundary_hematocrit[0] == 0.2:
+            elif flownetwork.boundary_hematocrit[0] == flownetwork.goal:
+                # --- save variables ---
+                f = open(str(self._PARAMETERS['network_name']) + '.pckl', 'wb')
+                pickle.dump(
+                    [flownetwork.flow_rate, flownetwork.node_relative_residual, flownetwork.positions_of_elements_not_in_boundary, flownetwork.node_residual,
+                     flownetwork.two_MagnitudeThreshold, flownetwork.node_flow_change, flownetwork.vessel_flow_change,
+                     flownetwork.node_relative_residual_plot, flownetwork.indices_over_blue, flownetwork.node_flow_change_total], f)
+                f.close()
+
                 flownetwork.convergence_check = True
                 residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, flownetwork._PARAMETERS,
                               str(self._PARAMETERS['network_name']), "", "final_convergence_plot")
@@ -153,12 +168,6 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                 result_array2 = flownetwork.node_relative_residual_plot[mask]
                 frequency_plot(flownetwork, result_array2, 'Residual', 'residual', 'skyblue', 100000, "non_converging_without_flow")
 
-                # --- save variables ---
-                f = open(str(self._PARAMETERS['network_name']) + '.pckl', 'wb')
-                pickle.dump(
-                    [flownetwork.flow_rate, flownetwork.node_relative_residual, flownetwork.positions_of_elements_not_in_boundary, flownetwork.node_residual,
-                     flownetwork.two_MagnitudeThreshold, flownetwork.node_flow_change, flownetwork.vessel_flow_change], f)
-                f.close()
 
             else:
                 flownetwork.convergence_check = False
