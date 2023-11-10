@@ -33,7 +33,7 @@ class FlowNetwork(object):
         self.save_change_flow_over_th = None
         self.node_residual = None
         self.positions_of_elements_not_in_boundary = None
-        self.two_MagnitudeThreshold = None
+        self.two_MagnitudeThreshold = 0
         self.local_balance_rbc = None
         self.min_flow = None
         self.eps_eff = None
