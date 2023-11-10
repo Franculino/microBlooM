@@ -46,9 +46,9 @@ PARAMETERS = MappingProxyType(
         # Blood properties
         "ht_constant": 4E-05,  # only required if RBC impact is considered
         "mu_plasma": 0.0052,
-        "boundary_hematocrit": np.full(2000, 0.9),  # np.random.uniform(low=0.09, high=0.11, size=2000),  # np.full(2000, 0.1)
+        "boundary_hematocrit": np.full(2000, 0.3),  # np.random.uniform(low=0.09, high=0.11, size=2000),  # np.full(2000, 0.1)
         # #: np.array([0.1] * 2000),  #
-        "network_name": "MVN2_09",
+        "network_name": "MVN2_03",
 
         # if True set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -89,13 +89,13 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/9_11/paraview/MVN2_09.vtp",
+        "write_path_igraph": "data/out/9_11/paraview/MVN2_03.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/9_11/MVN2_09/plot",
+        "path_for_graph": "data/out/9_11/MVN2_03/plot",
 
         # Write option in case of print in output file (.txt)
-        "path_output_file": "data/out/9_11/MVN2_09/log_file",
+        "path_output_file": "data/out/9_11/MVN2_03/log_file",
 
     }
 )

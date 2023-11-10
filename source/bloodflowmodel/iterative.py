@@ -112,41 +112,46 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
 
             if flownetwork.stop:  # TODO: if we want to force it 1 and put back if
 
+                # --- save variables ---
+                f = open(str(self._PARAMETERS['network_name']) + '.pckl', 'wb')
+                pickle.dump(
+                    [flownetwork.flow_rate, flownetwork.node_relative_residual, flownetwork.positions_of_elements_not_in_boundary, flownetwork.node_residual,
+                     flownetwork.two_MagnitudeThreshold, flownetwork.node_flow_change, flownetwork.vessel_flow_change,
+                     flownetwork.node_relative_residual_plot, flownetwork.indices_over_blue, flownetwork.node_flow_change_total], f)
+                f.close()
+
                 # --- ALL NODES ---
                 frequency_plot(flownetwork, flownetwork.node_relative_residual_plot, 'Relative Residual', 'relative residual', 'seagreen', 10000,
                                "all_node")
                 frequency_plot(flownetwork, flownetwork.node_residual_plot, 'Residual', 'residual', 'skyblue', 100000, "all_node")
 
                 # --- NON CONVERGING NODES ---
-                frequency_plot(flownetwork, flownetwork.node_relative_residual_plot[flownetwork.indices_over_blue], 'Relative Residual',
-                               'relative residual', 'seagreen', 10000, "non_converging")
-                frequency_plot(flownetwork, flownetwork.node_residual_plot[flownetwork.indices_over_blue], 'Residual', 'residual',
-                               'skyblue', 100000, "non_converging")
+                if len(flownetwork.indices_over_blue):
+                    frequency_plot(flownetwork, flownetwork.node_relative_residual_plot[flownetwork.indices_over_blue], 'Relative Residual',
+                                   'relative residual', 'seagreen', 10000, "non_converging")
+                    frequency_plot(flownetwork, flownetwork.node_residual_plot[flownetwork.indices_over_blue], 'Residual', 'residual',
+                                   'skyblue', 100000, "non_converging")
 
                 # --- NODE WITH FLOW CHANGE BEHAVIOUR ---
-                frequency_plot(flownetwork, flownetwork.node_relative_residual_plot[flownetwork.node_flow_change_total], 'Relative Residual',
-                               'relative residual', 'seagreen', 10000, "flow_change_total")
-                frequency_plot(flownetwork, flownetwork.node_residual_plot[flownetwork.node_flow_change_total], 'Residual', 'residual',
-                               'skyblue', 100000, "flow_change_total")
+                if len(flownetwork.node_flow_change_total):
+                    frequency_plot(flownetwork, flownetwork.node_relative_residual_plot[flownetwork.node_flow_change_total], 'Relative Residual',
+                                   'relative residual', 'seagreen', 10000, "flow_change_total")
+                    frequency_plot(flownetwork, flownetwork.node_residual_plot[flownetwork.node_flow_change_total], 'Residual', 'residual',
+                                   'skyblue', 100000, "flow_change_total")
 
-                # --- NON-CONVERGING WITHOUT FLOW DIRECTION CHANGE ---
-                mask = np.ones_like(flownetwork.node_relative_residual_plot, dtype=bool)
-                mask[flownetwork.node_flow_change_total] = False
-                result_array = flownetwork.node_relative_residual_plot[mask]
+                    # --- NON-CONVERGING WITHOUT FLOW DIRECTION CHANGE ---
+                    mask = np.ones_like(flownetwork.node_relative_residual_plot, dtype=bool)
+                    mask[flownetwork.node_flow_change_total] = False
+                    result_array = flownetwork.node_relative_residual_plot[mask]
 
-                frequency_plot(flownetwork, result_array, 'Relative Residual', 'relative residual', 'seagreen', 10000, "non_converging_without_flow")
+                    frequency_plot(flownetwork, result_array, 'Relative Residual', 'relative residual', 'seagreen', 10000, "non_converging_without_flow")
 
-                mask = np.ones_like(flownetwork.node_residual_plot, dtype=bool)
-                mask[flownetwork.node_flow_change_total] = False
-                result_array2 = flownetwork.node_relative_residual_plot[mask]
-                frequency_plot(flownetwork, result_array2, 'Residual', 'residual', 'skyblue', 100000, "non_converging_without_flow")
+                    mask = np.ones_like(flownetwork.node_residual_plot, dtype=bool)
+                    mask[flownetwork.node_flow_change_total] = False
+                    result_array2 = flownetwork.node_relative_residual_plot[mask]
+                    frequency_plot(flownetwork, result_array2, 'Residual', 'residual', 'skyblue', 100000, "non_converging_without_flow")
 
-                # --- save variables ---
-                f = open(str(self._PARAMETERS['network_name']) + '.pckl', 'wb')
-                pickle.dump(
-                    [flownetwork.flow_rate, flownetwork.node_relative_residual, flownetwork.positions_of_elements_not_in_boundary, flownetwork.node_residual,
-                     flownetwork.two_MagnitudeThreshold, flownetwork.node_flow_change, flownetwork.vessel_flow_change], f)
-                f.close()
+
 
             else:
                 flownetwork.convergence_check = False
