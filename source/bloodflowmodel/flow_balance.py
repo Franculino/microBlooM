@@ -129,7 +129,7 @@ class FlowBalanceClass(FlowBalance):
 
         elif flownetwork.zeroFlowThreshold is not None and iteration == 4000:
             flownetwork.stop = True
-            knoledge(self, flownetwork,   local_balance_rbc, flownetwork.positions_of_elements_not_in_boundary)
+            knoledge(self, flownetwork, local_balance_rbc, flownetwork.positions_of_elements_not_in_boundary)
 
         elif iteration > 1:
             flownetwork.families_dict_total = copy.deepcopy(dict_for_families_total(flownetwork))
@@ -229,13 +229,20 @@ def knoledge(self, flownetwork, local_balance_rbc, positions_of_elements_not_in_
                 for element in families_dict_total[index]["dgs"]:
                     file.write(f"{flownetwork.flow_rate[element]} ")
                     flow_par += abs(flow_rate[element])
+
                 file.write(f"\n")
-                file.write(f"Relative Residual: {node_relative_residual[index]}\n")
+                nodo = np.where(positions_of_elements_not_in_boundary == index)[0][0]
+
+                file.write(f"Relative Residual: {node_relative_residual[index]}\n"
+                           f"Residual : {local_balance_rbc[nodo]}\n"
+                           f"p:[{flownetwork.pressure[index]}\n\n")
 
                 # only the one over the threshold
                 if index in indices_over_blue:
-                    node_flow_change.append(index)
-                    vessel_flow_change.append(vessel)
+                    if index not in node_flow_change:
+                        node_flow_change.append(index)
+                    if vessel not in vessel_flow_change:
+                        vessel_flow_change.append(vessel)
 
                 # save all the node with flow changes and vessels
                 node_flow_change_total.append(index)
@@ -245,6 +252,7 @@ def knoledge(self, flownetwork, local_balance_rbc, positions_of_elements_not_in_
             flownetwork.node_flow_change_total, flownetwork.vesel_flow_change_total = \
             indices_over_blue, families_dict_total, np.array(node_flow_change), vessel_flow_change, np.array(node_flow_change_total), vessel_flow_change_total
         file.write(f"\nThe node that have the change of flow and are over the threshold are {node_flow_change_total}\n")
+        file.write(f"\nThe vessel that have the change of flow and are over the threshold are {vessel_flow_change_total}\n")
         file.write(f"------------------------------------------------------------\n")
 
         if len(node_flow_change_total) != 0:
@@ -256,20 +264,20 @@ def knoledge(self, flownetwork, local_balance_rbc, positions_of_elements_not_in_
                 for node in positions_of_elements_not_in_boundary:
                     if vessel in families_dict_total[node]["par"] or vessel in families_dict_total[node]["dgs"]:
                         file.write(f"-------------------------\n")
-                        file.write(f'{node}:{families_dict_total[node]}\n')
+                        file.write(f'{node}:{families_dict_total[node]} p:[{flownetwork.pressure[node]}\n')
                         if node not in node_flow_change:
                             # print flow in par and daughters
                             file.write(f'Flow rate par: ')
                             if len(families_dict_total[node]["par"]) != 0:
                                 for element in families_dict_total[node]["par"]:
-                                    file.write(f"{flownetwork.flow_rate[element]} ")
+                                    file.write(f"{flownetwork.flow_rate[element]}")
                             else:
                                 file.write(f'No par')
 
                             if len(families_dict_total[node]["dgs"]) != 0:
                                 file.write(f' dgs: ')
                                 for element in families_dict_total[node]["dgs"]:
-                                    file.write(f"{flownetwork.flow_rate[element]} ")
+                                    file.write(f"{flownetwork.flow_rate[element]}")
                             else:
                                 file.write(f' no dgs')
 
@@ -277,7 +285,9 @@ def knoledge(self, flownetwork, local_balance_rbc, positions_of_elements_not_in_
                             # print relative residual at that node
                             index = np.where(positions_of_elements_not_in_boundary == node)[0][0]
                             file.write(f'Relative Residual {node_relative_residual[node]}\n'
-                                       f'Residual at node {node}: {local_balance_rbc[index]}\n')
+                                       f'Residual at node {node}: {local_balance_rbc[index]}\n'
+                                       f'p:[{flownetwork.pressure[node]}\n')
+
                             file.write(f"-------------------------\n")
 
                             # print residual at that node
@@ -508,7 +518,11 @@ def dict_for_families(flownetwork):
             node_id = node[1]
             for con in range(0, len(node_connected[node_id])):
                 edge_position = edge_connected_position[node_id.astype(int)][con]
-                if pressure[node_connected[node_id][con]] > node[0]:
+                if node_id == 4881 or node_id == 4892:
+                    print()
+                if pressure[node_connected[node_id][con]] == node[0]:
+                    print(node_id)
+                elif pressure[node_connected[node_id][con]] > node[0]:
                     families_dict[node_id]["par"].append(edge_position)
                     vessel_general.append(edge_position)
                 else:
@@ -523,17 +537,26 @@ def dict_for_families_total(flownetwork):
     node_connected = flownetwork.node_connected
     edge_connected_position = flownetwork.edge_connected_position
     pressure = copy.deepcopy(flownetwork.pressure)
-    pressure_node = copy.deepcopy(flownetwork.pressure_node)
+    pressure_node = np.zeros((flownetwork.nr_of_vs, 2))
+    # [pressure][node] in a single array
+    for pres in range(0, flownetwork.nr_of_vs):
+        pressure_node[pres] = np.array([pressure[pres], pres])
+
+    # ordered in base of pressure [pressure][node]
+    pressure_node = pressure_node[np.argsort(pressure_node[:, 0])[::-1]]
+
     families_dict = {node: {"par": [], "dgs": []} for node in range(0, flownetwork.nr_of_vs)}
 
     for node in pressure_node:
-        node_id = node[1]
-        for con in range(0, len(node_connected[node_id])):
-            edge_position = edge_connected_position[node_id.astype(int)][con]
+        node_id = node[1].astype(int)
+        for nodeCon, edge in zip(node_connected[node_id], edge_connected_position[node_id]):
             # inside I have the edges
-            if pressure[node_connected[node_id][con]] > node[0]:
-                families_dict[node_id]["par"].append(edge_position)
+            # if pressure[nodeCon] == node[0]:
+            #     print(node_id)
+            # el
+            if pressure[nodeCon] > node[0]:
+                families_dict[node_id]["par"].append(edge)
             else:
-                families_dict[node_id]["dgs"].append(edge_position)
+                families_dict[node_id]["dgs"].append(edge)
 
     return families_dict

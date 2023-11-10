@@ -120,7 +120,7 @@ def edge_connected_dict(edge_list):
     edge_connected_position = dict(edge_connected_position)
     node_connected = dict(node_connected)
 
-    return edge_connected_position, node_connected  # edge_connected
+    return edge_connected_position, node_connected
 
 
 class DischargeHaematocritPries1990(DischargeHaematocrit):
