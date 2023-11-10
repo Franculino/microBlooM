@@ -1,6 +1,6 @@
 from types import MappingProxyType
 import source.flow_network as flow_network
-import source.distensibilitymodules.distensibility_law as distensibility_law
+import source.distensibilitymodules.distensibility_law_initialise as distensibility_law
 import source.fileio.read_distensibility_parameters as read_distensibility_parameters
 
 
@@ -34,11 +34,9 @@ class Distensibility(object):
         Method to initialise the distensibility model.
         """
         self._imp_read_dist_parameters.read(self, self._flow_network)
-        self._flow_network.update_transmissibility()
-        self._flow_network.update_blood_flow()
         self._imp_dist_ref_state.initialise_distensibility_ref_state(self, self._flow_network)
 
-    def update_vessel_diameters(self):
+    def update_vessel_diameters_dist(self):
         """
         Method to update the  diameters based on different p-A relations (distensibility law)
         """

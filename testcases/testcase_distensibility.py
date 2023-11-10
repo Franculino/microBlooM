@@ -1,5 +1,9 @@
 """
 A python script to simulate stationary blood flow in microvascular networks with considering the vessel distensibility.
+In response to ischaemic stroke (e.g., diameter reduction), the vascular diameters of the entire network changes
+according to the p-A relation which describes the ability of blood vessels to passively change their diameters with
+respect to intra- and extravascular pressure.
+
 Capabilities:
 1. Import a network from file or generate a hexagonal network
 2. Compute the edge transmissibilities with taking the impact of RBCs into account (Fahraeus, Fahraeus-Linquist effects)
@@ -178,7 +182,7 @@ for i in range(100):
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
     flow_balance.check_flow_balance()
-    distensibility.update_vessel_diameters()
+    distensibility.update_vessel_diameters_dist()
     print("Distensibility update: it=" + str(i + 1) + ", residual = " + "{:.2e}".format(
         np.max(np.abs(flow_network.diameter - diameters_current))) + " um (tol = " + "{:.2e}".format(tol)+")")
     if np.max(np.abs(flow_network.diameter - diameters_current)) < tol:

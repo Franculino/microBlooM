@@ -14,8 +14,10 @@ import source.inverseproblemmodules.adjoint_method_implementations as adjoint_me
 import source.inverseproblemmodules.adjoint_method_solver as adjoint_method_solver
 import source.inverseproblemmodules.alpha_restriction as alpha_mapping
 import source.fileio.read_distensibility_parameters as read_distensibility_parameters
-import source.distensibilitymodules.distensibility_law as distensibility_law
+import source.distensibilitymodules.distensibility_law_initialise as distensibility_law_initialise
+import source.distensibilitymodules.distensibility_law_diam_update as distensibility_law_diam_update
 import source.strokemodules.ischaemic_stroke_state as ischaemic_stroke_state
+import source.fileio.read_autoregulation_parameters as read_autoregulation_parameters
 import sys
 
 
@@ -47,6 +49,13 @@ class Setup(ABC):
         """
         Abstract method to set up the ischaemic stroke model
         """
+
+    @abstractmethod
+    def setup_autoregulation_model(self, PARAMETERS):
+        """
+        Abstract method to set up the distensibility model
+        """
+
 
 class SetupSimulation(Setup):
     """
@@ -179,31 +188,31 @@ class SetupSimulation(Setup):
             case 2:  # Read distensibility porameters from csv file
                 imp_read_dist_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(PARAMETERS)
             case _:
-                sys.exit("Error: Choose valid option to read distensibility porameters (read_dist_parameters_option)")
+                sys.exit("Error: Choose valid option to read distensibility parameters (read_dist_parameters_option)")
 
         match PARAMETERS["dist_ref_state_option"]:
             case 1:  # No update of diameters due to vessel distensibility
-                imp_dist_ref_state = distensibility_law.DistensibilityInitialiseNothing(PARAMETERS)
+                imp_dist_ref_state = distensibility_law_initialise.DistensibilityInitialiseNothing(PARAMETERS)
             case 2:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
-                imp_dist_ref_state = distensibility_law.DistensibilityLawPassiveReferenceBaselinePressure(PARAMETERS)
+                imp_dist_ref_state = distensibility_law_initialise.DistensibilityLawPassiveReferenceBaselinePressure(PARAMETERS)
             case 3:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Sherwin et al. (2003).
-                imp_dist_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureSherwin(PARAMETERS)
+                imp_dist_ref_state = distensibility_law_initialise.DistensibilityLawPassiveReferenceConstantExternalPressureSherwin(PARAMETERS)
             case 4:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Urquiza et al. (2006).
-                imp_dist_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureUrquiza(PARAMETERS)
+                imp_dist_ref_state = distensibility_law_initialise.DistensibilityLawPassiveReferenceConstantExternalPressureUrquiza(PARAMETERS)
             case 5:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Rammos et al. (1998).
-                imp_dist_ref_state = distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureRammos(PARAMETERS)
+                imp_dist_ref_state = distensibility_law_initialise.DistensibilityLawPassiveReferenceConstantExternalPressureRammos(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to define the reference state (dist_ref_state_option)")
 
         match PARAMETERS["dist_pres_area_relation_option"]:
             case 1:  # No update of diameters due to vessel distensibility
-                imp_dist_pres_area_relation = distensibility_law.DistensibilityLawUpdateNothing(PARAMETERS)
+                imp_dist_pres_area_relation = distensibility_law_diam_update.DistensibilityLawUpdateNothing(PARAMETERS)
             case 2:  # Update of diameters based on a non-linear p-A ralation proposed by Sherwin et al. (2003).
-                imp_dist_pres_area_relation = distensibility_law.DistensibilityLawUpdatePassiveSherwin(PARAMETERS)
+                imp_dist_pres_area_relation = distensibility_law_diam_update.DistensibilityLawUpdatePassiveSherwin(PARAMETERS)
             case 3:  # Update of diameters based on a non-linear p-A ralation proposed by Urquiza et al. (2006).
-                imp_dist_pres_area_relation = distensibility_law.DistensibilityLawUpdatePassiveUrquiza(PARAMETERS)
+                imp_dist_pres_area_relation = distensibility_law_diam_update.DistensibilityLawUpdatePassiveUrquiza(PARAMETERS)
             case 4:  # Update of diameters based on a linear p-A ralation proposed by Rammos et al. (1998).
-                imp_dist_pres_area_relation = distensibility_law.DistensibilityLawUpdatePassiveRammos(PARAMETERS)
+                imp_dist_pres_area_relation = distensibility_law_diam_update.DistensibilityLawUpdatePassiveRammos(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to define the p-A ralation (dist_pres_area_relation_option)")
 
@@ -228,3 +237,28 @@ class SetupSimulation(Setup):
                 sys.exit("Error: Choose valid option to simulate stroke (simulate_ischaemic_stroke_option)")
 
         return imp_sim_ischaemic_stroke
+
+
+    def setup_autoregulation_model(self, PARAMETERS):
+        """
+        Set up the autoregulation model and returns various implementations of the autoregulation model
+        :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
+        :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
+        :returns: the implementation objects. Error if invalid option is chosen.
+        """
+
+        match PARAMETERS["read_auto_parameters_option"]:
+            case 1:  # Do not read anything
+                imp_read_auto_parameters = read_autoregulation_parameters.ReadAutoregulationParametersNothing(PARAMETERS)
+            case 2:  # Read distensibility porameters from csv file
+                imp_read_auto_parameters = read_autoregulation_parameters.ReadAutoregulationParametersFromFile(PARAMETERS)
+            case _:
+                sys.exit("Error: Choose valid option to read autoregulation parameters (read_auto_parameters_option)")
+
+        match PARAMETERS["dist_ref_state_option"]:
+            case 1:  # No update of diameters due to vessel distensibility
+                imp_dist_ref_state = distensibility_law.DistensibilityInitialiseNothing(PARAMETERS)
+            case 2:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
+                imp_dist_ref_state = distensibility_law.DistensibilityLawPassiveReferenceBaselinePressure(PARAMETERS)
+
+        return imp_read_auto_parameters
