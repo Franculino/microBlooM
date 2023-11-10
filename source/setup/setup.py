@@ -14,8 +14,8 @@ import source.inverseproblemmodules.adjoint_method_implementations as adjoint_me
 import source.inverseproblemmodules.adjoint_method_solver as adjoint_method_solver
 import source.inverseproblemmodules.alpha_restriction as alpha_mapping
 import source.fileio.read_distensibility_parameters as read_distensibility_parameters
-import source.distensibilitymodules.distensibility_law_initialise as distensibility_law_initialise
-import source.distensibilitymodules.distensibility_law_diam_update as distensibility_law_diam_update
+import source.distensibilitymodules.initialise_distensibility_law as initialise_distensibility_law
+import source.distensibilitymodules.update_diam_distensibility_law as update_diam_distensibility_law
 import source.strokemodules.ischaemic_stroke_state as ischaemic_stroke_state
 import source.fileio.read_autoregulation_parameters as read_autoregulation_parameters
 import sys
@@ -192,27 +192,27 @@ class SetupSimulation(Setup):
 
         match PARAMETERS["dist_ref_state_option"]:
             case 1:  # No update of diameters due to vessel distensibility
-                imp_dist_ref_state = distensibility_law_initialise.DistensibilityInitialiseNothing(PARAMETERS)
+                imp_dist_ref_state = initialise_distensibility_law.DistensibilityInitialiseNothing(PARAMETERS)
             case 2:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
-                imp_dist_ref_state = distensibility_law_initialise.DistensibilityLawPassiveReferenceBaselinePressure(PARAMETERS)
+                imp_dist_ref_state = initialise_distensibility_law.DistensibilityLawPassiveReferenceBaselinePressure(PARAMETERS)
             case 3:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Sherwin et al. (2003).
-                imp_dist_ref_state = distensibility_law_initialise.DistensibilityLawPassiveReferenceConstantExternalPressureSherwin(PARAMETERS)
+                imp_dist_ref_state = initialise_distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureSherwin(PARAMETERS)
             case 4:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Urquiza et al. (2006).
-                imp_dist_ref_state = distensibility_law_initialise.DistensibilityLawPassiveReferenceConstantExternalPressureUrquiza(PARAMETERS)
+                imp_dist_ref_state = initialise_distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureUrquiza(PARAMETERS)
             case 5:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Rammos et al. (1998).
-                imp_dist_ref_state = distensibility_law_initialise.DistensibilityLawPassiveReferenceConstantExternalPressureRammos(PARAMETERS)
+                imp_dist_ref_state = initialise_distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureRammos(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to define the reference state (dist_ref_state_option)")
 
         match PARAMETERS["dist_pres_area_relation_option"]:
             case 1:  # No update of diameters due to vessel distensibility
-                imp_dist_pres_area_relation = distensibility_law_diam_update.DistensibilityLawUpdateNothing(PARAMETERS)
+                imp_dist_pres_area_relation = update_diam_distensibility_law.DistensibilityLawUpdateNothing(PARAMETERS)
             case 2:  # Update of diameters based on a non-linear p-A ralation proposed by Sherwin et al. (2003).
-                imp_dist_pres_area_relation = distensibility_law_diam_update.DistensibilityLawUpdatePassiveSherwin(PARAMETERS)
+                imp_dist_pres_area_relation = update_diam_distensibility_law.DistensibilityLawUpdatePassiveSherwin(PARAMETERS)
             case 3:  # Update of diameters based on a non-linear p-A ralation proposed by Urquiza et al. (2006).
-                imp_dist_pres_area_relation = distensibility_law_diam_update.DistensibilityLawUpdatePassiveUrquiza(PARAMETERS)
+                imp_dist_pres_area_relation = update_diam_distensibility_law.DistensibilityLawUpdatePassiveUrquiza(PARAMETERS)
             case 4:  # Update of diameters based on a linear p-A ralation proposed by Rammos et al. (1998).
-                imp_dist_pres_area_relation = distensibility_law_diam_update.DistensibilityLawUpdatePassiveRammos(PARAMETERS)
+                imp_dist_pres_area_relation = update_diam_distensibility_law.DistensibilityLawUpdatePassiveRammos(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to define the p-A ralation (dist_pres_area_relation_option)")
 
@@ -254,11 +254,5 @@ class SetupSimulation(Setup):
                 imp_read_auto_parameters = read_autoregulation_parameters.ReadAutoregulationParametersFromFile(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to read autoregulation parameters (read_auto_parameters_option)")
-
-        match PARAMETERS["dist_ref_state_option"]:
-            case 1:  # No update of diameters due to vessel distensibility
-                imp_dist_ref_state = distensibility_law.DistensibilityInitialiseNothing(PARAMETERS)
-            case 2:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
-                imp_dist_ref_state = distensibility_law.DistensibilityLawPassiveReferenceBaselinePressure(PARAMETERS)
 
         return imp_read_auto_parameters

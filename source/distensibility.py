@@ -1,14 +1,15 @@
 from types import MappingProxyType
 import source.flow_network as flow_network
-import source.distensibilitymodules.distensibility_law_initialise as distensibility_law
+import source.distensibilitymodules.initialise_distensibility_law as initialise_distensibility_law
+import source.distensibilitymodules.update_diam_distensibility_law as update_diam_distensibility_law
 import source.fileio.read_distensibility_parameters as read_distensibility_parameters
 
 
 class Distensibility(object):
     def __init__(self, flownetwork: flow_network.FlowNetwork,
-                 imp_dist_ref_state: distensibility_law.DistensibilityLawInitialise,
+                 imp_dist_ref_state: initialise_distensibility_law.DistensibilityLawInitialise,
                  imp_read_dist_parameters: read_distensibility_parameters.ReadDistensibilityParameters,
-                 imp_dist_pres_area_relation: distensibility_law.DistensibilityLawUpdate):
+                 imp_dist_pres_area_relation: update_diam_distensibility_law.DistensibilityLawUpdate):
         # "Reference" to flow network
         self._flow_network = flownetwork
 
