@@ -128,16 +128,16 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                 # --- NON CONVERGING NODES ---
                 if len(flownetwork.indices_over_blue):
                     frequency_plot(flownetwork, flownetwork.node_relative_residual_plot[flownetwork.indices_over_blue], 'Relative Residual',
-                                   'relative residual', 'seagreen', 10000, "non_converging")
+                                   'relative residual', 'seagreen', 'auto', "non_converging")
                     frequency_plot(flownetwork, flownetwork.node_residual_plot[flownetwork.indices_over_blue], 'Residual', 'residual',
-                                   'skyblue', 100000, "non_converging")
+                                   'skyblue', 'auto', "non_converging")
 
                 # --- NODE WITH FLOW CHANGE BEHAVIOUR ---
                 if len(flownetwork.node_flow_change_total):
                     frequency_plot(flownetwork, flownetwork.node_relative_residual_plot[flownetwork.node_flow_change_total], 'Relative Residual',
-                                   'relative residual', 'seagreen', 10000, "flow_change_total")
+                                   'relative residual', 'seagreen', 'auto', "flow_change_total")
                     frequency_plot(flownetwork, flownetwork.node_residual_plot[flownetwork.node_flow_change_total], 'Residual', 'residual',
-                                   'skyblue', 100000, "flow_change_total")
+                                   'skyblue', 'auto', "flow_change_total")
 
                     # --- NON-CONVERGING WITHOUT FLOW DIRECTION CHANGE ---
                     mask = np.ones_like(flownetwork.node_relative_residual_plot, dtype=bool)
