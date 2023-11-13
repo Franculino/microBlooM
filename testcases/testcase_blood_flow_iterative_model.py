@@ -48,7 +48,7 @@ PARAMETERS = MappingProxyType(
         "mu_plasma": 0.0052,
         "boundary_hematocrit": np.full(2000, 0.5),  # np.random.uniform(low=0.09, high=0.11, size=2000),  # np.full(2000, 0.1)
         # #: np.array([0.1] * 2000),  #
-        "network_name": "MVN1_05_bins2",
+        "network_name": "stop",
 
         # if True set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -89,13 +89,13 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/9_11/paraview/MVN1_05_bins2.vtp",
+        "write_path_igraph": "data/out/13_11/paraview/stop.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/9_11/MVN1_05_bins2/plot",
+        "path_for_graph": "data/out/13_11/stop/plot",
 
         # Write option in case of print in output file (.txt)
-        "path_output_file": "data/out/9_11/MVN1_05_bins2/log_file",
+        "path_output_file": "data/out/13_11/stop/log_file",
 
     }
 )
