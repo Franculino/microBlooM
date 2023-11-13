@@ -115,11 +115,16 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                 # TODO: if we want to force
                 # it 1 and
                 # put
+
                 flownetwork.boundary_hematocrit = np.full(len(flownetwork.boundary_vs), (flownetwork.boundary_hematocrit[0] + 0.01))
                 flownetwork.increment += 1
-                flownetwork.alpha = 0.5
+                with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + "Alphas_Hematocrit.txt", 'a') as file:
+                    file.write(f"------------------------ Iteration {flownetwork.iteration} ------------------------\n"
+                               f"alpha: {flownetwork.alpha}\nBoundary hematocrit: {flownetwork.boundary_hematocrit[0]}")
+                # flownetwork.alpha = 0.2
+
                 # --- save variables ---
-                f = open(str(self._PARAMETERS['network_name']) +str(flownetwork.iteration) + '.pckl', 'wb')
+                f = open(str(self._PARAMETERS['network_name']) + str(flownetwork.iteration) + '.pckl', 'wb')
                 pickle.dump(
                     [flownetwork.flow_rate, flownetwork.node_relative_residual, flownetwork.positions_of_elements_not_in_boundary, flownetwork.node_residual,
                      flownetwork.two_MagnitudeThreshold, flownetwork.node_flow_change, flownetwork.vessel_flow_change,

@@ -135,9 +135,6 @@ class FlowBalanceClass(FlowBalance):
         elif iteration > 1:
             flownetwork.families_dict_total = copy.deepcopy(dict_for_families_total(flownetwork))
 
-        # if iteration % 4000 == 0 and iteration != 0 and flownetwork.increment != 1:
-        #     pass
-
         flownetwork.local_balance_rbc = local_balance_rbc
 
 
