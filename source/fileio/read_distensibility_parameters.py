@@ -76,7 +76,7 @@ class ReadDistensibilityParametersFromFile(ReadDistensibilityParameters):
             if True in df_distensibility.duplicated(subset=['eid_distensibility']).to_numpy():
                 sys.exit("Error: Duplicate edge id in distensibility definition.")
 
-            distensibility.eid_vessel_distensibility  = df_distensibility["eid_distensibility"].to_numpy().astype(int)
+            distensibility.eid_vessel_distensibility = df_distensibility["eid_distensibility"].to_numpy().astype(int)
             distensibility.e_modulus = df_distensibility['e_modulus'].to_numpy().astype(float)
             distensibility.wall_thickness = df_distensibility['wall_thickness'].to_numpy().astype(float)
 

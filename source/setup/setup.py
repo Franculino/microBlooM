@@ -18,6 +18,8 @@ import source.distensibilitymodules.initialise_distensibility_law as initialise_
 import source.distensibilitymodules.update_diam_distensibility_law as update_diam_distensibility_law
 import source.strokemodules.ischaemic_stroke_state as ischaemic_stroke_state
 import source.fileio.read_autoregulation_parameters as read_autoregulation_parameters
+import source.autoregulationmodules.initialise_autoregulation_model as initialise_autoregulation_model
+import source.autoregulationmodules.update_diam_autoregulation_model as update_diam_autoregulation_model
 import sys
 
 
@@ -250,9 +252,27 @@ class SetupSimulation(Setup):
         match PARAMETERS["read_auto_parameters_option"]:
             case 1:  # Do not read anything
                 imp_read_auto_parameters = read_autoregulation_parameters.ReadAutoregulationParametersNothing(PARAMETERS)
-            case 2:  # Read distensibility porameters from csv file
+            case 2:  # Read autoregulation porameters from csv file
                 imp_read_auto_parameters = read_autoregulation_parameters.ReadAutoregulationParametersFromFile(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to read autoregulation parameters (read_auto_parameters_option)")
 
-        return imp_read_auto_parameters
+        match PARAMETERS["compliance_relation_option"]:
+            case 1:  # Do not specify compliance relation
+                imp_auto_baseline = initialise_autoregulation_model.AutoregulationModelInitialiseNothing(PARAMETERS)
+            case 2:  # Specify the compliance at the baseline according to p-A relation proposed by Sherwin et al. (2003)
+                imp_auto_baseline = initialise_autoregulation_model.AutoregulationModelInitialiseSherwinRelation(PARAMETERS)
+            case _:
+                sys.exit("Error: Choose valid option to specify compliance relation (compliance_relation_option)")
+
+        match PARAMETERS["auto_feedback_model_option"]:
+            case 1:  # Do not specify compliance relation
+                imp_auto_feedback_model = update_diam_autoregulation_model.AutoregulationModelUpdateNothing(PARAMETERS)
+            case 2:  # Specify the compliance at the baseline according to p-A relation proposed by Sherwin et al. (2003)
+                imp_auto_feedback_model = update_diam_autoregulation_model.AutoregulationModelUpdatePayne2023(PARAMETERS)
+            case 3:  # Specify the compliance at the baseline according to p-A relation proposed by Sherwin et al. (2003)
+                imp_auto_feedback_model = update_diam_autoregulation_model.AutoregulationModelUpdateUrsino1997(PARAMETERS)
+            case _:
+                sys.exit("Error: Choose valid option to specify the compliance feedback model (auto_feedback_model_option)")
+
+        return imp_read_auto_parameters, imp_auto_baseline, imp_auto_feedback_model
