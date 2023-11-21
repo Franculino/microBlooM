@@ -26,3 +26,5 @@ networks04
 data/out
 job.sh
 util_methods/open_pck_file_dp.py
+*.pckl
+*.pckl
