@@ -61,14 +61,12 @@ class PressureFlowSolver(ABC):
 
         if flownetwork.zeroFlowThreshold is not None:
             # in case we want to exclude the unrealistic lower values in iterative model
-            flownetwork.flow_rate = _update_low_flow(self, flownetwork, flow_rate)
-        else:
-            flownetwork.flow_rate = flow_rate
+            flow_rate = _update_low_flow(self, flownetwork, flow_rate)
 
-        # print(f"Residual max: {max(residual)}")
-        # print(f"Residual min: {min(residual)}")
-        # print(f"Residual mean: {np.mean(residual)}")
-        # print(f'Euclidean norm: {np.linalg.norm(residual)}')
+        if flownetwork.iteration > 2:
+            flownetwork.flow_convergence_criteria = max(abs(abs(flownetwork.flow_rate) - abs(flow_rate)))  # TODO:ask franca
+            flownetwork.flow_convergence_criteria_berg = abs(abs(flownetwork.flow_rate) - abs(flow_rate)) / abs(flow_rate)
+        flownetwork.flow_rate = flow_rate
 
 
 def set_low_flow_threshold(self, flownetwork, local_balance):
@@ -133,7 +131,10 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
-        flownetwork.pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
+        pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
+        if flownetwork.iteration > 2:
+            flownetwork.pressure_convergence_criteria_berg = abs(abs(flownetwork.pressure) - abs(pressure)) / abs(pressure)
+        flownetwork.pressure = pressure
 
 
 class PressureFlowSolverPyAMG(PressureFlowSolver):
@@ -172,6 +173,7 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
         # inlet and outlet pressure values. In case of pressure and flow rate boundary conditions, x0 should be an
         # array with values +/-50% of the pressure boundary value.
         res = []
+        old_pressure = flownetwork.pressure
         if flownetwork.pressure is None:
             if (1 in flownetwork.boundary_type) and not (2 in flownetwork.boundary_type):  # only pressure boundaries
                 boundary_inlet = np.max(flownetwork.boundary_val)
@@ -192,6 +194,7 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
             x0 = flownetwork.pressure
             flownetwork.pressure, info = ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600,
                                                   cycle="V", return_info=True)
+
         # Provides convergence information
         if not info == 0:  # if info is zero, successful exit from the iterative solver
             print("ERROR in Solving the Matrix")

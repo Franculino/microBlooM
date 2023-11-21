@@ -547,13 +547,12 @@ def percentage_lower_than(data, value):
     return percentage
 
 
-def frequency_plot(flownetwork, data, title, x_axis, color_plot, bin_count,pathSave):
+def frequency_plot(flownetwork, data, title, x_axis, color_plot, bin_count, path_save):
     mean_val = np.mean(data)
     median_val = np.median(data)
     max_val = np.max(data)
 
     plt.figure(figsize=(25, 15), dpi=300)
-    # bin_heights, _ = np.histogram(data, bins=bin_count)
     sns.histplot(data, bins=bin_count, kde=False, color=color_plot, edgecolor='white', stat="percent")
 
     plt.xlabel(x_axis, fontsize=30)
@@ -574,13 +573,9 @@ def frequency_plot(flownetwork, data, title, x_axis, color_plot, bin_count,pathS
     plt.legend(loc='upper left', fontsize=25)
     plt.gca().set_facecolor('#f0f0f0')
     plt.tight_layout()
-    # plt.show()
 
-    if flownetwork._PARAMETERS['save']:
-        path = flownetwork._PARAMETERS['path_for_graph'] + '/' + pathSave
-        isExist = os.path.exists(path)
-        if not isExist:
-            # Create a new directory because it does not exist
-            os.makedirs(path)
-        plt.savefig(path + '/' + str(title) + '.png')
+    if flownetwork._PARAMETERS.get('save', False):
+        path = os.path.join(flownetwork._PARAMETERS['path_for_graph'], path_save)
+        os.makedirs(path, exist_ok=True)
+        plt.savefig(os.path.join(path, f'{title}.png'))
     plt.close()

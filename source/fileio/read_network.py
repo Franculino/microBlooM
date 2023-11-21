@@ -339,7 +339,10 @@ class ReadNetworkSingleHexagon(ReadNetwork):
         flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
         flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
         flownetwork.boundary_type = df_boundaries["types"].to_numpy()
-
+        print(f"Network {self._PARAMETERS['network_name']}")
+        print("Number of  vs: " + str(flownetwork.nr_of_vs))
+        print("Number of boundary vs: " + str(len(flownetwork.boundary_vs)))
+        print("Number of  es: " + str(flownetwork.nr_of_es))
 
 class ReadNetworkSingleHexagonTrifurcation(ReadNetwork):
 

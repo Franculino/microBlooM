@@ -23,6 +23,7 @@ class FlowNetwork(object):
                  imp_iterative: iterative_routine.IterativeRoutine, imp_balance: flow_balance.FlowBalance,
                  PARAMETERS: MappingProxyType):
         # Network attributes
+        self.vessel_flow_change_total = None
         self.maxBalance = None
         self.node_flow_change_total = None
         self.node_residual_plot = None
@@ -116,6 +117,13 @@ class FlowNetwork(object):
         self.zeroFlowThresholdMagnitude, self.indices_over, self.indices_over_blue, self.local_balance_rbc_corr = None, None, None, None
         self.boundary_inflow, self.families_dict_total = [], None
         self.increment = 0
+        self.hd_convergence_criteria, self.flow_convergence_criteria = None, None
+        self.rasmussen_criteria = 1e-9
+        self.hd_convergence_criteria_berg, self.flow_convergence_criteria_berg, self.pressure_convergence_criteria_berg = None, None, None
+
+        self.berg = 1e-13
+        self.r_value = 10
+
         return
 
     def read_network(self):

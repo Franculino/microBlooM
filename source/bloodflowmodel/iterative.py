@@ -76,6 +76,15 @@ class IterativeRoutineNone(IterativeRoutine):
         pass
 
 
+def berg_convergence(hd, flow, pressure, hd_current, flow_current):
+    residual_part_1 = 1 / (hd_current * flow_current)
+    residual_part_2 = hd_current
+    residual_parte3 = hd + flow + pressure
+
+    residual_berg = residual_part_1 * residual_part_2 + residual_parte3
+    return residual_berg
+
+
 class IterativeRoutineMultipleIteration(IterativeRoutine):
 
     def _iterative_method(self, flownetwork):  # , flow_balance):
@@ -104,72 +113,212 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
             self.iterative_routine(flownetwork)
             flownetwork.iteration += 1
 
+            if flownetwork.iteration > 3:
+                residual_berg = berg_convergence(flownetwork.hd_convergence_criteria_berg, flownetwork.flow_convergence_criteria_berg,
+                                                 flownetwork.pressure_convergence_criteria_berg, flownetwork.hd, abs(flownetwork.flow_rate))
+
             # ----- iterative routine -----
 
             if flownetwork.iteration % 150 == 0 and flownetwork.iteration > 2:
                 residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, flownetwork._PARAMETERS, " ", "",
                               "convergence")
 
-            if flownetwork.stop:  # TODO: if we want to force it 1 and put back if
-                flownetwork.convergence_check = True
-                # --- save variables ---
-                f = open(str(self._PARAMETERS['network_name']) + '.pckl', 'wb')
+            node_residual, node_relative_residual, local_balance_rbc, node_flow_change_total, indices_over_blue = flownetwork.node_residual, \
+                flownetwork.node_relative_residual, \
+                flownetwork.local_balance_rbc, flownetwork.node_flow_change_total, flownetwork.indices_over_blue
+
+            if flownetwork.stop and (indices_over_blue is None or len(indices_over_blue) == 0):
+                residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, flownetwork._PARAMETERS, " ", "",
+                              "convergence")
+                f = open('data/out/values_to_print/pckl/' + self._PARAMETERS['network_name'] + '.pckl', 'wb')
                 pickle.dump(
-                    [flownetwork.flow_rate, flownetwork.node_relative_residual, flownetwork.positions_of_elements_not_in_boundary, flownetwork.node_residual,
-                     flownetwork.two_MagnitudeThreshold, flownetwork.node_flow_change, flownetwork.vessel_flow_change,
-                     flownetwork.node_relative_residual_plot, flownetwork.indices_over_blue, flownetwork.node_flow_change_total, flownetwork.pressure], f)
+                    [flownetwork.flow_rate,
+                     flownetwork.node_relative_residual,
+                     flownetwork.positions_of_elements_not_in_boundary,
+                     flownetwork.node_residual,
+                     flownetwork.two_MagnitudeThreshold,
+                     flownetwork.node_flow_change,
+                     flownetwork.vessel_flow_change,
+                     indices_over_blue,
+                     node_flow_change_total,
+                     flownetwork.vessel_flow_change_total,
+                     flownetwork.pressure,
+                     flownetwork.hd], f)
                 f.close()
 
-                # --- ALL NODES ---
-                frequency_plot(flownetwork, flownetwork.node_relative_residual_plot, 'Relative Residual', 'relative residual', 'seagreen', 10000,
-                               "all_node")
-                frequency_plot(flownetwork, flownetwork.node_residual_plot, 'Residual', 'residual', 'skyblue', 100000, "all_node")
+            elif flownetwork.stop:  # TODO: if we want to force it 1 and put back if
+                flownetwork.convergence_check = True
+                residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, flownetwork._PARAMETERS, " ", "",
+                              "convergence")
 
-                # --- NON CONVERGING NODES ---
-                if len(flownetwork.indices_over_blue) != 0:
-                    frequency_plot(flownetwork, flownetwork.node_relative_residual_plot[flownetwork.indices_over_blue], 'Relative Residual',
-                                   'relative residual', 'seagreen', 'auto', "non_converging")
-                    frequency_plot(flownetwork, flownetwork.node_residual_plot[flownetwork.indices_over_blue], 'Residual', 'residual',
-                                   'skyblue', 'auto', "non_converging")
+                # IMPORT
 
-                # --- NODE WITH FLOW CHANGE BEHAVIOUR ---
-                if len(flownetwork.node_flow_change_total) != 0:
-                    frequency_plot(flownetwork, flownetwork.node_relative_residual_plot[flownetwork.node_flow_change_total], 'Relative Residual',
-                                   'relative residual', 'seagreen', 'auto', "flow_change_total")
-                    frequency_plot(flownetwork, flownetwork.node_residual_plot[flownetwork.node_flow_change_total], 'Residual', 'residual',
-                                   'skyblue', 'auto', "flow_change_total")
+                # varibles needed
+                # posso eseguire tutte le operazioni perchè è previsto
+                if len(node_flow_change_total) != 0:
+                    mask = np.ones_like(node_relative_residual, dtype=bool)
+                    mask[node_flow_change_total] = False
+                    relative_residual_non_converging_without_flow = node_relative_residual[mask]
 
-                # --- NON-CONVERGING WITHOUT FLOW DIRECTION CHANGE ---
-                mask = np.ones_like(flownetwork.node_relative_residual_plot, dtype=bool)
-                mask[flownetwork.node_flow_change_total] = False
-                result_array = flownetwork.node_relative_residual_plot[mask]
+                    mask2 = np.ones_like(node_residual, dtype=bool)
+                    mask2[node_flow_change_total] = False
+                    residual_non_converging_without_flow = node_residual[mask2]
 
-                frequency_plot(flownetwork, result_array, 'Relative Residual', 'relative residual', 'seagreen', 'auto', "non_converging_without_flow")
+                    node_with_flow_change_residual = node_residual[node_flow_change_total]
+                    node_with_flow_change_relative_residual = node_relative_residual[node_flow_change_total]
 
-                mask = np.ones_like(flownetwork.node_residual_plot, dtype=bool)
-                mask[flownetwork.node_flow_change_total] = False
-                result_array2 = flownetwork.node_relative_residual_plot[mask]
-                frequency_plot(flownetwork, result_array2, 'Residual', 'residual', 'skyblue', 'auto', "non_converging_without_flow")
+                else:
+                    # i need the one wihtout flow changes and i don't have them
+                    relative_residual_non_converging_without_flow = node_relative_residual
+                    residual_non_converging_without_flow = node_residual
 
+                    # I don't have them
+                    node_with_flow_change_residual = np.zeros(len(node_residual))
+                    node_with_flow_change_relative_residual = np.zeros(len(node_residual))
 
+                if len(indices_over_blue) != 0:
+                    non_convergin_node_residual = node_residual[indices_over_blue]
+                    non_convergin_node_relative_residual = node_relative_residual[indices_over_blue]
+
+                else:
+                    non_convergin_node_residual = np.zeros(len(node_residual))
+                    non_convergin_node_relative_residual = np.zeros(len(node_residual))
+
+                # --- save variables ---
+                f = open('data/out/values_to_print/pckl/' + self._PARAMETERS['network_name'] + '.pckl', 'wb')
+                pickle.dump(
+                    [flownetwork.flow_rate,
+                     flownetwork.node_relative_residual,
+                     flownetwork.positions_of_elements_not_in_boundary,
+                     flownetwork.node_residual,
+                     flownetwork.two_MagnitudeThreshold,
+                     flownetwork.node_flow_change,
+                     flownetwork.vessel_flow_change,
+                     indices_over_blue,
+                     node_flow_change_total,
+                     flownetwork.vessel_flow_change_total,
+                     flownetwork.pressure,
+                     flownetwork.hd,
+                     node_with_flow_change_residual,
+                     node_with_flow_change_relative_residual,
+                     non_convergin_node_residual,
+                     non_convergin_node_relative_residual,
+                     relative_residual_non_converging_without_flow,
+                     residual_non_converging_without_flow], f)
+                f.close()
+
+                with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + "_Gathered_Values.txt", 'w') as file:
+                    file.write(f"Network: {self._PARAMETERS['network_name']} \n"
+                               f"nr of vs: {flownetwork.nr_of_vs} - nr of boundary vs: {len(flownetwork.boundary_vs)} - nr of es: {flownetwork.nr_of_es} \n"
+                               f"\n------- ALL NODES -------\n"
+                               f"\nInterval of Residual: \n"
+                               f"- max: {max(local_balance_rbc)}\n"
+                               f"- mean :{np.mean(local_balance_rbc)}\n"
+                               f"- min: {min(local_balance_rbc[local_balance_rbc != 0])} [0 values not printed]\n"
+
+                               f"\nInterval of Relative Residual: \n"
+                               f"- max: {max(node_relative_residual)}\n"
+                               f"- mean: {np.mean(node_relative_residual)}\n"
+                               f"- min: {min(node_relative_residual[node_relative_residual != 0])} [0 values not printed]\n"
+
+                               f"\n------- NON CONVERGING NODES -------\n"
+                               f"\nInterval of Residual: \n"
+                               f"- max: {max(non_convergin_node_residual)}\n"
+                               f"- mean: {np.mean(non_convergin_node_residual)}\n"
+                               f"- min: {min(non_convergin_node_residual[non_convergin_node_residual != 0])} [0 values not printed]\n"
+
+                               f"\nInterval of Relative Residual: \n"
+                               f"- max: {max(non_convergin_node_relative_residual)}\n"
+                               f"- mean: {np.mean(non_convergin_node_relative_residual)}\n"
+                               f"- min: {min(non_convergin_node_relative_residual[non_convergin_node_relative_residual != 0])} [0 values not printed]\n")
+
+                    if len(node_flow_change_total) != 0:
+                        file.write(f"\n------- NODE WITH FLOW CHANGE BEHAVIOUR -------\n"
+                                   f"\nInterval of Residual: \n"
+                                   f"- max: {max(node_with_flow_change_residual)}\n"
+                                   f"- mean: {np.mean(node_with_flow_change_residual)}\n")
+                        try:
+                            minimo = min(node_with_flow_change_residual[node_with_flow_change_residual != 0])
+                        except ValueError:
+                            minimo = 0
+
+                        file.write(f"- min: {minimo} [0 values not printed, if so there are not other values]\n"
+                                   f"\nInterval of Relative Residual: \n"
+                                   f"- max: {max(node_with_flow_change_relative_residual)}\n"
+                                   f"- mean: {np.mean(node_with_flow_change_relative_residual)}\n")
+
+                        try:
+                            minimo = min(node_with_flow_change_relative_residual[node_with_flow_change_relative_residual != 0])
+                        except ValueError:
+                            minimo = 0
+
+                        file.write(f"- min: {minimo} [0 values not printed, if so there are not other values]\n")
+
+                    else:
+                        file.write(f"\n------- NODE WITH FLOW CHANGE BEHAVIOUR -------\n"
+                                   f"\n NOT present \n")
+
+                    file.write(f"\n------- NON-CONVERGING WITHOUT FLOW DIRECTION CHANGE -------\n"
+                               f"\nInterval of Residual: \n"
+                               f"- max: {max(residual_non_converging_without_flow)}\n"
+                               f"- mean: {np.mean(residual_non_converging_without_flow)}\n")
+                    try:
+                        minimo = min(residual_non_converging_without_flow[residual_non_converging_without_flow != 0])
+                    except ValueError:
+                        minimo = 0
+                    file.write(f"- min: {minimo} [0 values not printed, if so there are not other values]\n"
+                               f"\nInterval of Relative Residual: \n"
+                               f"- max: {max(relative_residual_non_converging_without_flow)}\n"
+                               f"- mean: {np.mean(relative_residual_non_converging_without_flow)}\n")
+                    try:
+                        minimo = min(relative_residual_non_converging_without_flow[relative_residual_non_converging_without_flow != 0])
+                    except ValueError:
+                        minimo = 0
+                    file.write(f"- min: {minimo} [0 values not "
+                               f"printed, if so there are not other values]\n")
+                file.close()
+                #
+                # # --- ALL NODES ---
+                # frequency_plot(flownetwork, node_relative_residual, 'Relative Residual', 'relative residual', 'seagreen', 'auto',
+                #                "all_node")
+                # frequency_plot(flownetwork, node_relative_residual, 'Relative Residual More Bins', 'relative residual', 'seagreen', 10000,
+                #                "all_node")
+                # frequency_plot(flownetwork, node_residual, 'Residual', 'residual', 'skyblue', 'auto', "all_node")
+                # frequency_plot(flownetwork, node_residual, 'Residual More Bins', 'residual', 'skyblue', 10000, "all_node")
+                #
+                # # --- NON CONVERGING NODES ---
+                # frequency_plot(flownetwork, non_convergin_node_relative_residual, 'Relative Residual',
+                #                'relative residual', 'seagreen', 'auto', "non_converging")
+                # frequency_plot(flownetwork, non_convergin_node_relative_residual, 'Relative Residual More Bins',
+                #                'relative residual', 'seagreen', 10000, "non_converging")
+                # frequency_plot(flownetwork, non_convergin_node_residual, 'Residual', 'residual',
+                #                'skyblue', 'auto', "non_converging")
+                # frequency_plot(flownetwork, non_convergin_node_residual, 'Residual More Bins', 'residual',
+                #                'skyblue', 10000, "non_converging")
+                #
+                # # --- NODE WITH FLOW CHANGE BEHAVIOUR ---
+                # if len(node_flow_change_total) != 0:
+                #     frequency_plot(flownetwork, node_with_flow_change_relative_residual, 'Relative Residual More Bins',
+                #                    'relative residual', 'seagreen', 'auto', "flow_change_total")
+                #     frequency_plot(flownetwork, node_with_flow_change_relative_residual, 'Relative Residual More Bins',
+                #                    'relative residual', 'seagreen', 10000, "flow_change_total")
+                #     frequency_plot(flownetwork, node_with_flow_change_residual, 'Residual', 'residual',
+                #                    'skyblue', 'auto', "flow_change_total")
+                #     frequency_plot(flownetwork, node_with_flow_change_residual, 'Residual', 'residual',
+                #                    'skyblue', 10000, "flow_change_total")
+                #
+                # # --- NON-CONVERGING WITHOUT FLOW DIRECTION CHANGE ---
+                #
+                # frequency_plot(flownetwork, relative_residual_non_converging_without_flow, 'Relative Residual', 'relative residual', 'seagreen', 'auto',
+                #                "non_converging_without_flow")
+                # frequency_plot(flownetwork, relative_residual_non_converging_without_flow, 'Relative Residual More Bins', 'relative residual', 'seagreen',
+                #                10000, "non_converging_without_flow")
+                #
+                # frequency_plot(flownetwork, residual_non_converging_without_flow, 'Residual', 'residual', 'skyblue', 'auto', "non_converging_without_flow")
+                # frequency_plot(flownetwork, residual_non_converging_without_flow, 'Residual More Bins', 'residual', 'skyblue', 10000,
+                #                "non_converging_without_flow")
 
             else:
                 flownetwork.convergence_check = False
 
-            if flownetwork.iteration == -5:
-                with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'a') as file:
-                    file.write(f"I:{flownetwork.iteration}")
-                    #  and data: HEMATOCRIT {cnvg_hem_avg_per:.5e} {cnvg_hem_max_per:.5e} ALPHA {flownetwork.alpha} VESSEL >1%  hd"
-                    # f":{vessel_hd:.5e}% n:{len(cnvg_hem[cnvg_hem >= 1])} \n")
-
         print(f"Convergence: DONE in -> {flownetwork.iteration} \nAlpha -> {flownetwork.alpha} ")
-
-        # s_curve_util(self._PARAMETERS, flownetwork)
-        #
-        # s_curve_personalized_thersholds(flownetwork, self._PARAMETERS, 0.1)
-        # s_curve_personalized_thersholds(flownetwork, self._PARAMETERS, 0.3)
-        # s_curve_personalized_thersholds(flownetwork, self._PARAMETERS, 0.5)
-        # s_curve_personalized_thersholds(flownetwork, self._PARAMETERS, 0.7)
-        # s_curve_personalized_thersholds(flownetwork, self._PARAMETERS, 0.9)
-        #
-        # s_curve_util_trifurcation(self._PARAMETERS, flownetwork)

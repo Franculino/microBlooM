@@ -12,7 +12,7 @@ from types import MappingProxyType
 import source.setup.setup as setup
 
 # set random seed
-#np.random.seed(42)
+# np.random.seed(42)
 
 # MappingProxyType is basically a const dict.
 # todo: read parameters from file; need a good way to import from human readable file (problem: json does not support
@@ -20,7 +20,7 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 2,  # 1: generate hexagonal graph
+        "read_network_option": 3,  # 1: generate hexagonal graph
         # 2: import graph from csv files
         # 3: import graph from igraph file (pickle file)
         # 4: generate hexagonal graph composed of a single hexagon
@@ -46,22 +46,21 @@ PARAMETERS = MappingProxyType(
         # Blood properties
         "ht_constant": 4E-05,  # only required if RBC impact is considered
         "mu_plasma": 0.0052,
-        "boundary_hematocrit": np.full(2000, 0.5),  # np.random.uniform(low=0.09, high=0.11, size=2000),  # np.full(2000, 0.1)
-        # #: np.array([0.1] * 2000),  #
-        "network_name": "stop",
+        "boundary_hematocrit": 0.5,  # TODO inserire cose se vogliono sessere diverse
+        "network_name": "CH_05",
 
-        # if True set the blood vessel with unrealistic blood flow to zero
+        # if True, set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
 
         # Machine error for float
         "machine_error": 1E-15,
 
-        # Alpha for relaxation factor of SOR
+        # Alpha for a relaxation factor of SOR
         "alpha": 1,
         "epsilon": 5E-25,
         "epsilon_second_method": 1E-10,
 
-        # zeroFlowThreshold default is False, true inc ase of iterative routine
+        # zeroFlowThreshold default is False, true in case of iterative routine
         "zeroFlowThreshold": False,
         # Hexagonal network properties. Only required for "read_network_option" 1
         "nr_of_hexagon_x": 5,
@@ -89,18 +88,18 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/13_11/paraview/stop.vtp",
+        "write_path_igraph": "data/out/Chryso/paraview/CH_05.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/13_11/stop/plot",
+        "path_for_graph": "data/out/Chryso/CH_05/plot",
 
-        # Write option in case of print in output file (.txt)
-        "path_output_file": "data/out/13_11/stop/log_file",
+        # Write option in a case of print in output file (.txt)
+        "path_output_file": "data/out/Chryso/CH_05/log_file",
 
     }
 )
 
-# Create object to set up the simulation and initialise the simulation
+# Create an object to set up the simulation and initialise the simulation
 setup_blood_flow = setup.SetupSimulation()
 # Initialise the implementations based on the parameters specified
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
@@ -127,8 +126,9 @@ flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
 # Check flow balance
+# Already in the iteration routine
 print("Check flow balance: ...")
-flow_network.check_flow_balance()
+# flow_network.check_flow_balance()
 print("Check flow balance: DONE")
 
 # Write the results to file
