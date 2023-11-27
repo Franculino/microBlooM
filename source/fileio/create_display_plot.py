@@ -422,14 +422,13 @@ def residual_plot(flownetwork, residualMax, residualNorm, PARAMETERS, title, pat
     plt.style.use('seaborn-whitegrid')
 
     # Plot lines with labels
-    plt.plot(range(0, flownetwork.iteration), residualMax, "-k", label="residualMax")
-    plt.plot(range(0, flownetwork.iteration), residualNorm, "-g", label="residualMean")
-    x_threshold = np.linspace(0, 10, flownetwork.iteration)
-    plt.plot(range(0, flownetwork.iteration), np.full_like(x_threshold, flownetwork.zeroFlowThreshold), color='r', linestyle=':', label="zeroFlowThreshold")
-    second_line = 1 * 10 ** (3 - flownetwork.zeroFlowThresholdMagnitude)
-    plt.plot(range(0, flownetwork.iteration), np.full_like(x_threshold, second_line), color='b', linestyle=':',
+    plt.plot(range(0, len(residualMax)), residualMax, "-k", label="residualMax")
+    plt.plot(range(0, len(residualMax)), residualNorm, "-g", label="residualMean")
+    x_threshold = np.linspace(0, 10, len(residualMax))
+
+    plt.plot(range(0, len(residualMax)), np.full_like(x_threshold, flownetwork.two_MagnitudeThreshold), color='b', linestyle=':',
              label="2MagnitudeThreshold")
-    plt.xlim([0, flownetwork.iteration])
+    plt.xlim([0, len(residualMax)])
     plt.title(title)  # , fontsize=10)
     plt.xlabel("Iteration")  # , fontsize=10)
     plt.ylabel("Residual value")  # , fontsize=10)
@@ -437,7 +436,9 @@ def residual_plot(flownetwork, residualMax, residualNorm, PARAMETERS, title, pat
     # plt.xticks(fontsize=20)
     # plt.yticks(fontsize=20)+
 
-    plt.ylim(None, 1e-11)
+    # plt.ylim(None, 1e-11)
+    plt.xlim([0, len(residualMax)])
+
     plt.rcParams.update({'font.size': 22})
 
     # To display Alphas
@@ -449,6 +450,96 @@ def residual_plot(flownetwork, residualMax, residualNorm, PARAMETERS, title, pat
     #     plt.annotate(label, (x_label, y_label), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=20)
 
     # Create the legend
+    plt.legend(loc='upper right', fontsize=20)
+
+    if PARAMETERS['save']:
+        path = PARAMETERS['path_for_graph'] + '/' + path_title + name  # '/' + PARAMETERS["network_name"]
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+        plt.savefig(path + '/' + str(flownetwork.iteration) + '.png')
+    plt.close()
+
+
+def residual_plot_berg(flownetwork, residualBerg, PARAMETERS, title, path_title, name):
+    plt.figure(figsize=(15, 15), dpi=300)
+    plt.style.use('seaborn-whitegrid')
+
+    # Plot lines with labels
+    plt.plot(range(0, flownetwork.iteration), residualBerg, "-k", label="Residual Berg")
+    x_threshold = np.linspace(0, 10, flownetwork.iteration)
+    plt.plot(range(0, flownetwork.iteration), np.full_like(x_threshold, flownetwork.berg_criteria), color='r', linestyle=':', label="Threshold")
+
+    plt.xlim([0, flownetwork.iteration])
+    plt.title(title)  # , fontsize=10)
+    plt.xlabel("Iteration")  # , fontsize=10)
+    plt.ylabel("Residual Berg value")  # , fontsize=10)
+    plt.yscale("log")
+    # plt.ylim(None, 1e-11)
+    plt.rcParams.update({'font.size': 22})
+
+    plt.legend(loc='upper right', fontsize=20)
+
+    if PARAMETERS['save']:
+        path = PARAMETERS['path_for_graph'] + '/' + path_title + name  # '/' + PARAMETERS["network_name"]
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+        plt.savefig(path + '/' + str(flownetwork.iteration) + '.png')
+    plt.close()
+
+
+def residual_plot_berg_subset(flownetwork, residualBerg, PARAMETERS, title, path_title, name, label, correction):
+    plt.figure(figsize=(15, 15), dpi=300)
+    plt.style.use('seaborn-whitegrid')
+
+    # Plot lines with labels
+    plt.plot(range(0, flownetwork.iteration + correction), residualBerg, "-k", label=label)
+    x_threshold = np.linspace(0, 10, flownetwork.iteration + correction)
+    plt.plot(range(0, flownetwork.iteration + correction), np.full_like(x_threshold, flownetwork.berg_criteria), color='r', linestyle=':', label="Threshold")
+
+    plt.xlim([0, flownetwork.iteration + correction])
+    plt.title(title)  # , fontsize=10)
+    plt.xlabel("Iteration")  # , fontsize=10)
+    plt.ylabel("Residual Berg value")  # , fontsize=10)
+    plt.yscale("log")
+    # plt.ylim(None, 1e-11)
+    plt.rcParams.update({'font.size': 22})
+
+    plt.legend(loc='upper right', fontsize=20)
+
+    if PARAMETERS['save']:
+        path = PARAMETERS['path_for_graph'] + '/' + path_title + '/'  # '/' + PARAMETERS["network_name"]
+        isExist = os.path.exists(path)
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(path)
+        plt.savefig(path + str(flownetwork.iteration) + '_' + name + '.png')
+    plt.close()
+
+
+def residual_plot_rasmussen(flownetwork, hd, flow, PARAMETERS, title, path_title, name, th_hd, th_flow):
+    plt.figure(figsize=(15, 15), dpi=300)
+    plt.style.use('seaborn-whitegrid')
+    iter = flownetwork.iteration + 1
+    # Plot lines with labels
+    plt.plot(range(0, iter), hd, color="lightcoral", label="Hematocrit")
+    plt.plot(range(0, iter), flow, color="cornflowerblue", label="Flow")
+    x_threshold = np.linspace(0, 10, iter)
+    plt.plot(range(0, iter), np.full_like(x_threshold, th_hd), color='indianred', linestyle=':', label="Threshold Hematocrit", linewidth=5)
+    x_threshold = np.linspace(0, 10, iter)
+    plt.plot(range(0, iter), np.full_like(x_threshold, th_flow), color='royalblue', linestyle=':', label="Threshold Flow", linewidth=5)
+
+    plt.xlim([1, iter])
+    plt.title(title)  # , fontsize=10)
+    plt.xlabel("Iteration")  # , fontsize=10)
+    plt.ylabel("Change between iterations")  # , fontsize=10)
+    plt.yscale("log")
+    # plt.ylim(None, 1e-11)
+    plt.rcParams.update({'font.size': 22})
+
     plt.legend(loc='upper right', fontsize=20)
 
     if PARAMETERS['save']:

@@ -121,6 +121,9 @@ class SetupSimulation(Setup):
             case 4:
                 imp_buildsystem = build_system.BuildSystemSparseCooNoOne(PARAMETERS)
                 imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirect(PARAMETERS)  # Direct solver
+            case 5:
+                imp_buildsystem = build_system.BuildSystemSparseCsc(PARAMETERS)
+                imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirectCsc(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 

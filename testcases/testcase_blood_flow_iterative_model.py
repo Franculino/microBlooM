@@ -20,7 +20,7 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 3,  # 1: generate hexagonal graph
+        "read_network_option": 2,  # 1: generate hexagonal graph
         # 2: import graph from csv files
         # 3: import graph from igraph file (pickle file)
         # 4: generate hexagonal graph composed of a single hexagon
@@ -37,17 +37,18 @@ PARAMETERS = MappingProxyType(
         # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
         # 3: Laws by Pries and Secomb (2005)
         # 4: Laws by Preis (1996)
-        "solver_option": 1,  # 1: Direct solver
+        "solver_option": 5,  # 1: Direct solver
         # 2: PyAMG solvervisual
         # 3-...: other solvers
+        # 5: csc approach
         "iterative_routine": 2,  # 1: Single iteration
         # 2: Iterative routine
 
         # Blood properties
         "ht_constant": 4E-05,  # only required if RBC impact is considered
         "mu_plasma": 0.0052,
-        "boundary_hematocrit": 0.5,  # TODO inserire cose se vogliono sessere diverse
-        "network_name": "CH_05",
+        "boundary_hematocrit": 0.4,  # TODO inserire cose se vogliono sessere diverse
+        "network_name": "MVN1_04_berg_study_3",
 
         # if True, set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -56,7 +57,7 @@ PARAMETERS = MappingProxyType(
         "machine_error": 1E-15,
 
         # Alpha for a relaxation factor of SOR
-        "alpha": 1,
+        "alpha": 0.05, # riprovare con 0.05
         "epsilon": 5E-25,
         "epsilon_second_method": 1E-10,
 
@@ -88,13 +89,13 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/Chryso/paraview/CH_05.vtp",
+        "write_path_igraph": "data/out/Berg/paraview/MVN1_04_berg_study_3.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/Chryso/CH_05/plot",
+        "path_for_graph": "data/out/Berg/MVN1_04_berg_study_3/plot",
 
         # Write option in a case of print in output file (.txt)
-        "path_output_file": "data/out/Chryso/CH_05/log_file",
+        "path_output_file": "data/out/Berg/MVN1_04_berg_study_3/log_file",
 
     }
 )

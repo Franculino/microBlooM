@@ -23,6 +23,8 @@ class FlowNetwork(object):
                  imp_iterative: iterative_routine.IterativeRoutine, imp_balance: flow_balance.FlowBalance,
                  PARAMETERS: MappingProxyType):
         # Network attributes
+        self.hd_norm_plot = []
+        self.bergIteration, self.Berg1, self.Berg2, self.BergPressure, self.BergFlow, self.BergHD, self.BergFirstPartEq, self.BergSecondPartEq = [], [], [], [], [], [], [], []
         self.vessel_flow_change_total = None
         self.maxBalance = None
         self.node_flow_change_total = None
@@ -100,6 +102,7 @@ class FlowNetwork(object):
         self.cnvg_rbc = 0
         self.cnvg_flow = 0
         self.alphaOn = True
+        self.local_balance_rbc = True
         self.residualOverIteration, self.residualFlowOverIteration, self.i = [], [], 0
         self.residualOverIterationMax = []
         self.residualOverIterationNorm = []
@@ -118,12 +121,13 @@ class FlowNetwork(object):
         self.boundary_inflow, self.families_dict_total = [], None
         self.increment = 0
         self.hd_convergence_criteria, self.flow_convergence_criteria = None, None
-        self.rasmussen_criteria = 1e-9
+        self.hd_convergence_criteria_plot, self.flow_convergence_criteria_plot = [], []
+        self.rasmussen_hd_threshold, self.rasmussen_flow_threshold = None, None
         self.hd_convergence_criteria_berg, self.flow_convergence_criteria_berg, self.pressure_convergence_criteria_berg = None, None, None
-
-        self.berg = 1e-13
+        self.inflow, self.inflow_pressure_node = None, None
+        self.berg_criteria = 1e-13
         self.r_value = 10
-
+        self.average_inlet_pressure, self.pressure_norm_plot = [], []
         return
 
     def read_network(self):

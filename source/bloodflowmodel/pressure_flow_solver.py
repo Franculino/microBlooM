@@ -63,9 +63,20 @@ class PressureFlowSolver(ABC):
             # in case we want to exclude the unrealistic lower values in iterative model
             flow_rate = _update_low_flow(self, flownetwork, flow_rate)
 
-        if flownetwork.iteration > 2:
-            flownetwork.flow_convergence_criteria = max(abs(abs(flownetwork.flow_rate) - abs(flow_rate)))  # TODO:ask franca
-            flownetwork.flow_convergence_criteria_berg = abs(abs(flownetwork.flow_rate) - abs(flow_rate)) / abs(flow_rate)
+        if flownetwork.iteration == 0:
+            flownetwork.flow_convergence_criteria = max(abs(flow_rate) - abs(np.zeros(len(flow_rate))))
+            flownetwork.flow_convergence_criteria_plot.append(max(abs(abs(flow_rate) - np.zeros(len(flow_rate)))))
+            flownetwork.flow_convergence_criteria_berg = None
+        elif flownetwork.iteration == 1:
+            flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
+            flownetwork.rasmussen_flow_threshold = 1 * 10 ** (int("{:e}".format(flownetwork.flow_convergence_criteria).split('e')[1]) - 8)
+            flownetwork.flow_convergence_criteria_plot = [max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))] * 3
+            flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
+        else:
+            flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
+            flownetwork.flow_convergence_criteria_plot.append(max(abs(abs(flow_rate) - abs(flownetwork.flow_rate))))
+            flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
+
         flownetwork.flow_rate = flow_rate
 
 
@@ -120,6 +131,51 @@ def _update_low_flow(self, flownetwork, flow_rate):
     return flow_rate
 
 
+def flow_berg(flownetwork, flow_rate):
+    # ||Q^n - Q^n-1||
+    flow_norm = np.linalg.norm(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
+    # Q_i^n implemented as the sum pressure inlet
+    # inflow: are all the inflow values sum
+    return flow_norm / flownetwork.inflow
+
+
+def pressure_berg(flownetwork, pressure):
+    # ||P^n - P^n-1||
+    pressure_norm = np.linalg.norm(abs(pressure - flownetwork.pressure))
+    flownetwork.pressure_norm_plot.append(pressure_norm)
+    # P_i^n implemented as the average pressure inlet
+    # inflow_pressure_node: are all the inflow node
+    average_inlet_pressure = np.average(flownetwork.pressure[flownetwork.inflow_pressure_node])
+    flownetwork.average_inlet_pressure.append(average_inlet_pressure)
+
+    return pressure_norm / average_inlet_pressure
+
+
+def _berg_assistance(flownetwork):
+    from source.bloodflowmodel.flow_balance import dict_for_families_total
+    inflow_pressure_node, inflow = [], 0
+    # find the parent and daughters of every node
+    families_dict = dict_for_families_total(flownetwork)
+    for key, values in families_dict.items():
+        if key in flownetwork.boundary_vs:
+            if values['dgs']:
+                # for the flow is necessary to do a bit more preprocessing
+                # if par = [ ] it means that is a boundary node and the flow is exact the one needed
+                if values['par'] == []:
+                    inflow += sum(abs(flownetwork.flow_rate[key]) for key in values['dgs'])
+                    inflow_pressure_node.append(key)
+
+                else:
+                    # if the par vessel exists, it is possible that our inflow is smaller
+                    # that the one this goes to the daughters one
+                    flow_par = sum(abs(flownetwork.flow_rate[key]) for key in values['par'])
+                    flow_dgs = sum(abs(flownetwork.flow_rate[key]) for key in values['dgs'])
+                    if flow_dgs > flow_par:
+                        inflow += abs(flow_dgs - flow_par)
+                        inflow_pressure_node.append(key)
+    flownetwork.inflow_pressure_node, flownetwork.inflow = inflow_pressure_node, inflow
+
+
 class PressureFlowSolverSparseDirect(PressureFlowSolver):
     """
     Class for calculating the pressure with a sparse direct solver.
@@ -129,11 +185,32 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         """
         Solve the linear system of equations for the pressure and update the pressure in flownetwork.
         :param flownetwork: flow network object
-        :type flownetwork: source.flow_network.FlowNetwork
+        :type flownetwork: source.flow_network.FlowNetworks
         """
         pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
-        if flownetwork.iteration > 2:
-            flownetwork.pressure_convergence_criteria_berg = abs(abs(flownetwork.pressure) - abs(pressure)) / abs(pressure)
+        if flownetwork.iteration == 0:
+            flownetwork.pressure_convergence_criteria_berg = None
+        else:
+            _berg_assistance(flownetwork)
+            flownetwork.pressure_convergence_criteria_berg = pressure_berg(flownetwork, pressure)
+        flownetwork.pressure = pressure
+class PressureFlowSolverSparseDirectCsc(PressureFlowSolver):
+    """
+    Class for calculating the pressure with a sparse direct solver.
+    """
+
+    def _solve_pressure(self, flownetwork):
+        """
+        Solve the linear system of equations for the pressure and update the pressure in flownetwork.
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetworks
+        """
+        pressure = spsolve(flownetwork.system_matrix, flownetwork.rhs)
+        if flownetwork.iteration == 0:
+            flownetwork.pressure_convergence_criteria_berg = None
+        else:
+            _berg_assistance(flownetwork)
+            flownetwork.pressure_convergence_criteria_berg = pressure_berg(flownetwork, pressure)
         flownetwork.pressure = pressure
 
 

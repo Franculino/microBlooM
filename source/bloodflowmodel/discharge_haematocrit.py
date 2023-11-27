@@ -214,9 +214,18 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         if hemat_parent == 0 or flow_parent == 0:
             hematocrit_a, hematocrit_b, hematocrit_c = 0, 0, 0
         else:
-            hematocrit_a, hematocrit_b, hematocrit_c = hemat_parent, hemat_parent, hemat_parent
-
             qRBC_parent = flow_parent * hemat_parent
+
+            # hematocrit_a, hematocrit_b, hematocrit_c = hemat_parent, hemat_parent, hemat_parent
+            if flow_daughter_a != 0:
+                hematocrit_a = (qRBC_parent * flow_daughter_a) / (flow_parent * flow_daughter_a)
+            if flow_daughter_b != 0:
+                hematocrit_b = (qRBC_parent * flow_daughter_b) / (flow_parent * flow_daughter_b)
+            if flow_daughter_a != 0:
+                hematocrit_c = (qRBC_parent * flow_daughter_c) / (flow_parent * flow_daughter_c)
+            #
+            # hematocrit_a, hematocrit_b, hematocrit_c = (qRBC_parent * flow_daughter_a) / (flow_parent * flow_daughter_a), (qRBC_parent * flow_daughter_b) / (
+            #         flow_parent * flow_daughter_b), (qRBC_parent * flow_daughter_c) / (flow_parent * flow_daughter_c)
             fractional_trifurc_RBCs.extend(
                 [(flow_daughter_a * hematocrit_a) / qRBC_parent, (flow_daughter_b * hematocrit_b) / qRBC_parent, (flow_daughter_c * hematocrit_c)
                  / qRBC_parent])
@@ -295,9 +304,9 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
         x_0 = self.x_o_init * (1 - hemat_par) / diam_par
 
-        # A = (-self.A_o_init) * ((pow(diam_a, 2) - pow(diam_b, 2)) / (pow(diam_a, 2) + pow(diam_b, 2))) * (
-        #         1 - hemat_par) / diam_par
-        A = -self.A_o_init * ((diam_a - diam_b) / (diam_a + diam_b)) * ((1 - hemat_par) / diam_par)
+        A = (-self.A_o_init) * ((pow(diam_a, 2) - pow(diam_b, 2)) / (pow(diam_a, 2) + pow(diam_b, 2))) * (
+                1 - hemat_par) / diam_par
+
         B = 1 + (self.B_o_init * (1 - hemat_par) / diam_par)
 
         return x_0, A, B
@@ -419,7 +428,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         # hematocrit for this iteration
         # hd_i
         hd_i = copy.deepcopy(flownetwork.hd_i)
-        boundary_inflow = []
 
         if edge_connected_position is None:
             print("Node connection creation: ...")
@@ -431,7 +439,9 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
         if pressure is None:
             flownetwork.hd = copy.deepcopy(flownetwork.ht)
+            old_hematocrit = copy.deepcopy(flownetwork.hd)
         else:
+
             old_hematocrit = copy.deepcopy(flownetwork.hd)
             flow = np.abs(copy.deepcopy(flownetwork.flow_rate))
 
@@ -447,6 +457,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
             # ordered_node = pressure_node[:, 1]
             # iterate over the nodes, ordered by pressure
             for node in pressure_node:
+
                 # position of the daughter edge
                 edge_daughter = []
                 # position of the parent edge
@@ -457,7 +468,8 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                         parent_edge.append(edge_connected_position[node[1].astype(int)][con])
                     else:
                         edge_daughter.append(edge_connected_position[node[1].astype(int)][con])
-
+                if node[1] == 944 or node[1] == 6580:
+                    pass
                 # DAUGHTERS
                 # Check witch type of daughters (bifurcation)
                 match len(edge_daughter):
@@ -506,7 +518,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                             flownetwork.hd[single_daughter], rbc_balance = self.hematocrit_1_1(
                                 flownetwork.boundary_hematocrit[np.where(flownetwork.boundary_vs == node[1])[0][0]],
                                 flow[single_daughter], flow[single_daughter], rbc_balance)
-                            boundary_inflow.append(node[1])
 
                         # (-ø-)
                         # outflows ghost
@@ -535,7 +546,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                                                                                                       fractional_b_qRBCs, fractional_a_blood,
                                                                                                                       fractional_b_blood,
                                                                                                                       hemat_parent_plot)
-                            boundary_inflow.append(node[1])
 
                         # (>ø-)
                         # outflow ghost
@@ -632,7 +642,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 flow[daughter_c], rbc_balance,
                                 fractional_trifurc_RBCs,
                                 fractional_trifurc_blood)
-                            boundary_inflow.append(node[1])
                         case 1, 2:
 
                             # to understand if it is inflow or outflow ghost case
@@ -781,43 +790,63 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
             if rbc_balance > 0:
                 sys.exit("Check RBCs balance: FAIL -->", rbc_balance)
 
-            # to save and check Hd_predict (i)
-            flownetwork.hd_i = flownetwork.hd
-
             # flow analisys
             # flownetwork.boundary_inflow = flowAnalysis(self, flownetwork.boundary_inflow, boundary_inflow)
             # Relaxation factor
             if flownetwork.iteration > 1:
-                flownetwork.hd = sor(self, flownetwork, flownetwork.hd, old_hematocrit)
+                flownetwork.hd = sor_berg(flownetwork, flownetwork.hd, old_hematocrit)
 
-            flownetwork.hd_convergence_criteria = max(abs(flownetwork.hd - old_hematocrit))
-            flownetwork.hd_convergence_criteria_berg = abs(abs(flownetwork.hd) - abs(old_hematocrit)) / abs(old_hematocrit)
+        # if flownetwork.iteration == 0:
+        #     flownetwork.hd_convergence_criteria = max(abs(flownetwork.hd - np.zeros(len(flownetwork.hd))))
+        #     flownetwork.hd_convergence_criteria_plot.append(max(abs(flownetwork.hd - np.zeros(len(flownetwork.hd)))))
+        #     flownetwork.hd_convergence_criteria_berg = np.linalg.norm(abs(flownetwork.hd - np.zeros(len(flownetwork.hd)))) / flownetwork._PARAMETERS[
+        #         'boundary_hematocrit']
+        # elif flownetwork.iteration == 1:
+        #     flownetwork.hd_convergence_criteria = max(abs(flownetwork.hd - old_hematocrit))
+        #     flownetwork.hd_convergence_criteria_plot.append(max(abs(flownetwork.hd - old_hematocrit)))
+        #     flownetwork.hd_convergence_criteria_berg = np.linalg.norm(abs(flownetwork.hd - old_hematocrit)) / flownetwork._PARAMETERS['boundary_hematocrit']
+        # else:
+        flownetwork.hd_convergence_criteria = max(abs(flownetwork.hd - old_hematocrit))
+        abs_value = abs(flownetwork.hd - old_hematocrit)
+        value = np.argsort(abs_value)[-20:][::-1]
+        with open(f"{flownetwork._PARAMETERS['path_output_file']}/{flownetwork._PARAMETERS['network_name']}_HD.txt", 'a') as file:
+            file.write(f'Iteration {flownetwork.iteration}\n'
+                       f'10 Element with max diff {value}\n'
+                       f'abs diff value: {abs_value[value]}\n'
+                       f'over the threshold of 1e-6 {len(abs_value[abs_value > 1e-6]) / flownetwork.nr_of_es * 100}\n'
+                       f'over the threshold of 1e-8 {len(abs_value[abs_value > 1e-8]) / flownetwork.nr_of_es * 100}\n'
+                       f'over the threshold {len(abs_value[abs_value > flownetwork.berg_criteria]) / flownetwork.nr_of_es * 100}\n')
+            if flownetwork.iteration > 1:
+                file.write(f'1583: new {flownetwork.hd[1583]} old {old_hematocrit[1583]} and flow rate new {flownetwork.flow_rate[1583]}\n'
+                           f'1584: new {flownetwork.hd[1584]} old {old_hematocrit[1584]} new {flownetwork.flow_rate[1584]}\n\n')
 
-            print(flownetwork.hd_convergence_criteria)
+        if flownetwork.iteration == 1:
+            flownetwork.rasmussen_hd_threshold = 1 * 10 ** (int("{:e}".format(flownetwork.hd_convergence_criteria).split('e')[1]) - 8)
+
+        flownetwork.hd_convergence_criteria_plot.append(max(abs(flownetwork.hd - old_hematocrit)))
+        flownetwork.hd_convergence_criteria_berg = np.linalg.norm(abs(flownetwork.hd - old_hematocrit)) / flownetwork._PARAMETERS['boundary_hematocrit']
+        flownetwork.hd_norm_plot.append(np.linalg.norm(abs(flownetwork.hd - old_hematocrit)))
 
 
-# def flowAnalysis(self, old_boundary_inflow, new_boundary_inflow):
-#     if sorted(old_boundary_inflow) == sorted(new_boundary_inflow):
-#
-#         print(
-#             f' They are the same and they are: \n {set(sorted(old_boundary_inflow)).symmetric_difference(set(sorted(new_boundary_inflow)))}  lend {len(new_boundary_inflow)}\n')
-#     else:
-#         print(f' Different: \n {set(sorted(old_boundary_inflow)).symmetric_difference(set(sorted(new_boundary_inflow)))} lend {len(new_boundary_inflow)}\n')
-#     # print(sorted(new_boundary_inflow))
-#
-#     return new_boundary_inflow
+def check_max_values(flownetwork):
+    pass
 
 
-def sor(self, flownetwork, prd_hematocrit, old_hematocrit):
+def sor_berg(flownetwork, prd_hematocrit, old_hematocrit):
+    alpha = flownetwork.alpha
+    return ((1 - alpha) * old_hematocrit) + (alpha * prd_hematocrit)
+
+
+def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit):
     iteration = flownetwork.iteration
     match flownetwork.sor:
         case True:
             # every 50 iteration the alpha is updated and decreased of 1% percent
             alpha = flownetwork.alpha
-            if iteration % 50 == 0 and iteration != 0:
-                alpha = flownetwork.alpha * 0.9
+            if iteration % flownetwork.r_value == 0 and iteration != 0:
+                alpha = flownetwork.alpha * 0.8
                 flownetwork.alphaSave = np.append(flownetwork.alphaSave, flownetwork.alpha)
-                with open(f"{self._PARAMETERS['path_output_file']}/{self._PARAMETERS['network_name']}.txt", 'a') as file:
+                with open(f"{flownetwork._PARAMETERS['path_output_file']}/{flownetwork._PARAMETERS['network_name']}.txt", 'a') as file:
                     file.write(f'it:{iteration} alpha: {alpha} \n')
 
             one_alpha = 1 - alpha
@@ -827,16 +856,16 @@ def sor(self, flownetwork, prd_hematocrit, old_hematocrit):
     return result
 
 
-def sor_rasmussen2018(self, flownetwork, prd_hematocrit, old_hematocrit):
+def sor(flownetwork, prd_hematocrit, old_hematocrit):
     iteration = flownetwork.iteration
     match flownetwork.sor:
         case True:
             # every 50 iteration the alpha is updated and decreased of 1% percent
             alpha = flownetwork.alpha
-            if iteration % flownetwork.r_value == 0 and iteration != 0:
+            if iteration % 50 == 0 and iteration != 0:
                 alpha = flownetwork.alpha * 0.9
                 flownetwork.alphaSave = np.append(flownetwork.alphaSave, flownetwork.alpha)
-                with open(f"{self._PARAMETERS['path_output_file']}/{self._PARAMETERS['network_name']}.txt", 'a') as file:
+                with open(f"{flownetwork._PARAMETERS['path_output_file']}/{flownetwork._PARAMETERS['network_name']}.txt", 'a') as file:
                     file.write(f'it:{iteration} alpha: {alpha} \n')
 
             one_alpha = 1 - alpha

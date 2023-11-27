@@ -107,6 +107,7 @@ class FlowBalanceClass(FlowBalance):
         flow_rbcs = self._get_flow_balance_rbcs(flownetwork)
         local_balance_rbc = np.abs(flow_rbcs[is_inside_node])
         maxBalance, meanBalance = max(local_balance_rbc), np.mean(local_balance_rbc)
+        flownetwork.local_balance_rbc = local_balance_rbc
         flownetwork.maxBalance = maxBalance
         flownetwork.residualOverIterationMax = np.append(flownetwork.residualOverIterationMax, maxBalance)
         flownetwork.residualOverIterationNorm = np.append(flownetwork.residualOverIterationNorm, meanBalance)
