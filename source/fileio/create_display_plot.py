@@ -491,16 +491,16 @@ def residual_plot_berg(flownetwork, residualBerg, PARAMETERS, title, path_title,
     plt.close()
 
 
-def residual_plot_berg_subset(flownetwork, residualBerg, PARAMETERS, title, path_title, name, label, correction):
+def residual_plot_berg_subset(flownetwork, residualBerg, PARAMETERS, title, path_title, name, label):
     plt.figure(figsize=(15, 15), dpi=300)
     plt.style.use('seaborn-whitegrid')
 
     # Plot lines with labels
-    plt.plot(range(0, flownetwork.iteration + correction), residualBerg, "-k", label=label)
-    x_threshold = np.linspace(0, 10, flownetwork.iteration + correction)
-    plt.plot(range(0, flownetwork.iteration + correction), np.full_like(x_threshold, flownetwork.berg_criteria), color='r', linestyle=':', label="Threshold")
+    plt.plot(range(0, flownetwork.iteration), residualBerg, "-k", label=label)
+    x_threshold = np.linspace(0, 10, flownetwork.iteration)
+    plt.plot(range(0, flownetwork.iteration), np.full_like(x_threshold, flownetwork.berg_criteria), color='r', linestyle=':', label="Threshold")
 
-    plt.xlim([0, flownetwork.iteration + correction])
+    plt.xlim([0, flownetwork.iteration])
     plt.title(title)  # , fontsize=10)
     plt.xlabel("Iteration")  # , fontsize=10)
     plt.ylabel("Residual Berg value")  # , fontsize=10)
@@ -523,7 +523,7 @@ def residual_plot_berg_subset(flownetwork, residualBerg, PARAMETERS, title, path
 def residual_plot_rasmussen(flownetwork, hd, flow, PARAMETERS, title, path_title, name, th_hd, th_flow):
     plt.figure(figsize=(15, 15), dpi=300)
     plt.style.use('seaborn-whitegrid')
-    iter = flownetwork.iteration + 1
+    iter = flownetwork.iteration +1
     # Plot lines with labels
     plt.plot(range(0, iter), hd, color="lightcoral", label="Hematocrit")
     plt.plot(range(0, iter), flow, color="cornflowerblue", label="Flow")

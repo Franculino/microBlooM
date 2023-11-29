@@ -70,7 +70,7 @@ class PressureFlowSolver(ABC):
         elif flownetwork.iteration == 1:
             flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
             flownetwork.rasmussen_flow_threshold = 1 * 10 ** (int("{:e}".format(flownetwork.flow_convergence_criteria).split('e')[1]) - 8)
-            flownetwork.flow_convergence_criteria_plot = [max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))] * 3
+            flownetwork.flow_convergence_criteria_plot = [max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))] * 2
             flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
         else:
             flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
@@ -98,11 +98,6 @@ def set_low_flow_threshold(self, flownetwork, local_balance):
     print("Tolerance :" + str(flownetwork.zeroFlowThreshold))
     # update the flow rate
 
-    with open(flownetwork._PARAMETERS['path_output_file'] + "/" + flownetwork._PARAMETERS['network_name'] + ".txt", 'w') as file:
-        file.write(f"----------------------------------\n"
-                   f"Hematrocrit: {flownetwork.boundary_hematocrit[0]}\n"
-                   f"Tollerance: {flownetwork.zeroFlowThreshold}\n"
-                   f"----------------------------------\n")
     return _update_low_flow(self, flownetwork, flownetwork.flow_rate)
 
 
@@ -118,8 +113,6 @@ def _update_low_flow(self, flownetwork, flow_rate):
         flag = np.where(flow_rate == initial_flow, 1, 0)
         flownetwork.flagFlowM1 = flag
 
-        with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'a') as file:
-            file.write(f"Vessel with change in the flow are {len(flow_rate[flag == 0])}: {np.where(flag == 0)}\n")
 
     if flownetwork.iteration < 2:
         # check how the flow it is changed

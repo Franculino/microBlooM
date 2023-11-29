@@ -854,90 +854,54 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                                 flownetwork.hd[parent] = 0
 
             if rbc_balance > 0:
-                sys.exit("Check RBCs balance: FAIL -->", rbc_balance)
+                sys.exit("Check RBCs balance: FAIL")
 
-            # flow analisys
-            # flownetwork.boundary_inflow = flowAnalysis(self, flownetwork.boundary_inflow, boundary_inflow)
             # Relaxation factor
-            if flownetwork.iteration > 1:
-                flownetwork.hd = sor_rasmussen2018(flownetwork, flownetwork.hd, old_hematocrit)
 
-        flownetwork.hd_convergence_criteria = max(abs(flownetwork.hd - old_hematocrit))
-        abs_value = abs(flownetwork.hd - old_hematocrit)
-        value = np.argsort(abs_value)[-20:][::-1]
-        # path = flownetwork._PARAMETERS['path_output_file']
-        # if flownetwork._PARAMETERS['save']:
-        #     isExist = os.path.exists(path)
-        #     if not isExist:
-        #         # Create a new directory because it does not exist
-        #         os.makedirs(path)
-        #
-        # with open(f"{path}/{flownetwork._PARAMETERS['network_name']}_HD.txt",
-        #           'a') as file:
-        #     file.write(f'Iteration {flownetwork.iteration}\n'
-        #                f'10 Element with max diff {value}\n'
-        #                f'abs diff value: {abs_value[value]}\n'
-        #                f'over the threshold of 1e-6 {len(abs_value[abs_value > 1e-6]) / flownetwork.nr_of_es * 100}\n'
-        #                f'over the threshold of 1e-8 {len(abs_value[abs_value > 1e-8]) / flownetwork.nr_of_es * 100}\n'
-        #                f'over the threshold {len(abs_value[abs_value > flownetwork.berg_criteria]) / flownetwork.nr_of_es * 100}\n\n')
+            match self._PARAMETERS['sor']:
+                case 'Berg':
+                    if flownetwork.iteration > 0:
+                        flownetwork.hd = sor_berg(flownetwork.hd, old_hematocrit, flownetwork.alpha)
+                        flownetwork.hd_convergence_criteria_berg = np.linalg.norm(abs(flownetwork.hd - old_hematocrit)) / self._PARAMETERS[
+                            'boundary_hematocrit']
 
+                case 'Rasmussen':
+                    if flownetwork.iteration > 0:
+                        flownetwork.hd = sor_rasmussen2018(flownetwork, flownetwork.hd, old_hematocrit, flownetwork.alpha, flownetwork.iteration)
+                        flownetwork.hd_convergence_criteria = max(abs(flownetwork.hd - old_hematocrit))
+                        flownetwork.hd_convergence_criteria_plot.append(max(abs(flownetwork.hd - old_hematocrit)))
+                    if flownetwork.iteration == 1:
+                        flownetwork.rasmussen_hd_threshold = 1 * 10 ** (int("{:e}".format(flownetwork.hd_convergence_criteria).split('e')[1]) - 8)
+                        flownetwork.hd_convergence_criteria_plot = [max(abs(flownetwork.hd - old_hematocrit))]*2
 
-        if flownetwork.iteration == 1:
-            flownetwork.rasmussen_hd_threshold = 1 * 10 ** (
-                    int("{:e}".format(flownetwork.hd_convergence_criteria).split('e')[1]) - 8)
+                case 'sor':
+                    if flownetwork.iteration > 0:
+                        flownetwork.hd = sor(flownetwork, flownetwork.hd, old_hematocrit, flownetwork.alpha, flownetwork.iteration)
 
-        flownetwork.hd_convergence_criteria_plot.append(max(abs(flownetwork.hd - old_hematocrit)))
-        flownetwork.hd_convergence_criteria_berg = np.linalg.norm(abs(flownetwork.hd - old_hematocrit)) / \
-                                                   flownetwork._PARAMETERS['boundary_hematocrit']
-        flownetwork.hd_norm_plot.append(np.linalg.norm(abs(flownetwork.hd - old_hematocrit)))
+                case _:
+                    sys.exit('Uncorrected element')
 
 
-def check_max_values(flownetwork):
-    pass
-
-
-def sor_berg(flownetwork, prd_hematocrit, old_hematocrit):
-    alpha = flownetwork.alpha
+def sor_berg(prd_hematocrit, old_hematocrit, alpha):
     return ((1 - alpha) * old_hematocrit) + (alpha * prd_hematocrit)
 
 
-def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit):
-    iteration = flownetwork.iteration
-    match flownetwork.sor:
-        case True:
-            # every 50 iteration the alpha is updated and decreased of 1% percent
-            alpha = flownetwork.alpha
-            if iteration % flownetwork.r_value == 0 and iteration != 0:
-                alpha = flownetwork.alpha * 0.8
-                flownetwork.alphaSave = np.append(flownetwork.alphaSave, flownetwork.alpha)
-                with open(
-                        f"{flownetwork._PARAMETERS['path_output_file']}/{flownetwork._PARAMETERS['network_name']}.txt",
-                        'a') as file:
-                    file.write(f'it:{iteration} alpha: {alpha} \n')
+def sor_rasmussen2018(flownetwork, prd_hematocrit, old_hematocrit, alpha, iteration):
+    if iteration % flownetwork.r_value == 0 and iteration != 0:
+        alpha = flownetwork.alpha * 0.8
+        flownetwork.alpha = alpha
 
-            one_alpha = 1 - alpha
-            result = (one_alpha * old_hematocrit) + (alpha * prd_hematocrit)
-            flownetwork.alpha = alpha
-
+    one_alpha = 1 - alpha
+    result = (one_alpha * old_hematocrit) + (alpha * prd_hematocrit)
     return result
 
 
-def sor(flownetwork, prd_hematocrit, old_hematocrit):
-    iteration = flownetwork.iteration
-    match flownetwork.sor:
-        case True:
-            # every 50 iteration the alpha is updated and decreased of 1% percent
-            alpha = flownetwork.alpha
-            if iteration % 50 == 0 and iteration != 0:
-                alpha = flownetwork.alpha * 0.9
-                flownetwork.alphaSave = np.append(flownetwork.alphaSave, flownetwork.alpha)
-                with open(
-                        f"{flownetwork._PARAMETERS['path_output_file']}/{flownetwork._PARAMETERS['network_name']}.txt",
-                        'a') as file:
-                    file.write(f'it:{iteration} alpha: {alpha} \n')
+def sor(flownetwork, prd_hematocrit, old_hematocrit, alpha, iteration):
+    if iteration % 50 == 0 and iteration != 0:
+        alpha = flownetwork.alpha * 0.9
+        flownetwork.alpha =alpha
 
-            one_alpha = 1 - alpha
-            result = (one_alpha * old_hematocrit) + (alpha * prd_hematocrit)
-            flownetwork.alpha = alpha
+    one_alpha = 1 - alpha
+    result = (one_alpha * old_hematocrit) + (alpha * prd_hematocrit)
 
     return result

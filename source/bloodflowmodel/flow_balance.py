@@ -132,7 +132,6 @@ class FlowBalanceClass(FlowBalance):
 
         elif flownetwork.zeroFlowThreshold is not None and iteration > 2 and maxBalance <= flownetwork.two_MagnitudeThreshold:
             flownetwork.stop = True
-            # knoledge(self, flownetwork, local_balance_rbc, positions_of_elements_not_in_boundary)
 
         elif iteration > 1:
             flownetwork.families_dict_total = copy.deepcopy(dict_for_families_total(flownetwork))
@@ -188,7 +187,8 @@ def knoledge(self, flownetwork, local_balance_rbc, positions_of_elements_not_in_
         node_residual[node] = local_balance_rbc[index]
 
     flownetwork.node_relative_residual, flownetwork.node_residual, flownetwork.positions_of_elements_not_in_boundary, flownetwork.node_relative_residual_plot, flownetwork.node_residual_plot \
-        = node_relative_residual, node_residual, positions_of_elements_not_in_boundary, np.array(node_relative_residual_plot), np.array(node_residual_plot)
+        = node_relative_residual, node_residual, positions_of_elements_not_in_boundary, np.array(node_relative_residual_plot), np.array(
+        node_residual_plot)
 
     # indices over the TH
     indices_over_blue, d = [], 0
@@ -254,7 +254,8 @@ def knoledge(self, flownetwork, local_balance_rbc, positions_of_elements_not_in_
 
         flownetwork.indices_over_blue, flownetwork.families_dict_total, flownetwork.node_flow_change, flownetwork.vesel_flow_change, \
             flownetwork.node_flow_change_total, flownetwork.vessel_flow_change_total = \
-            indices_over_blue, families_dict_total, np.array(node_flow_change), vessel_flow_change, np.array(node_flow_change_total), vessel_flow_change_total
+            indices_over_blue, families_dict_total, np.array(node_flow_change), vessel_flow_change, np.array(
+                node_flow_change_total), vessel_flow_change_total
         file.write(f"\nThe node that have the change of flow and are over the threshold are {node_flow_change_total}\n")
         file.write(f"\nThe vessel that have the change of flow and are over the threshold are {vessel_flow_change_total}\n")
         file.write(f"------------------------------------------------------------\n\n")

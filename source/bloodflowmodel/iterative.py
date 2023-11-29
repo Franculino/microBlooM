@@ -77,10 +77,10 @@ class IterativeRoutineNone(IterativeRoutine):
         pass
 
 
-def berg_convergence(flownetwork):
+def berg_convergence(self, flownetwork):
     # 1/ (h_d Q)^n _i
     # interpret as the inlow RBcs at iteration n
-    residual_part_1 = 1 / (flownetwork._PARAMETERS["boundary_hematocrit"] * flownetwork.inflow)
+    residual_part_1 = 1 / (self._PARAMETERS["boundary_hematocrit"] * flownetwork.inflow)
     flownetwork.Berg1.append(residual_part_1)
 
     # sum(|delta(H_dQ)|^n_k) interpret as the leakage of red blood cells at inner vertex k
@@ -103,14 +103,9 @@ def berg_convergence(flownetwork):
     return residual
 
 
-# hd_convergence_criteria_berg, flownetwork.flow_convergence_criteria_berg,
-# flownetwork.pressure_convergence_criteria_berg, flownetwork.hd, abs(flownetwork.flow_rate),
-# flownetwork.local_balance_rbc
 class IterativeRoutineMultipleIteration(IterativeRoutine):
 
     def _iterative_method(self, flownetwork):  # , flow_balance):
-        """
-        """
 
         # warning handled for np.nan and np.inf
         warnings.filterwarnings("ignore")
@@ -118,106 +113,154 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
 
         print("Convergence: ...")
 
-        isExist = os.path.exists(self._PARAMETERS['path_output_file'])
-        if not isExist:
-            # Create a new directory because it does not exist
-            os.makedirs(self._PARAMETERS['path_output_file'])
+        # isExist = os.path.exists(self._PARAMETERS['path_output_file'])
+        # if not isExist:
+        #     # Create a new directory because it does not exist
+        #     os.makedirs(self._PARAMETERS['path_output_file'])
 
-        with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'w') as file:
-            file.write(
-                f"Network: {self._PARAMETERS['network_name']} \nnr of vs: {flownetwork.nr_of_vs} - nr of boundary vs: {len(flownetwork.boundary_vs)} - nr of es: "
-                f" {flownetwork.nr_of_es} \n")
+        # with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'w') as file:
+        #     file.write(
+        #         f"Network: {self._PARAMETERS['network_name']} \nnr of vs: {flownetwork.nr_of_vs} - nr of boundary vs: {len(flownetwork.boundary_vs)} "
+        #         f"- nr of es: "
+        #         f" {flownetwork.nr_of_es} \n")
 
         while flownetwork.convergence_check is False:
-
+            iteration = flownetwork.iteration
             # ----- iterative routine -----
-            self.iterative_routine(flownetwork)
-            flownetwork.iteration += 1
+            if iteration > 0:
+                self.iterative_routine(flownetwork)
 
-            if flownetwork.iteration == 1:
-                flownetwork.bergIteration.append(None)
-                flownetwork.Berg1.append(None)
-                flownetwork.Berg2.append(None)
-                flownetwork.BergFirstPartEq.append(None)
-                flownetwork.BergPressure.append(None)
-                flownetwork.BergFlow.append(None)
-                flownetwork.BergHD.append(None)
-                flownetwork.BergSecondPartEq.append(None)
-            else:
-                residual_berg = berg_convergence(flownetwork)
-                # print(f'Berg:{residual_berg}')
-
-            # ----- iterative routine -----
-
-            if flownetwork.iteration % 100 == 0 and flownetwork.iteration > 1:
-                residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, flownetwork._PARAMETERS, " ",
-                              "",
-                              "convergence")
-                # residual_plot_berg(flownetwork, flownetwork.bergIteration, flownetwork._PARAMETERS, "convergence_berg", "", "convergence_berg")
-                # residual_plot_berg_subset(flownetwork, flownetwork.average_inlet_pressure, flownetwork._PARAMETERS, "", "average_inlet",
-                #                           "average_inlet",
-                #                           "average_inlet", -1)
-                # residual_plot_berg_subset(flownetwork, flownetwork.pressure_norm_plot, flownetwork._PARAMETERS, "", "pressure_norm_plot",
-                #                           "pressure_norm_plot",
-                #                           "pressure_norm_plot", -1)
-                # residual_plot_berg_subset(flownetwork, flownetwork.hd_norm_plot[2:], flownetwork._PARAMETERS, "", "hd_norm_plot", "hd_norm_plot",
-                #                           "hd_norm_plot", -1)
-                # residual_plot_berg_subset(flownetwork, flownetwork.Berg2, flownetwork._PARAMETERS, "", "convergence_berg", "convergence_berg2",
-                #                           "sum(|delta(H_dQ)|^n_k)")
-                # residual_plot_berg_subset(flownetwork, flownetwork.BergFirstPartEq, flownetwork._PARAMETERS, "", "convergence_berg",
-                # "convergence_BergFirstPartEq",
-                #                           "1/(h_d Q)^n _i * sum("
-                #                           "|delta(H_dQ)|^n_k)")
-                # residual_plot_berg_subset(flownetwork, flownetwork.BergPressure, flownetwork._PARAMETERS, "", "convergence_berg",
-                #                           "convergence_BergPressure",
-                #                           "||P^n - P ^n-1|| / P^n_i", 0)
-                # residual_plot_berg_subset(flownetwork, flownetwork.BergFlow, flownetwork._PARAMETERS, "", "convergence_berg", "convergence_BergFlow",
-                #                           "||Q^n - Q^n-1|| / Q^n_i")
-                # residual_plot_berg_subset(flownetwork, flownetwork.BergHD, flownetwork._PARAMETERS, "", "convergence_berg", "convergence_BergHD",
-                #                           "||H^n - H^n-1|| / H^n_i", 0)
-                # residual_plot_berg_subset(flownetwork, flownetwork.BergSecondPartEq, flownetwork._PARAMETERS, "", "convergence_berg",
-                # "convergence_BergSecondPartEq", " SUM ||X^n - X^n-1|| / X^n_i")
-                #
-                residual_plot_rasmussen(flownetwork, flownetwork.hd_convergence_criteria_plot, flownetwork.flow_convergence_criteria_plot,
-                                        flownetwork._PARAMETERS, " ", "", "convergence_Rasmussen",flownetwork.rasmussen_hd_threshold,
-                                         flownetwork.rasmussen_flow_threshold)
+            # if iteration % 5 == 0 and iteration > 1:
+            #     residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, self._PARAMETERS, " ",
+            #                   "",
+            #                   "convergence")
+            #     # residual_plot_berg(flownetwork, flownetwork.bergIteration, self._PARAMETERS, "convergence_berg", "", "convergence_berg")
+            #     # residual_plot_berg_subset(flownetwork, flownetwork.average_inlet_pressure, self._PARAMETERS, "", "average_inlet",
+            #     #                           "average_inlet",
+            #     #                           "average_inlet", -1)
+            #     # residual_plot_berg_subset(flownetwork, flownetwork.pressure_norm_plot, self._PARAMETERS, "", "pressure_norm_plot",
+            #     #                           "pressure_norm_plot",
+            #     #                           "pressure_norm_plot", -1)
+            #     # residual_plot_berg_subset(flownetwork, flownetwork.hd_norm_plot[2:], self._PARAMETERS, "", "hd_norm_plot", "hd_norm_plot",
+            #     #                           "hd_norm_plot", -1)
+            #     # residual_plot_berg_subset(flownetwork, flownetwork.Berg2, self._PARAMETERS, "", "convergence_berg", "convergence_berg2",
+            #     #                           "sum(|delta(H_dQ)|^n_k)")
+            #     # residual_plot_berg_subset(flownetwork, flownetwork.BergFirstPartEq, self._PARAMETERS, "", "convergence_berg",
+            #     # "convergence_BergFirstPartEq",
+            #     #                           "1/(h_d Q)^n _i * sum("
+            #     #                           "|delta(H_dQ)|^n_k)")
+            #     # residual_plot_berg_subset(flownetwork, flownetwork.BergPressure, self._PARAMETERS, "", "convergence_berg",
+            #     #                           "convergence_BergPressure",
+            #     #                           "||P^n - P ^n-1|| / P^n_i", 0)
+            #     # residual_plot_berg_subset(flownetwork, flownetwork.BergFlow, self._PARAMETERS, "", "convergence_berg", "convergence_BergFlow",
+            #     #                           "||Q^n - Q^n-1|| / Q^n_i")
+            #     # residual_plot_berg_subset(flownetwork, flownetwork.BergHD, self._PARAMETERS, "", "convergence_berg", "convergence_BergHD",
+            #     #                           "||H^n - H^n-1|| / H^n_i", 0)
+            #     # residual_plot_berg_subset(flownetwork, flownetwork.BergSecondPartEq, self._PARAMETERS, "", "convergence_berg",
+            #     # "convergence_BergSecondPartEq", " SUM ||X^n - X^n-1|| / X^n_i")
+            #     #
+            #     residual_plot_rasmussen(flownetwork, flownetwork.hd_convergence_criteria_plot, flownetwork.flow_convergence_criteria_plot,
+            #                             self._PARAMETERS, " ", "", "convergence_Rasmussen", flownetwork.rasmussen_hd_threshold,
+            #                             flownetwork.rasmussen_flow_threshold)
 
             node_residual, node_relative_residual, local_balance_rbc, node_flow_change_total, indices_over_blue = flownetwork.node_residual, \
                 flownetwork.node_relative_residual, \
                 flownetwork.local_balance_rbc, flownetwork.node_flow_change_total, flownetwork.indices_over_blue
 
-            if flownetwork.iteration > 2 and flownetwork.flow_convergence_criteria <= flownetwork.rasmussen_flow_threshold and  flownetwork.hd_convergence_criteria <=  flownetwork.rasmussen_hd_threshold:
-                #residual_berg <= flownetwork.berg_criteria):
+            match self._PARAMETERS['sor']:
+                case 'sor':
+                    if flownetwork.stop:
+                        flownetwork.convergence_check = True
 
+                        residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm,
+                                      self._PARAMETERS, " ", "", "convergence")
+                        path = self._PARAMETERS['path_output_file'] + '/'
+                        isExist = os.path.exists(path)
+                        if not isExist:
+                            os.makedirs(path)
 
-                flownetwork.convergence_check = True
-                residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, flownetwork._PARAMETERS, " ",
-                              "",
-                              "convergence")
+                        f = open(path + self._PARAMETERS['network_name'] + '.pckl', 'wb')
+                        pickle.dump(
+                            [flownetwork.flow_rate,
+                             flownetwork.node_relative_residual,
+                             flownetwork.positions_of_elements_not_in_boundary,
+                             flownetwork.node_residual,
+                             flownetwork.two_MagnitudeThreshold,
+                             flownetwork.node_flow_change,
+                             flownetwork.vessel_flow_change,
+                             indices_over_blue,
+                             node_flow_change_total,
+                             flownetwork.vessel_flow_change_total,
+                             flownetwork.pressure,
+                             flownetwork.hd], f)
+                        f.close()
 
-                residual_plot_berg(flownetwork, flownetwork.bergIteration, flownetwork._PARAMETERS, " ", "",
-                                   "convergence_berg")
-                residual_plot_rasmussen(flownetwork, flownetwork.hd_convergence_criteria_plot, flownetwork.flow_convergence_criteria_plot,
-                                        flownetwork._PARAMETERS, " ", "", "convergence_Rasmussen", flownetwork.rasmussen_hd_threshold,
-                                        flownetwork.rasmussen_flow_threshold)
+                case 'Berg':
+                    if iteration == 0:
+                        flownetwork.bergIteration.append(None)
+                        flownetwork.Berg1.append(None)
+                        flownetwork.Berg2.append(None)
+                        flownetwork.BergFirstPartEq.append(None)
+                        flownetwork.BergPressure.append(None)
+                        flownetwork.BergFlow.append(None)
+                        flownetwork.BergHD.append(None)
+                        flownetwork.BergSecondPartEq.append(None)
+                    else:
+                        residual_berg = berg_convergence(self, flownetwork)
 
-                f = open('data/out/values_to_print/pckl/' + self._PARAMETERS['network_name'] + '.pckl', 'wb')
-                pickle.dump(
-                    [flownetwork.flow_rate,
-                     flownetwork.node_relative_residual,
-                     flownetwork.positions_of_elements_not_in_boundary,
-                     flownetwork.node_residual,
-                     flownetwork.two_MagnitudeThreshold,
-                     flownetwork.node_flow_change,
-                     flownetwork.vessel_flow_change,
-                     indices_over_blue,
-                     node_flow_change_total,
-                     flownetwork.vessel_flow_change_total,
-                     flownetwork.pressure,
-                     flownetwork.hd], f)
-                f.close()
+                    if iteration > 0 and flownetwork.berg_criteria >= residual_berg:
+                        flownetwork.convergence_check = True
+                        residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm,
+                                      self._PARAMETERS, " ", "", "convergence")
 
-            else:
-                flownetwork.convergence_check = False
+                        residual_plot_berg(flownetwork, flownetwork.bergIteration, self._PARAMETERS, " ", "",
+                                           "convergence_berg")
+
+                        f = open(self._PARAMETERS['path_output_file'] + self._PARAMETERS['network_name'] + '.pckl', 'wb')
+                        pickle.dump(
+                            [flownetwork.flow_rate,
+                             flownetwork.node_relative_residual,
+                             flownetwork.positions_of_elements_not_in_boundary,
+                             flownetwork.node_residual,
+                             flownetwork.two_MagnitudeThreshold,
+                             flownetwork.node_flow_change,
+                             flownetwork.vessel_flow_change,
+                             indices_over_blue,
+                             node_flow_change_total,
+                             flownetwork.vessel_flow_change_total,
+                             flownetwork.pressure,
+                             flownetwork.hd], f)
+                        f.close()
+
+                case 'Rasmussen':
+                    if (iteration > 0 and flownetwork.flow_convergence_criteria <= flownetwork.rasmussen_flow_threshold and
+                            flownetwork.hd_convergence_criteria <= flownetwork.rasmussen_hd_threshold):
+                        flownetwork.convergence_check = True
+
+                        residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm,
+                                      self._PARAMETERS, " ",
+                                      "",
+                                      "convergence")
+                        residual_plot_rasmussen(flownetwork, flownetwork.hd_convergence_criteria_plot, flownetwork.flow_convergence_criteria_plot,
+                                                self._PARAMETERS, " ", "", "convergence_Rasmussen", flownetwork.rasmussen_hd_threshold,
+                                                flownetwork.rasmussen_flow_threshold)
+
+                        f = open(self._PARAMETERS['path_output_file'] + self._PARAMETERS['network_name'] + '.pckl', 'wb')
+                        pickle.dump(
+                            [flownetwork.flow_rate,
+                             flownetwork.node_relative_residual,
+                             flownetwork.positions_of_elements_not_in_boundary,
+                             flownetwork.node_residual,
+                             flownetwork.two_MagnitudeThreshold,
+                             flownetwork.node_flow_change,
+                             flownetwork.vessel_flow_change,
+                             indices_over_blue,
+                             node_flow_change_total,
+                             flownetwork.vessel_flow_change_total,
+                             flownetwork.pressure,
+                             flownetwork.hd], f)
+                        f.close()
+
+            flownetwork.iteration += 1
 
         print(f"Convergence: DONE in -> {flownetwork.iteration} \nAlpha -> {flownetwork.alpha} ")
