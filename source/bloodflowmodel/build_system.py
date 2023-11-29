@@ -87,7 +87,7 @@ class BuildSystemSparseCoo(BuildSystem):
 
 class BuildSystemSparseCsc(BuildSystem):
     """
-    Class for building a sparse linear system of equations (coo_matrix).
+    Class for building a sparse linear system of equations (csc_matrix).
     """
 
     #@profile

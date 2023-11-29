@@ -194,6 +194,7 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
             _berg_assistance(flownetwork)
             flownetwork.pressure_convergence_criteria_berg = pressure_berg(flownetwork, pressure)
         flownetwork.pressure = pressure
+
 class PressureFlowSolverSparseDirectCsc(PressureFlowSolver):
     """
     Class for calculating the pressure with a sparse direct solver.

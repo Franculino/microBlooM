@@ -48,7 +48,7 @@ PARAMETERS = MappingProxyType(
         "ht_constant": 4E-05,  # only required if RBC impact is considered
         "mu_plasma": 0.0052,
         "boundary_hematocrit": 0.4,  # TODO inserire cose se vogliono sessere diverse
-        "network_name": "MVN1_04_berg_study_3",
+        "network_name": "MVN2_04",
 
         # if True, set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -57,7 +57,7 @@ PARAMETERS = MappingProxyType(
         "machine_error": 1E-15,
 
         # Alpha for a relaxation factor of SOR
-        "alpha": 0.05, # riprovare con 0.05
+        "alpha": 1, # riprovare con 0.05
         "epsilon": 5E-25,
         "epsilon_second_method": 1E-10,
 
@@ -73,9 +73,9 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "MVN1/node_data.csv",
-        "csv_path_edge_data": "MVN1/edge_data.csv",
-        "csv_path_boundary_data": "MVN1/node_boundary_data.csv",
+        "csv_path_vertex_data": "MVN2/node_data.csv",
+        "csv_path_edge_data": "MVN2/edge_data.csv",
+        "csv_path_boundary_data": "MVN2/node_boundary_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
@@ -89,13 +89,13 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/Berg/paraview/MVN1_04_berg_study_3.vtp",
+        "write_path_igraph": "data/out/Rasmusen/paraview/MVN2_04.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/Berg/MVN1_04_berg_study_3/plot",
+        "path_for_graph": "data/out/Rasmusen/MVN2_04/plot",
 
         # Write option in a case of print in output file (.txt)
-        "path_output_file": "data/out/Berg/MVN1_04_berg_study_3/log_file",
+        "path_output_file": "data/out/Rasmusen/MVN2_04/log_file",
 
     }
 )
