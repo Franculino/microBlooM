@@ -465,13 +465,13 @@ def residual_plot(flownetwork, residualMax, residualNorm, PARAMETERS, title, pat
 def residual_plot_berg(flownetwork, residualBerg, PARAMETERS, title, path_title, name):
     plt.figure(figsize=(15, 15), dpi=300)
     plt.style.use('seaborn-whitegrid')
-
+    iteration =flownetwork.iteration +1
     # Plot lines with labels
-    plt.plot(range(0, flownetwork.iteration), residualBerg, "-k", label="Residual Berg")
-    x_threshold = np.linspace(0, 10, flownetwork.iteration)
-    plt.plot(range(0, flownetwork.iteration), np.full_like(x_threshold, flownetwork.berg_criteria), color='r', linestyle=':', label="Threshold")
+    plt.plot(range(0, iteration ), residualBerg, "-k", label="Residual Berg")
+    x_threshold = np.linspace(0, 10, iteration)
+    plt.plot(range(0, iteration), np.full_like(x_threshold, flownetwork.berg_criteria), color='r', linestyle=':', label="Threshold")
 
-    plt.xlim([0, flownetwork.iteration])
+    plt.xlim([0, iteration])
     plt.title(title)  # , fontsize=10)
     plt.xlabel("Iteration")  # , fontsize=10)
     plt.ylabel("Residual Berg value")  # , fontsize=10)
@@ -487,7 +487,7 @@ def residual_plot_berg(flownetwork, residualBerg, PARAMETERS, title, path_title,
         if not isExist:
             # Create a new directory because it does not exist
             os.makedirs(path)
-        plt.savefig(path + '/' + str(flownetwork.iteration) + '.png')
+        plt.savefig(path + '/' + str(iteration) + '.png')
     plt.close()
 
 

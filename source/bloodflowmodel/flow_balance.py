@@ -99,7 +99,7 @@ class FlowBalanceClass(FlowBalance):
         # zero-flow-threshold
         # The zero flow threshold is set as the max of the mass balance error for the internal nodes
         # it is computed the new flow inside
-        if flownetwork._PARAMETERS["low_flow_vessel"] is True and flownetwork.zeroFlowThreshold is None:
+        if self._PARAMETERS["low_flow_vessel"] is True and flownetwork.zeroFlowThreshold is None:
             flownetwork.flow_rate = set_low_flow_threshold(self, flownetwork, local_balance)
 
         # ------------------------ other things ------------------------

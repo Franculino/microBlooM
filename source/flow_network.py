@@ -125,7 +125,7 @@ class FlowNetwork(object):
         self.rasmussen_hd_threshold, self.rasmussen_flow_threshold = None, None
         self.hd_convergence_criteria_berg, self.flow_convergence_criteria_berg, self.pressure_convergence_criteria_berg = None, None, None
         self.inflow, self.inflow_pressure_node = None, None
-        self.berg_criteria = 1e-13
+        self.berg_criteria = 1e-6
         self.r_value = 10
         self.average_inlet_pressure, self.pressure_norm_plot = [], []
         return

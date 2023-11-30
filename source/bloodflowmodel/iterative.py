@@ -130,7 +130,8 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
             if iteration > 0:
                 self.iterative_routine(flownetwork)
 
-            # if iteration % 5 == 0 and iteration > 1:
+            if iteration % 100 == 0 and iteration > 1:
+                print(iteration)
             #     residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, self._PARAMETERS, " ",
             #                   "",
             #                   "convergence")
@@ -179,7 +180,7 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                         if not isExist:
                             os.makedirs(path)
 
-                        f = open(path + self._PARAMETERS['network_name'] + '.pckl', 'wb')
+                        f = open(path + '/' + self._PARAMETERS['network_name'] + '.pckl', 'wb')
                         pickle.dump(
                             [flownetwork.flow_rate,
                              flownetwork.node_relative_residual,
@@ -194,7 +195,9 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                              flownetwork.pressure,
                              flownetwork.hd], f)
                         f.close()
-
+                    elif iteration % 50 == 0 and iteration>0 :
+                        residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm,
+                                      self._PARAMETERS, " ", "", "convergence")
                 case 'Berg':
                     if iteration == 0:
                         flownetwork.bergIteration.append(None)
