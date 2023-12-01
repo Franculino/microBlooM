@@ -125,6 +125,7 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
         #         f" {flownetwork.nr_of_es} \n")
 
         while flownetwork.convergence_check is False:
+
             iteration = flownetwork.iteration
             # ----- iterative routine -----
             if iteration > 0:
@@ -132,37 +133,7 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
 
             if iteration % 100 == 0 and iteration > 1:
                 print(iteration)
-            #     residual_plot(flownetwork, flownetwork.residualOverIterationMax, flownetwork.residualOverIterationNorm, self._PARAMETERS, " ",
-            #                   "",
-            #                   "convergence")
-            #     # residual_plot_berg(flownetwork, flownetwork.bergIteration, self._PARAMETERS, "convergence_berg", "", "convergence_berg")
-            #     # residual_plot_berg_subset(flownetwork, flownetwork.average_inlet_pressure, self._PARAMETERS, "", "average_inlet",
-            #     #                           "average_inlet",
-            #     #                           "average_inlet", -1)
-            #     # residual_plot_berg_subset(flownetwork, flownetwork.pressure_norm_plot, self._PARAMETERS, "", "pressure_norm_plot",
-            #     #                           "pressure_norm_plot",
-            #     #                           "pressure_norm_plot", -1)
-            #     # residual_plot_berg_subset(flownetwork, flownetwork.hd_norm_plot[2:], self._PARAMETERS, "", "hd_norm_plot", "hd_norm_plot",
-            #     #                           "hd_norm_plot", -1)
-            #     # residual_plot_berg_subset(flownetwork, flownetwork.Berg2, self._PARAMETERS, "", "convergence_berg", "convergence_berg2",
-            #     #                           "sum(|delta(H_dQ)|^n_k)")
-            #     # residual_plot_berg_subset(flownetwork, flownetwork.BergFirstPartEq, self._PARAMETERS, "", "convergence_berg",
-            #     # "convergence_BergFirstPartEq",
-            #     #                           "1/(h_d Q)^n _i * sum("
-            #     #                           "|delta(H_dQ)|^n_k)")
-            #     # residual_plot_berg_subset(flownetwork, flownetwork.BergPressure, self._PARAMETERS, "", "convergence_berg",
-            #     #                           "convergence_BergPressure",
-            #     #                           "||P^n - P ^n-1|| / P^n_i", 0)
-            #     # residual_plot_berg_subset(flownetwork, flownetwork.BergFlow, self._PARAMETERS, "", "convergence_berg", "convergence_BergFlow",
-            #     #                           "||Q^n - Q^n-1|| / Q^n_i")
-            #     # residual_plot_berg_subset(flownetwork, flownetwork.BergHD, self._PARAMETERS, "", "convergence_berg", "convergence_BergHD",
-            #     #                           "||H^n - H^n-1|| / H^n_i", 0)
-            #     # residual_plot_berg_subset(flownetwork, flownetwork.BergSecondPartEq, self._PARAMETERS, "", "convergence_berg",
-            #     # "convergence_BergSecondPartEq", " SUM ||X^n - X^n-1|| / X^n_i")
-            #     #
-            #     residual_plot_rasmussen(flownetwork, flownetwork.hd_convergence_criteria_plot, flownetwork.flow_convergence_criteria_plot,
-            #                             self._PARAMETERS, " ", "", "convergence_Rasmussen", flownetwork.rasmussen_hd_threshold,
-            #                             flownetwork.rasmussen_flow_threshold)
+
 
             node_residual, node_relative_residual, local_balance_rbc, node_flow_change_total, indices_over_blue = flownetwork.node_residual, \
                 flownetwork.node_relative_residual, \

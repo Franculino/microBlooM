@@ -48,7 +48,7 @@ PARAMETERS = MappingProxyType(
         "ht_constant": 4E-05,  # only required if RBC impact is considered
         "mu_plasma": 0.0052,
         "boundary_hematocrit": 0.4,  # TODO inserire cose se vogliono sessere diverse
-        "network_name": "MVN2_Rasmussen",
+        "network_name": "CH_04_Berg_02",
 
         # if True, set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -57,8 +57,8 @@ PARAMETERS = MappingProxyType(
         "machine_error": 1E-15,
 
         # Alpha for a relaxation factor of SOR
-        "alpha": 1,
-        "sor": 'Rasmussen',  # type of sor to apply
+        "alpha": 0.2,
+        "sor": 'Berg',  # type of sor to apply
         "epsilon": 5E-25,
         "epsilon_second_method": 1E-10,
 
@@ -90,13 +90,13 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/Folder_for_converged_data/paraview/MVN2_Rasmussen.vtp",
+        "write_path_igraph": "data/out/Folder_for_converged_data/paraview/CH_04_Berg_02.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/Folder_for_converged_data/MVN2_Rasmussen/plot",
+        "path_for_graph": "data/out/Folder_for_converged_data/CH_04_Berg_02/plot",
 
         # Write option in a case of print in output file (.txt)
-        "path_output_file": "data/out/Folder_for_converged_data/MVN2_Rasmussen/log_file",
+        "path_output_file": "data/out/Folder_for_converged_data/CH_04_Berg_02/log_file",
 
     }
 )

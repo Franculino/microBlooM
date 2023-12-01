@@ -9,9 +9,11 @@ import pickle
 def main():
     print(os.chdir(str(r'C:\Users\UGE\Desktop\microBlooM')))
     flow_rate, hd = unpack_pickle(r'data\out\Folder_for_converged_data\MVN1_04\log_file\MVN1_04.pckl')
-    flow_rate_berg, hd_berg = unpack_pickle(r'data/out/Folder_for_converged_data/MVN1_Berg/log_fileMVN1_Berg.pckl')
+    flow_rate_berg, hd_berg = unpack_pickle(r'data/out/Folder_for_converged_data/MVN1_04_Berg_02/log_fileMVN1_04_Berg_02.pckl')
     flow_rate_rasmussen, hd_rasmussen = unpack_pickle(r'data/out/Folder_for_converged_data/MVN1_04_Rasmussen/log_fileMVN1_04_Rasmussen.pckl')
-    frequency_plot(flow_rate, flow_rate_berg, flow_rate_rasmussen, 'prova', 'x_axis',
+    frequency_plot(flow_rate, flow_rate_berg, flow_rate_rasmussen, 'prova_MVN1', 'x_axis',
+                   'data/out/Folder_for_converged_data')
+    frequency_plot(hd, hd_berg, hd_rasmussen, 'prova_MVN1_hd', 'x_axis',
                    'data/out/Folder_for_converged_data')
 
 
