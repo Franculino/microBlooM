@@ -5,14 +5,11 @@ A python script to simulate stationary blood flow in microvascular networks. Cap
 3. Solve for flow rates, pressures and RBC velocities
 4. Save the results in a file
 """
-import numpy as np
 
 from source.flow_network import FlowNetwork
 from types import MappingProxyType
 import source.setup.setup as setup
 
-# set random seed
-# np.random.seed(42)
 
 # MappingProxyType is basically a const dict.
 # todo: read parameters from file; need a good way to import from human readable file (problem: json does not support
@@ -20,35 +17,39 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 2,  # 1: generate hexagonal graph
-        # 2: import graph from csv files
-        # 3: import graph from igraph file (pickle file)
-        # 4: generate hexagonal graph composed of a single hexagon
-        # 5: generate hexagonal graph composed of a single hexagon for trifurcation
+        "read_network_option": 2,   # 1: generate hexagonal graph
+                                    # 2: import graph from csv files
+                                    # 3: import graph from igraph file (pickle file)
+                                    # 4: generate hexagonal graph composed of a single hexagon
+                                    # 5: generate hexagonal graph composed of a single hexagon for trifurcation
+                                    # 5: generate hexagonal graph composed of a single hexagon with double edge
         # 6: todo import graph from edge_data and vertex_data pickle files
         "write_network_option": 1,  # 1: do not write anything
-        # 2: write to igraph format # todo: handle overwriting data from import file
-        # 3: write to vpt format
-        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
-        # 2: Constant hematocrit
-        # 3: todo: RBC tracking
-        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 4,  # 1: No RBCs (hd=0)
-        # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-        # 3: Laws by Pries and Secomb (2005)
-        # 4: Laws by Preis (1996)
-        "solver_option": 5,  # 1: Direct solver
-        # 2: PyAMG solvervisual
-        # 3-...: other solvers
-        # 5: csc approach
-        "iterative_routine": 2,  # 1: Single iteration
-        # 2: Iterative routine
+                                    # 2: write to igraph format # todo: handle overwriting data from import file
+                                    # 3: write to vpt format
+        "tube_haematocrit_option": 2,   # 1: No RBCs (ht=0)
+                                        # 2: Constant hematocrit
+                                        # 3: todo: RBC tracking
+                                        # 4-...: todo: steady state RBC laws
+        "rbc_impact_option": 4,     # 1: No RBCs (hd=0)
+                                    # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
+                                    # 3: Laws by Pries and Secomb (2005)
+                                    # 4: Laws by Preis (1996)
+        "solver_option": 1,     # 1: Direct solver
+                                # 2: PyAMG solver visual
+                                # 3: No 1 in the matrix (Simple approach)
+                                # 4: No 1 in the matrix
+                                # ...: other solvers
+        "iterative_routine": 2,     # 1: Single iteration
+                                    # 2: Iterative routine (our)
+                                    # 3: Iterative routine (Berg Thesis)
+                                    # 4: Iterative routine (Rasmussen et al. 2018)
 
         # Blood properties
         "ht_constant": 4E-05,  # only required if RBC impact is considered
         "mu_plasma": 0.0052,
-        "boundary_hematocrit": 0.4,  # TODO inserire cose se vogliono sessere diverse
-        "network_name": "CH_04_Berg_02",
+        "boundary_hematocrit": 0.4,
+        "network_name": "MVN2_testing",
 
         # if True, set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -56,14 +57,9 @@ PARAMETERS = MappingProxyType(
         # Machine error for float
         "machine_error": 1E-15,
 
-        # Alpha for a relaxation factor of SOR
-        "alpha": 0.2,
-        "sor": 'Berg',  # type of sor to apply
-        "epsilon": 5E-25,
-        "epsilon_second_method": 1E-10,
-
         # zeroFlowThreshold default is False, true in case of iterative routine
         "zeroFlowThreshold": False,
+
         # Hexagonal network properties. Only required for "read_network_option" 1
         "nr_of_hexagon_x": 5,
         "nr_of_hexagon_y": 5,
@@ -90,13 +86,16 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/Folder_for_converged_data/paraview/CH_04_Berg_02.vtp",
+        "write_path_igraph": "data/out/Final_consideration/paraview/MVN2_testing.vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/Folder_for_converged_data/CH_04_Berg_02/plot",
+        "path_for_graph": "data/out/Final_consideration/MVN2_testing/plot",
 
         # Write option in a case of print in output file (.txt)
-        "path_output_file": "data/out/Folder_for_converged_data/CH_04_Berg_02/log_file",
+        "path_output_file": "data/out/Final_consideration/MVN2_testing/log_file/",
+
+        # save in a pckl central data
+        "pckl_save": False
 
     }
 )

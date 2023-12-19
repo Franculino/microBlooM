@@ -184,7 +184,6 @@ class ReadNetworkCsv(ReadNetwork):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
-        import pandas as pd
         # Extract file path of network files
         path_edge_data = self._PARAMETERS["csv_path_edge_data"]
         path_vertex_data = self._PARAMETERS["csv_path_vertex_data"]

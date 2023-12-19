@@ -62,7 +62,7 @@ class SetupSimulation(Setup):
             case 5:
                 imp_read = read_network.ReadNetworkSingleHexagonTrifurcation(PARAMETERS)  # Initialises a single hexagonal 2D network with trifurcation
             case 6:
-                imp_read = read_network.ReadNetworkSingleHexagonDoubleEdge(PARAMETERS)
+                imp_read = read_network.ReadNetworkSingleHexagonDoubleEdge(PARAMETERS)  # Initialises a single hexagonal 2D network with a double edge
             case _:
                 sys.exit("Error: Choose valid option to generate or import a network (read_network_option)")
 
@@ -110,10 +110,10 @@ class SetupSimulation(Setup):
         # Initialise the classes handling the solution of the linear system (build system and solver)
         match PARAMETERS["solver_option"]:
             case 1:
-                imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
+                imp_buildsystem = build_system.BuildSystemSparseCsc(PARAMETERS)  # Fast approach to build the system
                 imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirect(PARAMETERS)  # Direct solver
             case 2:
-                imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
+                imp_buildsystem = build_system.BuildSystemSparseCsc(PARAMETERS)  # Fast approach to build the system
                 imp_solver = pressure_flow_solver.PressureFlowSolverPyAMG(PARAMETERS)  # Iterative solver
             case 3:
                 imp_buildsystem = build_system.BuildSystemSparseCooNoOneSimple(PARAMETERS)
@@ -121,23 +121,22 @@ class SetupSimulation(Setup):
             case 4:
                 imp_buildsystem = build_system.BuildSystemSparseCooNoOne(PARAMETERS)
                 imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirect(PARAMETERS)  # Direct solver
-            case 5:
-                imp_buildsystem = build_system.BuildSystemSparseCsc(PARAMETERS)
-                imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirectCsc(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
         match PARAMETERS["iterative_routine"]:
             case 1:
-                imp_iterative = iterative_routine.IterativeRoutineNone(PARAMETERS)
+                imp_iterative = iterative_routine.IterativeRoutineNone(PARAMETERS)  # No iterative procedure
             case 2:
-                imp_iterative = iterative_routine.IterativeRoutineMultipleIteration(PARAMETERS)
+                imp_iterative = iterative_routine.IterativeRoutineMultipleIteration(PARAMETERS)  # Our implementation
             case 3:
-                imp_iterative = iterative_routine.IterativeRoutineRasmussen2018(PARAMETERS)
+                imp_iterative = iterative_routine.IterativeRoutineBerg(PARAMETERS)  # Berg Thesis
+            case 4:
+                imp_iterative = iterative_routine.IterativeRoutineRasmussen(PARAMETERS)  # Rasmussen et al. 2018
             case _:
                 sys.exit("Error: Choose valid option for the iterative routine (iterative_routine)")
 
-        # flow balance
+        # Flow Balance
         imp_balance = flow_balance.FlowBalanceClass(PARAMETERS)
 
         return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver, imp_iterative, imp_balance

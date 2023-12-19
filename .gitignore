@@ -28,3 +28,6 @@ job.sh
 util_methods/open_pck_file_dp.py
 *.pckl
 *.pckl
+data/Final_consideration/CH_Sor
+*.png
+scrath_to_plot_data.py

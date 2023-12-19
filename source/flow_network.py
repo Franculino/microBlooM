@@ -1,5 +1,3 @@
-import numpy as np
-
 import source.fileio.read_network as readnetwork
 import source.fileio.write_network as writenetwork
 import source.bloodflowmodel.tube_haematocrit as tubehaematocrit
@@ -23,21 +21,9 @@ class FlowNetwork(object):
                  imp_iterative: iterative_routine.IterativeRoutine, imp_balance: flow_balance.FlowBalance,
                  PARAMETERS: MappingProxyType):
         # Network attributes
-        self.hd_norm_plot = []
-        self.bergIteration, self.Berg1, self.Berg2, self.BergPressure, self.BergFlow, self.BergHD, self.BergFirstPartEq, self.BergSecondPartEq = [], [], [], [], [], [], [], []
-        self.vessel_flow_change_total = None
-        self.maxBalance = None
-        self.node_flow_change_total = None
-        self.node_residual_plot = None
-        self.node_relative_residual_plot = None
-        self.vessel_flow_change = None
-        self.positions_of_elements_not_in_boundary = None
-        self.node_flow_change = None
-        self.save_change_flow_over_th = None
-        self.node_residual = None
-        self.positions_of_elements_not_in_boundary = None
-        self.two_MagnitudeThreshold = None
-        self.local_balance_rbc = None
+
+        self.convergedDataHD = None
+        self.convergedDataFlow = None
         self.min_flow = None
         self.eps_eff = None
         self.nr_of_vs = None
@@ -90,44 +76,65 @@ class FlowNetwork(object):
         # "Reference" to parameter dict
         self._PARAMETERS = PARAMETERS
 
-        self.alpha = PARAMETERS['alpha']
+        # Iterative procedure
+        self.alpha = None
         self.sor = True
-
-        self.avg_check = 0
-        self.max_check = 0
-        self.avg_old = 0
-        self.iterationExit = 0
-        self.hd_i = 0
+        # the number of iterations performed
+        # 1st (0) is to stabilize the iteration
         self.iteration = 0
-        self.cnvg_rbc = 0
-        self.cnvg_flow = 0
-        self.alphaOn = True
-        self.local_balance_rbc = True
-        self.residualOverIteration, self.residualFlowOverIteration, self.i = [], [], 0
+
+        # save residual max and norm over the iteration
         self.residualOverIterationMax = []
         self.residualOverIterationNorm = []
+        # to save the value of Alpha's during the iteration and display in the final plot
         self.alphaSave = [1]
-        self.stop, self.n_stop = False, 0
-        self.all_positions = None
-        self.node_values = None
-        self.flagFlow, self.flagFlowM1 = None, None
-        self.pressure_node, self.families_dict, self.vessel_general = None, None, None
-        self.node_identifiers = [75, 193, 238, 377, 456, 522, 771, 778]  # MVN1_01
-        # self.node_identifiers = [361, 405, 407, 576, 713, 950, 968, 1005, 2617]  # MVN2_06
-        # self.node_identifiers = [300, 500]
-        self.vessel_value_hd, self.vessel_value_flow = None, None
-        self.node_values_hd, self.node_values_flow, self.upAlpha, self.max_magnitude, self.node_relative_residual = None, None, 0, 0, None
-        self.zeroFlowThresholdMagnitude, self.indices_over, self.indices_over_blue, self.local_balance_rbc_corr = None, None, None, None
-        self.boundary_inflow, self.families_dict_total = [], None
-        self.increment = 0
-        self.hd_convergence_criteria, self.flow_convergence_criteria = None, None
-        self.hd_convergence_criteria_plot, self.flow_convergence_criteria_plot = [], []
-        self.rasmussen_hd_threshold, self.rasmussen_flow_threshold = None, None
-        self.hd_convergence_criteria_berg, self.flow_convergence_criteria_berg, self.pressure_convergence_criteria_berg = None, None, None
-        self.inflow, self.inflow_pressure_node = None, None
+        # to stop our computation after a certain iteration
+        self.stop = False
+        self.pressure_node = None
+        self.vessel_general = None
+        self.vessel_value_hd = None
+        self.vesel_flow_change = None
+        self.vessel_value_flow = None
+        self.node_values_hd = None
+        self.node_values_flow = None
+        self.node_relative_residual = None
+        self.zeroFlowThresholdMagnitude = None
+        self.indices_over = None
+        self.indices_over_blue = None
+        self.families_dict_total = None
+        self.hd_convergence_criteria = None
+        self.flow_convergence_criteria = None
+        self.rasmussen_hd_threshold = None
+        self.rasmussen_flow_threshold = None
+        self.hd_convergence_criteria_berg = None
+        self.flow_convergence_criteria_berg = None
+        self.pressure_convergence_criteria_berg = None
+        self.inflow = None
+        self.inflow_pressure_node = None
         self.berg_criteria = 1e-6
         self.r_value = 10
-        self.average_inlet_pressure, self.pressure_norm_plot = [], []
+        self.average_inlet_pressure = []
+        self.pressure_norm_plot = []
+        self.bergIteration = []
+        self.Berg1 = []
+        self.Berg2 = []
+        self.BergPressure = []
+        self.BergFlow = []
+        self.BergHD = []
+        self.BergFirstPartEq = []
+        self.BergSecondPartEq = []
+        self.vessel_flow_change_total = None
+        self.maxBalance = None
+        self.node_flow_change_total = None
+        self.node_residual_plot = None
+        self.node_relative_residual_plot = None
+        self.vessel_flow_change = None
+        self.node_flow_change = None
+        self.save_change_flow_over_th = None
+        self.node_residual = None
+        self.positions_of_elements_not_in_boundary = None
+        self.two_MagnitudeThreshold = None
+        self.local_balance_rbc = None
         return
 
     def read_network(self):
@@ -164,3 +171,18 @@ class FlowNetwork(object):
         Check flow balance
         """
         self._imp_balance.check_flow_balance(self)
+
+    # Needed for Iterative procedure
+    @property
+    def imp_buildsystem(self):
+        return self._imp_buildsystem
+
+    # Needed for Iterative procedure
+    @property
+    def imp_solver(self):
+        return self._imp_solver
+
+    # Needed for Iterative procedure
+    @property
+    def imp_rbcvelocity(self):
+        return self._imp_rbcvelocity

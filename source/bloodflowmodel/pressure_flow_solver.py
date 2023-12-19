@@ -1,16 +1,12 @@
-import copy
 import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 
 import numpy as np
-from scipy.sparse import csc_matrix
-from scipy.sparse.linalg import spsolve, norm, inv
+from scipy.sparse.linalg import spsolve
 
-import scipy.sparse as sparse
 from pyamg import smoothed_aggregation_solver
 from scipy.sparse import csr_matrix
-from scipy.sparse import isspmatrix_csc
 
 
 class PressureFlowSolver(ABC):
@@ -61,67 +57,35 @@ class PressureFlowSolver(ABC):
 
         if flownetwork.zeroFlowThreshold is not None:
             # in case we want to exclude the unrealistic lower values in iterative model
-            flow_rate = _update_low_flow(self, flownetwork, flow_rate)
+            flow_rate = _update_low_flow(flownetwork, flow_rate)
 
-        if flownetwork.iteration == 0:
-            flownetwork.flow_convergence_criteria = max(abs(flow_rate) - abs(np.zeros(len(flow_rate))))
-            flownetwork.flow_convergence_criteria_plot.append(max(abs(abs(flow_rate) - np.zeros(len(flow_rate)))))
-            flownetwork.flow_convergence_criteria_berg = None
-        elif flownetwork.iteration == 1:
-            flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
-            flownetwork.rasmussen_flow_threshold = 1 * 10 ** (int("{:e}".format(flownetwork.flow_convergence_criteria).split('e')[1]) - 8)
-            flownetwork.flow_convergence_criteria_plot = [max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))] * 2
-            flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
-        else:
-            flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
-            flownetwork.flow_convergence_criteria_plot.append(max(abs(abs(flow_rate) - abs(flownetwork.flow_rate))))
-            flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
+        # if we are in the iterative case of Berg
+        if self._PARAMETERS["iterative_routine"] == 3:
+            if flownetwork.iteration == 0:
+                flownetwork.flow_convergence_criteria_berg = None
+            elif flownetwork.iteration == 1:
+                flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
+                flownetwork.rasmussen_flow_threshold = 1 * 10 ** (int("{:e}".format(flownetwork.flow_convergence_criteria).split('e')[1]) - 8)
+                flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
+            else:
+                flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
+                flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
+
+        # if we are in the iterative case of Berg
+        if self._PARAMETERS["iterative_routine"] == 3:
+            if flownetwork.iteration == 0:
+                flownetwork.flow_convergence_criteria_berg = None
+            else:
+                flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
+        # if we are in the iterative case of Rasmussen
+        elif self._PARAMETERS["iterative_routine"] == 4:
+            if flownetwork.iteration == 1:
+                flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
+                flownetwork.rasmussen_flow_threshold = 1 * 10 ** (int("{:e}".format(flownetwork.flow_convergence_criteria).split('e')[1]) - 8)
+            else:
+                flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
 
         flownetwork.flow_rate = flow_rate
-
-
-def set_low_flow_threshold(self, flownetwork, local_balance):
-    # max of the mass balance error for the internal nodes
-    flownetwork.zeroFlowThreshold = np.max(local_balance)
-    # Convert the number to scientific notation
-    scientific_notation = "{:e}".format(np.max(local_balance))
-    # Extract the magnitude based on the exponent
-    flownetwork.zeroFlowThresholdMagnitude = abs(int(scientific_notation.split('e')[1]))
-
-    # check how the flow it will change
-    # Print to display the percentage of Zero flow vessel
-    print(f"Percentage of zero flow vessel {np.round((len(flownetwork.flow_rate[flownetwork.flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)}%")
-    # Print to display the percentage of Zero flow vessel
-    print(f"Min flow rate = {np.min(np.abs(flownetwork.flow_rate[flownetwork.flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flownetwork.flow_rate))}")
-
-    # print to check the value of the threshold
-    print("Tolerance :" + str(flownetwork.zeroFlowThreshold))
-    # update the flow rate
-
-    return _update_low_flow(self, flownetwork, flownetwork.flow_rate)
-
-
-def _update_low_flow(self, flownetwork, flow_rate):
-    # to flag the vessel where the threshold is changed
-    initial_flow = copy.deepcopy(flow_rate)
-    # Update flow rate based on the zero flow threshold
-    flow_rate = np.where(np.abs(flow_rate) < flownetwork.zeroFlowThreshold, 0, flow_rate)
-    # flag the ones that has been changed
-    flownetwork.flagFlow = np.where(flow_rate == initial_flow, 1, 0)
-
-    if flownetwork.n_stop == 99:
-        flag = np.where(flow_rate == initial_flow, 1, 0)
-        flownetwork.flagFlowM1 = flag
-
-
-    if flownetwork.iteration < 2:
-        # check how the flow it is changed
-        # Print to display the percentage of Zero flow vessel
-        print(f"Percentage of zero flow vessel {np.round((len(flow_rate[flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)}")
-        # Print to display the min and max flow_rate
-        print(f"Min flow rate = {np.min(np.abs(flow_rate[flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flow_rate))}")
-
-    return flow_rate
 
 
 def flow_berg(flownetwork, flow_rate):
@@ -169,26 +133,42 @@ def _berg_assistance(flownetwork):
     flownetwork.inflow_pressure_node, flownetwork.inflow = inflow_pressure_node, inflow
 
 
+def _update_low_flow(flownetwork, flow_rate):
+    # Update flow rate based on the zero-flow threshold
+    flow_rate = np.where(np.abs(flow_rate) < flownetwork.zeroFlowThreshold, 0, flow_rate)
+
+    if flownetwork.iteration < 2:
+        # check how the flow it is changed
+        # Print to display the percentage of Zero flow vessel
+        print(f"Percentage of zero flow vessel {np.round((len(flow_rate[flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)}")
+        # Print to display the min and max flow_rate
+        print(f"Min flow rate = {np.min(np.abs(flow_rate[flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flow_rate))}")
+
+    return flow_rate
+
+
+def set_low_flow_threshold(flownetwork, local_balance):
+    # max of the mass balance error for the internal nodes
+    flownetwork.zeroFlowThreshold = np.max(local_balance)
+    # Convert the number to scientific notation
+    scientific_notation = "{:e}".format(np.max(local_balance))
+    # Extract the magnitude based on the exponent
+    flownetwork.zeroFlowThresholdMagnitude = abs(int(scientific_notation.split('e')[1]))
+
+    # check how the flow it will change
+    # Print to display the percentage of Zero flow vessel
+    print(f"Percentage of zero flow vessel {np.round((len(flownetwork.flow_rate[flownetwork.flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)}%")
+    # Print to display the percentage of Zero flow vessel
+    print(f"Min flow rate = {np.min(np.abs(flownetwork.flow_rate[flownetwork.flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flownetwork.flow_rate))}")
+
+    # print to check the value of the threshold
+    print("Tolerance :" + str(flownetwork.zeroFlowThreshold))
+    # update the flow rate
+
+    return _update_low_flow(flownetwork, flownetwork.flow_rate)
+
+
 class PressureFlowSolverSparseDirect(PressureFlowSolver):
-    """
-    Class for calculating the pressure with a sparse direct solver.
-    """
-
-    def _solve_pressure(self, flownetwork):
-        """
-        Solve the linear system of equations for the pressure and update the pressure in flownetwork.
-        :param flownetwork: flow network object
-        :type flownetwork: source.flow_network.FlowNetworks
-        """
-        pressure = spsolve(csc_matrix(flownetwork.system_matrix), flownetwork.rhs)
-        if flownetwork.iteration == 0:
-            flownetwork.pressure_convergence_criteria_berg = None
-        else:
-            _berg_assistance(flownetwork)
-            flownetwork.pressure_convergence_criteria_berg = pressure_berg(flownetwork, pressure)
-        flownetwork.pressure = pressure
-
-class PressureFlowSolverSparseDirectCsc(PressureFlowSolver):
     """
     Class for calculating the pressure with a sparse direct solver.
     """
@@ -244,7 +224,7 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
         # inlet and outlet pressure values. In case of pressure and flow rate boundary conditions, x0 should be an
         # array with values +/-50% of the pressure boundary value.
         res = []
-        old_pressure = flownetwork.pressure
+
         if flownetwork.pressure is None:
             if (1 in flownetwork.boundary_type) and not (2 in flownetwork.boundary_type):  # only pressure boundaries
                 boundary_inlet = np.max(flownetwork.boundary_val)
