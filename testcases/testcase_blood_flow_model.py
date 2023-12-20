@@ -1,5 +1,6 @@
 """
-A python script to simulate stationary blood flow in microvascular networks. Capabilities:
+A python script to simulate stationary blood flow in microvascular networks.
+Capabilities:
 1. Import a network from file or generate a hexagonal network
 2. Compute the edge transmissibilities with taking the impact of RBCs into account (Fahraeus, Fahraeus-Linquist effects)
 3. Solve for flow rates, pressures and RBC velocities
@@ -16,30 +17,23 @@ import source.setup.setup as setup
 
 
 # MappingProxyType is basically a const dict.
-# todo: read parameters from file; need a good way to import from human readable file (problem: json does not support
-#  comments, which we would like to have in the text file; need better solution...)
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
         "read_network_option": 2,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
-                                   # 3: import graph from igraph file (pickle file)
-                                   # 4: todo import graph from edge_data and vertex_data pickle files
+                                   # 3: import graph from igraph format (pickle file)
         "write_network_option": 1,  # 1: do not write anything
-                                    # 2: write to igraph format # todo: handle overwriting data from import file
-                                    # 3: write to vtp format
-                                    # 4: write to two csv files
+                                    # 2: write to igraph format (.pkl)
+                                    # 3: write to vtp format (.vtp)
+                                    # 4: write to two csv files (.csv)
         "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
                                        # 2: Constant haematocrit
-                                       # 3: todo: RBC tracking
-                                       # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 3,  # 1: No RBCs (hd=0)
+        "rbc_impact_option": 3,  # 1: No RBCs (hd=0) - makes only sense if tube_haematocrit_option:1 or ht=0
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: Laws by Pries and Secomb (2005)
-                                 # 4-...: todo: Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
-                             # 3-...: other solvers
 
         # Blood properties
         "ht_constant": 0.3,  # only required if RBC impact is considered
@@ -58,23 +52,24 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "MVN2/node_data.csv",
-        "csv_path_edge_data": "MVN2/edge_data.csv",
-        "csv_path_boundary_data": "MVN2/node_boundary_data.csv",
+        "csv_path_vertex_data": "data/network/node_data.csv",
+        "csv_path_edge_data": "data/network/edge_data.csv",
+        "csv_path_boundary_data": "data/network/boundary_node_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
         "csv_boundary_vs": "nodeID", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "data/network/b6_B_pre_061/b6_B_initial.pkl",
+        "pkl_path_igraph": "data/network/network_graph.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
 
         # Write options
-        "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "data/network/b6_B_pre_061_simulated.pkl"  # only required for "write_network_option" 2
+        "write_override_initial_graph": False,
+        # Note: the extension of the output file is automatically added later in the function
+        "write_path_igraph": "data/network/network_simulated",
     }
 )
 

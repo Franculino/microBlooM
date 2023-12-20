@@ -10,7 +10,7 @@ import numpy as np
 
 
 class InverseModel(object):
-    # todo docstring and explain all attributes
+
     def __init__(self, flownetwork: flow_network.FlowNetwork, imp_readtargetvalues: read_target_values.ReadTargetValues,
                  imp_readparameters: read_parameters.ReadParameters,
                  imp_adjointmethodparameters: adj_method_parameters.AdjointMethodImplementations,
@@ -23,23 +23,23 @@ class InverseModel(object):
         self._PARAMETERS = PARAMETERS
 
         # Target values
-        self.edge_constraint_eid = None
-        self.edge_constraint_type = None # 1: Flow rate, 2: Velocity, ...
-        self.edge_constraint_value = None
-        self.edge_constraint_range_pm = None
-        self.edge_constraint_sigma = None
-        self.nr_of_edge_constraints = None
+        self.edge_constraint_eid = None  # edge ids of constraint edges (1d np.array)
+        self.edge_constraint_type = None  # constraint type - 1: Flow rate, 2: Velocity, ... (1d np.array)
+        self.edge_constraint_value = None  # constraint value (1d np.array)
+        self.edge_constraint_range_pm = None  # constraint range (1d np.array)
+        self.edge_constraint_sigma = None  # constraint sigma of the cost function (1d np.array)
+        self.nr_of_edge_constraints = None  # number of constraint edges
 
         # Parameter space
         # Edge parameters
-        self.edge_param_eid = None
-        self.parameter_pm_range = None
-        self.nr_of_edge_parameters = None
+        self.edge_param_eid = None  # edge ids of parameters (1d np.array)
+        self.parameter_pm_range = None  # parameter range - tolerance to baseline (1d np.array)
+        self.nr_of_edge_parameters = None  # number of edge parameters
 
         # Vertex parameters
-        self.vertex_param_vid = None
+        self.vertex_param_vid = None  # vetrex ids of parameters (1d np.array)
         # self.vertex_param_pm_range = None
-        self.nr_of_vertex_parameters = None
+        self.nr_of_vertex_parameters = None  # number of vertex parameters
 
         # Total parameters
         self.nr_of_parameters = None
@@ -49,8 +49,8 @@ class InverseModel(object):
         self.alpha_prime = None
         self.alpha_pm_range = None
 
-        self.transmiss_baselinevalue = None
-        self.diameter_baselinevalue = None
+        self.transmiss_baselinevalue = None  # baseline transmissibility (1d np.array)
+        self.diameter_baselinevalue = None  # baseline diameter (1d np.array)
 
         self.boundary_pressure_baselinevalue = None
 
@@ -58,19 +58,19 @@ class InverseModel(object):
         self.transmiss_tilde = None
 
         # Inverse model parameters
-        self.gamma = None
-        self.phi = None
+        self.gamma = None  # constant learning rate
+        self.phi = None  # constant parameter to tune the shape of the function between alpha and alpha_prime
 
         # Inverse model cost terms
         self.f_h = None  # Cost of hard constraint
 
-        # Adjoint method vectors and matrices
+        # Adjoint method vectors and matrices - derivatives
         self.d_f_d_alpha = None  # Vector
         self.d_f_d_pressure = None  # Vector
         self.d_g_d_alpha = None  # coo_matrix
-        self._lambda = None # Vector
+        self._lambda = None  # Vector
 
-        # Gradient
+        # Gradient descent
         self.gradient_alpha = None
         self.gradient_alpha_prime = None
 
@@ -81,7 +81,7 @@ class InverseModel(object):
         self._imp_adjointmethodsolver = imp_adjointmethodsolver
         self._imp_alphamapping = imp_alphamapping
 
-        # Solution monitoring - Visualisation
+        # Simulation monitoring - Visualisation
         self.current_iteration = 0
         self.iteration_array = np.array([])
         self.f_h_array = np.array([])
@@ -107,7 +107,6 @@ class InverseModel(object):
         # Update gradient d f / f alpha_prime (mapping between parameter and pseudo parameter)
         self._imp_alphamapping.update_gradient_alpha_prime(self)
         # Update alpha_prime by using gradient descent with constant learning rate.
-        # Todo: different algorithms, e.g. with adaptive gamma or Adams algorithm
         self.alpha_prime -= self.gamma * self.gradient_alpha_prime
         # Transform pseudo parameter alpha_prime back to alpha space
         self._imp_alphamapping.update_alpha_from_alpha_prime(self)

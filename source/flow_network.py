@@ -10,7 +10,7 @@ from types import MappingProxyType
 
 
 class FlowNetwork(object):
-    # todo docstring and explain all attributes
+
     def __init__(self, imp_readnetwork: readnetwork.ReadNetwork, imp_writenetwork: writenetwork.WriteNetwork,
                  imp_tube_ht: tubehaematocrit.TubeHaematocrit,
                  imp_tube_hd: dischargehaematocrit.DischargeHaematocrit,
@@ -19,32 +19,32 @@ class FlowNetwork(object):
                  PARAMETERS: MappingProxyType):
 
         # Network attributes
-        self.nr_of_vs = None
-        self.nr_of_es = None
+        self.nr_of_vs = None  # number of vertices
+        self.nr_of_es = None  # number of edges
 
         # Vertex attributes
-        self.xyz = None
-        self.pressure = None
+        self.xyz = None  # coordination (2d np.array)
+        self.pressure = None  # pressure (1d np.array)
 
         # Edge attributes
-        self.edge_list = None
-        self.diameter = None
-        self.length = None
-        self.transmiss = None
-        self.mu_rel = None
-        self.ht = None
-        self.hd = None
-        self.flow_rate = None
-        self.rbc_velocity = None
+        self.edge_list = None  # edge list (2d np.array)
+        self.diameter = None  # diameter (1d np.array)
+        self.length = None  # length (1d np.array)
+        self.transmiss = None  # transmissibility (1d np.array)
+        self.mu_rel = None  # relative apparent viscosity (1d np.array)
+        self.ht = None  # tube haematocrit (1d np.array)
+        self.hd = None  # discharge haematocrit (1d np.array)
+        self.flow_rate = None  # flow rate (1d np.array)
+        self.rbc_velocity = None  # rbc velocity (1d np.array)
 
         # Network boundaries
-        self.boundary_vs = None # vertex ids of boundaries (1d np.array)
-        self.boundary_val =  None # boundary values (1d np.array)
-        self.boundary_type = None # boundary type (1: pressure, 2: flow rate)
+        self.boundary_vs = None  # vertex ids of boundaries (1d np.array)
+        self.boundary_val = None  # boundary values (1d np.array)
+        self.boundary_type = None  # boundary type (1: pressure, 2: flow rate)
 
         # Solver
-        self.system_matrix = None # system matrix of linear system of equations
-        self.rhs = None # right hand side of linear system of equations
+        self.system_matrix = None  # system matrix of linear system of equations
+        self.rhs = None  # right hand side of linear system of equations
 
         # "References" to implementations
         self._imp_readnetwork = imp_readnetwork
