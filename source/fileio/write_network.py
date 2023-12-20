@@ -273,8 +273,7 @@ class WriteNetworkVtp(WriteNetwork):
         f = open(fname, 'w')
 
         # Find unconnected vertices:
-        unconnected = np.nonzero([x == 0 for x in G.strength(weights=
-                                                             [1 for i in range(G.ecount())])])[0].tolist() # TODO: correct weighted_degree
+        unconnected = np.nonzero([x == 0 for x in G.strength(weights=[1 for i in range(G.ecount())])])[0].tolist()  # TODO: correct weighted_degree
 
         # Header
         f.write('<?xml version="1.0"?>\n')

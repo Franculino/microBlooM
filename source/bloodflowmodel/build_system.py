@@ -1,8 +1,6 @@
-import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
-# from line_profiler_pycharm import profile
 from scipy.sparse import coo_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve
 

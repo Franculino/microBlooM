@@ -16,7 +16,7 @@ import source.setup.setup as setup
 #  comments, which we would like to have in the text file; need better solution...)
 PARAMETERS = MappingProxyType(
     {
-        # Setup parameters for blood flow model
+        # Setup parameters for the blood flow model
         "read_network_option": 2,   # 1: generate hexagonal graph
                                     # 2: import graph from csv files
                                     # 3: import graph from igraph file (pickle file)
@@ -49,7 +49,7 @@ PARAMETERS = MappingProxyType(
         "ht_constant": 4E-05,  # only required if RBC impact is considered
         "mu_plasma": 0.0052,
         "boundary_hematocrit": 0.4,
-        "network_name": "MVN2_testing",
+        "network_name": "MVN1_testing",
 
         # if True, set the blood vessel with unrealistic blood flow to zero
         "low_flow_vessel": True,
@@ -70,9 +70,9 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "MVN2/node_data.csv",
-        "csv_path_edge_data": "MVN2/edge_data.csv",
-        "csv_path_boundary_data": "MVN2/node_boundary_data.csv",
+        "csv_path_vertex_data": "MVN1/node_data.csv",
+        "csv_path_edge_data": "MVN1/edge_data.csv",
+        "csv_path_boundary_data": "MVN1/node_boundary_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
@@ -86,13 +86,13 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": True,  # todo: currently does not do anything
-        "write_path_igraph": "data/out/Final_consideration/paraview/MVN2_testing.vtp",
+        "write_path_igraph": "data/out/vtp/[name_file].vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/Final_consideration/MVN2_testing/plot",
+        "path_for_graph": "data/out/plot",
 
         # Write option in a case of print in output file (.txt)
-        "path_output_file": "data/out/Final_consideration/MVN2_testing/log_file/",
+        "path_output_file": "data/out/log_file/",
 
         # save in a pckl central data
         "pckl_save": False

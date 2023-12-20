@@ -21,9 +21,6 @@ class FlowNetwork(object):
                  imp_iterative: iterative_routine.IterativeRoutine, imp_balance: flow_balance.FlowBalance,
                  PARAMETERS: MappingProxyType):
         # Network attributes
-
-        self.convergedDataHD = None
-        self.convergedDataFlow = None
         self.min_flow = None
         self.eps_eff = None
         self.nr_of_vs = None
@@ -82,7 +79,10 @@ class FlowNetwork(object):
         # the number of iterations performed
         # 1st (0) is to stabilize the iteration
         self.iteration = 0
-
+        # Zero-flow threshold
+        self.zeroFlowThresholdMagnitude = None
+        # Threshold terative approach with our sor
+        self.two_MagnitudeThreshold = None
         # save residual max and norm over the iteration
         self.residualOverIterationMax = []
         self.residualOverIterationNorm = []
@@ -90,7 +90,9 @@ class FlowNetwork(object):
         self.alphaSave = [1]
         # to stop our computation after a certain iteration
         self.stop = False
+        # array for discharge hematicrit
         self.pressure_node = None
+        # assistant variables for an iterative process over 4000 iteration
         self.vessel_general = None
         self.vessel_value_hd = None
         self.vesel_flow_change = None
@@ -98,23 +100,24 @@ class FlowNetwork(object):
         self.node_values_hd = None
         self.node_values_flow = None
         self.node_relative_residual = None
-        self.zeroFlowThresholdMagnitude = None
         self.indices_over = None
         self.indices_over_blue = None
         self.families_dict_total = None
+        # Convergence criteria for iterative approaches Berg/Rasmussen
         self.hd_convergence_criteria = None
         self.flow_convergence_criteria = None
-        self.rasmussen_hd_threshold = None
-        self.rasmussen_flow_threshold = None
         self.hd_convergence_criteria_berg = None
         self.flow_convergence_criteria_berg = None
         self.pressure_convergence_criteria_berg = None
-        self.inflow = None
-        self.inflow_pressure_node = None
         self.berg_criteria = 1e-6
         self.r_value = 10
+        # Threshold for Rasmussen approach
+        self.rasmussen_hd_threshold = None
+        self.rasmussen_flow_threshold = None
+        # Assistence for iterative approaches
+        self.inflow = None
+        self.inflow_pressure_node = None
         self.average_inlet_pressure = []
-        self.pressure_norm_plot = []
         self.bergIteration = []
         self.Berg1 = []
         self.Berg2 = []
@@ -126,15 +129,12 @@ class FlowNetwork(object):
         self.vessel_flow_change_total = None
         self.maxBalance = None
         self.node_flow_change_total = None
-        self.node_residual_plot = None
-        self.node_relative_residual_plot = None
         self.vessel_flow_change = None
         self.node_flow_change = None
-        self.save_change_flow_over_th = None
         self.node_residual = None
         self.positions_of_elements_not_in_boundary = None
-        self.two_MagnitudeThreshold = None
         self.local_balance_rbc = None
+
         return
 
     def read_network(self):

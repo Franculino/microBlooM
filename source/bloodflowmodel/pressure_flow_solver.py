@@ -79,11 +79,11 @@ class PressureFlowSolver(ABC):
                 flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
         # if we are in the iterative case of Rasmussen
         elif self._PARAMETERS["iterative_routine"] == 4:
+            # at the first iteration is necessary to set the flow_threshold criteria
             if flownetwork.iteration == 1:
-                flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
                 flownetwork.rasmussen_flow_threshold = 1 * 10 ** (int("{:e}".format(flownetwork.flow_convergence_criteria).split('e')[1]) - 8)
-            else:
-                flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
+
+            flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
 
         flownetwork.flow_rate = flow_rate
 
@@ -99,7 +99,6 @@ def flow_berg(flownetwork, flow_rate):
 def pressure_berg(flownetwork, pressure):
     # ||P^n - P^n-1||
     pressure_norm = np.linalg.norm(abs(pressure - flownetwork.pressure))
-    flownetwork.pressure_norm_plot.append(pressure_norm)
     # P_i^n implemented as the average pressure inlet
     # inflow_pressure_node: are all the inflow node
     average_inlet_pressure = np.average(flownetwork.pressure[flownetwork.inflow_pressure_node])
@@ -136,14 +135,6 @@ def _berg_assistance(flownetwork):
 def _update_low_flow(flownetwork, flow_rate):
     # Update flow rate based on the zero-flow threshold
     flow_rate = np.where(np.abs(flow_rate) < flownetwork.zeroFlowThreshold, 0, flow_rate)
-
-    if flownetwork.iteration < 2:
-        # check how the flow it is changed
-        # Print to display the percentage of Zero flow vessel
-        print(f"Percentage of zero flow vessel {np.round((len(flow_rate[flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)}")
-        # Print to display the min and max flow_rate
-        print(f"Min flow rate = {np.min(np.abs(flow_rate[flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flow_rate))}")
-
     return flow_rate
 
 

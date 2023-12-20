@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 import os
 import warnings
 from types import MappingProxyType
-from source.fileio.create_display_plot import residual_plot, residual_plot_berg, residual_plot_rasmussen, frequency_plot_abs_fl, relative_difference
 
 
 class IterativeRoutine(ABC):
@@ -102,7 +101,7 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
     Iterative approach based on our definition
     """
 
-    def _iterative_method(self, flownetwork):  # , flow_balance):
+    def _iterative_method(self, flownetwork):
         """
         Iterative method based on the convergence criteria of Max Residual under a certain threshold
 
@@ -122,40 +121,21 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
             # ----- iterative routine -----
             if iteration > 0:
                 self.iterative_routine(flownetwork)
-
-                if iteration == 5 or iteration == 10 or iteration == 20 or iteration == 50 or iteration == 100 or iteration == 200 or (iteration > 200 and iteration % 50 == 0):
-                    path = self._PARAMETERS['path_for_graph'] + '/plot_hist/'
-                    path_2 = self._PARAMETERS['path_for_graph'] + '/plot_hist_hd/'
-                    isExist = os.path.exists(path)
-                    if not isExist:
-                        os.makedirs(path)
-
-                    isExist = os.path.exists(path_2)
-                    if not isExist:
-                        os.makedirs(path_2)
-                    # frequency_plot_abs_fl(self._PARAMETERS, abs(flownetwork.flow_rate), 'Distribution', iteration, path)
-                    frequency_plot_abs_fl(self._PARAMETERS, abs(flownetwork.hd), 'Distribution Hd ', iteration, path_2)
-                    relative_difference(flownetwork, data_currentFlow=abs(flownetwork.flow_rate), data_convergedFlow=abs(flownetwork.convergedDataFlow),
-                                        data_currentHD=flownetwork.hd, data_convergedHD=flownetwork.convergedDataHD, two_MagnitudeThreshold=flownetwork.two_MagnitudeThreshold,
-                                        path_plot='data/plot/' + self._PARAMETERS['network_name'] + '/')
-
+                # Convergence criteria analyzed in flow_balance
                 if flownetwork.stop:
+                    # to exit from the loop if the criteria is fulfilled
                     flownetwork.convergence_check = True
-
-                    residual_plot(flownetwork, self._PARAMETERS, " ", "", "convergence")
-
+                    # Save pckl if selected
                     if self._PARAMETERS['pckl_save']:
                         self.save_pckl_data(flownetwork, path_pckl=self._PARAMETERS['path_output_file'] + self._PARAMETERS['network_name'] + '/')
 
             else:
+                # Set at the first iteration the starting value of alpha
                 flownetwork.alpha = 1
-                with open('/Users/cucciolo/Desktop/microBlooM/data/pckl/MVN2_04.pckl', 'rb') as f:  # self._PARAMETERS['network_name']
-                    fl, _, _, _, _, _, _, _, _, _, _, hd = pickle.load(f)
-                flownetwork.convergedDataHD, flownetwork.convergedDataFlow = hd, abs(fl)
 
             flownetwork.iteration += 1
 
-        print(f"Convergence: DONE in -> {flownetwork.iteration} \nAlpha -> {flownetwork.alpha} ")
+        print(f"Convergence: DONE in -> {flownetwork.iteration}")
 
 
 class IterativeRoutineBerg(IterativeRoutine):
@@ -163,7 +143,7 @@ class IterativeRoutineBerg(IterativeRoutine):
     Iterative method based on the convergence criteria define by the PhD's thesis of Berg
     """
 
-    def _iterative_method(self, flownetwork):  # , flow_balance):
+    def _iterative_method(self, flownetwork):
         """
         Iterative method based on the convergence criteria of the desiged "residual" from Berg
 
@@ -188,23 +168,21 @@ class IterativeRoutineBerg(IterativeRoutine):
 
                 # Residual of Berg
                 residual_berg = self.berg_convergence(flownetwork)
-
+                # Convergence criteria
                 if flownetwork.berg_criteria >= residual_berg:
+                    # to exit from the loop if the criteria is fulfilled
                     flownetwork.convergence_check = True
-
-                    residual_plot(flownetwork, self._PARAMETERS, " ", "", "convergence")
-
-                    residual_plot_berg(flownetwork, self._PARAMETERS, " ", "",
-                                       "convergence_berg")
+                    # Save pckl if selected
                     if self._PARAMETERS['pckl_save']:
                         self.save_pckl_data(flownetwork, path_pckl=self._PARAMETERS['path_output_file'] + self._PARAMETERS['network_name'] + '/')
 
             else:
+                # Set at the first iteration the starting value of alpha
                 flownetwork.alpha = 0.2
 
             flownetwork.iteration += 1
 
-        print(f"Convergence: DONE in -> {flownetwork.iteration} \nAlpha -> {flownetwork.alpha} ")
+        print(f"Convergence: DONE in -> {flownetwork.iteration}")
 
     def berg_convergence(self, flownetwork):
         """
@@ -272,25 +250,23 @@ class IterativeRoutineRasmussen(IterativeRoutine):
         while flownetwork.convergence_check is False:
             # Variable needed for the computation
             iteration = flownetwork.iteration
+
             # ----- iterative routine -----
             if iteration > 0:
                 self.iterative_routine(flownetwork)
 
+                # Convergence Criteria
                 if flownetwork.flow_convergence_criteria <= flownetwork.rasmussen_flow_threshold and flownetwork.hd_convergence_criteria <= flownetwork.rasmussen_hd_threshold:
+                    # to exit from the loop if the criteria is fulfilled
                     flownetwork.convergence_check = True
-                    path = self._PARAMETERS['path_output_file'] + 'new_pckl/'
-                    isExist = os.path.exists(path)
-                    if not isExist:
-                        os.makedirs(path)
-                    residual_plot(flownetwork, self._PARAMETERS, " ", "", "convergence")
-                    residual_plot_rasmussen(flownetwork, self._PARAMETERS, " ", "", "convergence_Rasmussen")
-
+                    # Save pckl if selected
                     if self._PARAMETERS['pckl_save']:
                         self.save_pckl_data(flownetwork, path_pckl=self._PARAMETERS['path_output_file'] + self._PARAMETERS['network_name'] + '/')
 
             else:
+                # Set at the first iteration the starting value of alpha
                 flownetwork.alpha = 1
 
             flownetwork.iteration += 1
 
-        print(f"Convergence: DONE in -> {flownetwork.iteration} \nAlpha -> {flownetwork.alpha} ")
+        print(f"Convergence: DONE in -> {flownetwork.iteration}")

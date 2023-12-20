@@ -1,6 +1,4 @@
 import copy
-from abc import ABC
-from collections import defaultdict
 from types import MappingProxyType
 
 import numpy as np
@@ -117,10 +115,6 @@ class FlowBalanceClass(FlowBalance):
             flownetwork.local_balance_rbc = local_balance_rbc
             flownetwork.maxBalance = maxBalance
 
-            # To plot the convergence value during the iteration in the iterative script
-            flownetwork.residualOverIterationMax = np.append(flownetwork.residualOverIterationMax, maxBalance)
-            flownetwork.residualOverIterationNorm = np.append(flownetwork.residualOverIterationNorm, meanBalance)
-
             if iteration > 2:
                 flownetwork.node_relative_residual = {node: [] for node in positions_of_elements_not_in_boundary}
                 flownetwork.two_MagnitudeThreshold = 1 * 10 ** (3 - flownetwork.zeroFlowThresholdMagnitude)
@@ -198,14 +192,19 @@ class FlowBalanceClass(FlowBalance):
         data = self.magnitude_f(local_balance_rbc, positions_of_elements_not_in_boundary, flownetwork.zeroFlowThresholdMagnitude, indices_over_blue)
         values_array = []
         with open(self._PARAMETERS['path_output_file'] + "/" + self._PARAMETERS['network_name'] + ".txt", 'a') as file:
+
+            # write at current iteration the nodes that doesn't converge and the percentage of them
             file.write(f"\n\n------------------------ Iteration {flownetwork.iteration} ------------------------\n\n "
                        f"--- Not crossing nodes of 2MagnitudeThreshold: {len(indices_over_blue)} ({len(indices_over_blue) / len(local_balance_rbc) * 100:.5e}%)"
                        f"\n------------------------\n")
+
+            # the writing is also reported for each magnitude
             for magnitudo, numeri_in_magnitudo in data.items():
                 if magnitudo < flownetwork.two_MagnitudeThreshold and magnitudo != 0:
                     file.write(f"Magnitudo {magnitudo}: {numeri_in_magnitudo['count']} values. NODES: {numeri_in_magnitudo['nodes']}\n")
             file.write(f"------------------------------------------------------------\n")
 
+            # the nodes are also reported with the vessels that are connected to
             for index in indices_over_blue:
                 output_line = f"node {index} connected with vessels :  {flownetwork.edge_connected_position[index]}\n"
                 file.write(output_line)
@@ -220,7 +219,6 @@ class FlowBalanceClass(FlowBalance):
                 # all that have a flow change
                 if families_dict_total[node] != flownetwork.families_dict_total[node]:
                     vessel = list(set(families_dict_total[node]['par']) ^ set(flownetwork.families_dict_total[node]['par']))[0]
-                    # file.write(f"New {families_dict_total[node]} - old {flownetwork.families_dict_total[node]}")
                     file.write(f"Vessel: {vessel} \n"
                                f"node {node} {families_dict_total[node]} - Connected with vessel par: ")
                     for element in families_dict_total[node]["par"]:
@@ -255,6 +253,7 @@ class FlowBalanceClass(FlowBalance):
             file.write(f"\nThe vessel that have the change of flow and are over the threshold are {vessel_flow_change_total}\n")
             file.write(f"------------------------------------------------------------\n\n")
 
+            # Analysis on different flow directions
             if len(node_flow_change_total) != 0:
                 file.write(f"Flow Direction Change [not-converging nodes]\n"
                            f"NODES:{node_flow_change}\nVESSEL:{vessel_flow_change}\n\n"
@@ -287,13 +286,14 @@ class FlowBalanceClass(FlowBalance):
                                            f'Residual at node {node}: {node_residual[node]}\n')
 
                                 file.write(f"-------------------------\n")
-
-                                # print residual at that node
-
             file.write(f"\n------------------------------------------------------------\n")
 
     @staticmethod
     def magnitude_f(arr, pos, zeroFlowThresholdMagnitude, indices_over):
+        """
+        Function to return the magnitude of an array and return an array
+        with the node correspond to that magnitude and the number of elements for that.
+        """
         magnitudes = {}
         c = 0
         for idx, number in enumerate(arr):
@@ -314,25 +314,13 @@ class FlowBalanceClass(FlowBalance):
                     c += 1
         return magnitudes
 
-    @staticmethod
-    def magnitude_flow(arr):
-        magnitudes = {}
-
-        for idx, number in enumerate(arr):
-            # Convert the number to scientific notation
-            scientific_notation = "{:e}".format(number)
-            # Extract the magnitude based on the exponent
-            magnitude = abs(int(scientific_notation.split('e')[1]))
-            # Create the key in the desired format
-            if magnitude in magnitudes:
-                magnitudes[magnitude]["nodes"].append(idx)
-                magnitudes[magnitude]["count"] += 1
-            else:
-                magnitudes[magnitude] = {"nodes": [idx], "count": 1}
-        return magnitudes
-
 
 def dict_for_families_total(flownetwork):
+    """
+    Function to return the connection for each node
+    par: parent nodes
+    dgs: daughter nodes
+    """
     node_connected = flownetwork.node_connected
     edge_connected_position = flownetwork.edge_connected_position
     pressure = copy.deepcopy(flownetwork.pressure)

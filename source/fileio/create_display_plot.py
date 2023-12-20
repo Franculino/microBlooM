@@ -489,7 +489,7 @@ def residual_plot(flownetwork, PARAMETERS, title, path_title, name):
     plt.legend(loc='upper right', fontsize=20)
 
     if PARAMETERS['save']:
-        save_fig(path=PARAMETERS['path_for_graph'] + '/' + path_title + name + '/' + str(flownetwork.iteration))
+        save_fig(path=PARAMETERS['path_for_graph'] + '/' + path_title, title=name + '/' + str(flownetwork.iteration))
     plt.close()
 
 
@@ -668,7 +668,7 @@ def relative_difference(flownetwork, data_currentFlow, data_convergedFlow, data_
     plt.axvline(mean_val, color='red', linestyle='dashed', label='Mean', linewidth=1)
     plt.axvline(median_val, color='blue', linestyle='dashed', label='Median', linewidth=1)
     plt.axvline(two_MagnitudeThreshold, color='violet', linestyle='dashed', label='two_MagnitudeThreshold', linewidth=1)
-    plt.xlim([1e-10, 1e-1])
+    plt.xlim([1e-10, 1e0])
 
     plt.legend(loc='upper right')
     plt.title(f'Relative Difference Flow at iteration {flownetwork.iteration} - Converged')
