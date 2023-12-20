@@ -57,12 +57,6 @@ class SetupSimulation(Setup):
                 imp_read = read_network.ReadNetworkCsv(PARAMETERS)  # Imports an arbitrary network from csv files
             case 3:
                 imp_read = read_network.ReadNetworkIgraph(PARAMETERS)  # Imports a graph from igraph file (pickle file)
-            case 4:
-                imp_read = read_network.ReadNetworkSingleHexagon(PARAMETERS)  # Initialises a single hexagonal 2D network
-            case 5:
-                imp_read = read_network.ReadNetworkSingleHexagonTrifurcation(PARAMETERS)  # Initialises a single hexagonal 2D network with trifurcation
-            case 6:
-                imp_read = read_network.ReadNetworkSingleHexagonDoubleEdge(PARAMETERS)  # Initialises a single hexagonal 2D network with a double edge
             case _:
                 sys.exit("Error: Choose valid option to generate or import a network (read_network_option)")
 
@@ -115,12 +109,6 @@ class SetupSimulation(Setup):
             case 2:
                 imp_buildsystem = build_system.BuildSystemSparseCsc(PARAMETERS)  # Fast approach to build the system
                 imp_solver = pressure_flow_solver.PressureFlowSolverPyAMG(PARAMETERS)  # Iterative solver
-            case 3:
-                imp_buildsystem = build_system.BuildSystemSparseCooNoOneSimple(PARAMETERS)
-                imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirect(PARAMETERS)  # Direct solver
-            case 4:
-                imp_buildsystem = build_system.BuildSystemSparseCooNoOne(PARAMETERS)
-                imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirect(PARAMETERS)  # Direct solver
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 

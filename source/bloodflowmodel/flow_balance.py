@@ -121,12 +121,12 @@ class FlowBalanceClass(FlowBalance):
 
                 # if the iteration number reach 4000 is considered as not convergent
                 if iteration == 4000:
-                    flownetwork.stop = True
+                    flownetwork.our_convergence_criteria = True
                     self.knowledge(flownetwork, local_balance_rbc, positions_of_elements_not_in_boundary)
 
                 # Convergence reached
                 elif flownetwork.zeroFlowThreshold is not None and iteration > 2 and maxBalance <= flownetwork.two_MagnitudeThreshold:
-                    flownetwork.stop = True
+                    flownetwork.our_convergence_criteria = True
 
                 elif iteration == 1:
                     flownetwork.families_dict_total = copy.deepcopy(dict_for_families_total(flownetwork))

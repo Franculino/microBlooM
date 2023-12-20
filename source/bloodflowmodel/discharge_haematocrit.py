@@ -143,7 +143,7 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                     if np.abs(qRBC_p - qRBC_d) <= tollerance:
                         RBCbalance = 0
 
-            # two parent and one daughter (-E)
+            # one parent and three daughter (-E) (1,3)
             case 3:
                 flow_in_daughters = flow_a_d + flow_b_d + flow_c_d
                 if np.abs(flow_a_par - flow_in_daughters) <= tollerance:  # check same flow
@@ -854,14 +854,14 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
                 case 2:
                     flownetwork.hd, flownetwork.alpha = self.sor(flownetwork.hd, old_hematocrit, flownetwork.alpha, flownetwork.iteration)
 
-                # Sor: our implementation
+                # Sor: Berg implementation
                 # Based on Berg PhD's thesis, the alpha is not decreased but is fixed
                 case 3:
                     flownetwork.hd = self.sor_berg(flownetwork.hd, old_hematocrit, flownetwork.alpha)
                     flownetwork.hd_convergence_criteria_berg = np.linalg.norm(abs(flownetwork.hd - old_hematocrit)) / self._PARAMETERS[
                         'boundary_hematocrit']
 
-                # Sor: our implementation
+                # Sor: Rasmussen implementation
                 # Based on the Rasmussen 2018, the alpha value decreased every r_value iteration by 20%
                 case 4:
                     if flownetwork.iteration == 1:

@@ -56,33 +56,21 @@ class PressureFlowSolver(ABC):
         flow_rate = transmiss * (pressure_0 - pressure_1)
 
         if flownetwork.zeroFlowThreshold is not None:
-            # in case we want to exclude the unrealistic lower values in iterative model
+            # in case we want to exclude the unrealistic lower values in the iterative model
             flow_rate = _update_low_flow(flownetwork, flow_rate)
 
         # if we are in the iterative case of Berg
         if self._PARAMETERS["iterative_routine"] == 3:
             if flownetwork.iteration == 0:
                 flownetwork.flow_convergence_criteria_berg = None
-            elif flownetwork.iteration == 1:
-                flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
-                flownetwork.rasmussen_flow_threshold = 1 * 10 ** (int("{:e}".format(flownetwork.flow_convergence_criteria).split('e')[1]) - 8)
-                flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
             else:
-                flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
                 flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
 
-        # if we are in the iterative case of Berg
-        if self._PARAMETERS["iterative_routine"] == 3:
-            if flownetwork.iteration == 0:
-                flownetwork.flow_convergence_criteria_berg = None
-            else:
-                flownetwork.flow_convergence_criteria_berg = flow_berg(flownetwork, flow_rate)
         # if we are in the iterative case of Rasmussen
-        elif self._PARAMETERS["iterative_routine"] == 4:
+        if self._PARAMETERS["iterative_routine"] == 4:
             # at the first iteration is necessary to set the flow_threshold criteria
             if flownetwork.iteration == 1:
                 flownetwork.rasmussen_flow_threshold = 1 * 10 ** (int("{:e}".format(flownetwork.flow_convergence_criteria).split('e')[1]) - 8)
-
             flownetwork.flow_convergence_criteria = max(abs(abs(flow_rate) - abs(flownetwork.flow_rate)))
 
         flownetwork.flow_rate = flow_rate
@@ -171,11 +159,15 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         :type flownetwork: source.flow_network.FlowNetworks
         """
         pressure = spsolve(flownetwork.system_matrix, flownetwork.rhs)
-        if flownetwork.iteration == 0:
-            flownetwork.pressure_convergence_criteria_berg = None
-        else:
-            _berg_assistance(flownetwork)
-            flownetwork.pressure_convergence_criteria_berg = pressure_berg(flownetwork, pressure)
+
+        if self._PARAMETERS['iterative_routine'] == 2:
+            # Berg approach
+            if flownetwork.iteration == 0:
+                flownetwork.pressure_convergence_criteria_berg = None
+            else:
+                _berg_assistance(flownetwork)
+                flownetwork.pressure_convergence_criteria_berg = pressure_berg(flownetwork, pressure)
+
         flownetwork.pressure = pressure
 
 

@@ -20,27 +20,22 @@ PARAMETERS = MappingProxyType(
         "read_network_option": 2,   # 1: generate hexagonal graph
                                     # 2: import graph from csv files
                                     # 3: import graph from igraph file (pickle file)
-                                    # 4: generate hexagonal graph composed of a single hexagon
-                                    # 5: generate hexagonal graph composed of a single hexagon for trifurcation
-                                    # 5: generate hexagonal graph composed of a single hexagon with double edge
-        # 6: todo import graph from edge_data and vertex_data pickle files
+                                    # ...: todo import graph from edge_data and vertex_data pickle files
         "write_network_option": 1,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
                                     # 3: write to vpt format
         "tube_haematocrit_option": 2,   # 1: No RBCs (ht=0)
                                         # 2: Constant hematocrit
                                         # 3: todo: RBC tracking
-                                        # 4-...: todo: steady state RBC laws
+                                        # ...: todo: steady state RBC laws
         "rbc_impact_option": 4,     # 1: No RBCs (hd=0)
                                     # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                     # 3: Laws by Pries and Secomb (2005)
                                     # 4: Laws by Preis (1996)
         "solver_option": 1,     # 1: Direct solver
                                 # 2: PyAMG solver visual
-                                # 3: No 1 in the matrix (Simple approach)
-                                # 4: No 1 in the matrix
                                 # ...: other solvers
-        "iterative_routine": 2,     # 1: Single iteration
+        "iterative_routine": 2,     # 1: Forward problem
                                     # 2: Iterative routine (our)
                                     # 3: Iterative routine (Berg Thesis)
                                     # 4: Iterative routine (Rasmussen et al. 2018)
@@ -61,8 +56,10 @@ PARAMETERS = MappingProxyType(
         "zeroFlowThreshold": False,
 
         # Hexagonal network properties. Only required for "read_network_option" 1
+        # For options 4-6 the hexagonal nr_of_hexagon_x and nr_of_hexagon_y are not needed
         "nr_of_hexagon_x": 5,
         "nr_of_hexagon_y": 5,
+
         "hexa_edge_length": 62.e-6,
         "hexa_diameter": 5.e-6,
         "hexa_boundary_vertices": [0, 27],
@@ -122,15 +119,10 @@ flow_network.update_transmissibility()
 print("Update transmissibility: DONE")
 
 # Update flow rate, pressure and RBC velocity
-print("Update flow, pressure and velocity: ...")
-flow_network.update_blood_flow()
-print("Update flow, pressure and velocity: DONE")
-
 # Check flow balance
-# Already in the iteration routine
-print("Check flow balance: ...")
-# flow_network.check_flow_balance()
-print("Check flow balance: DONE")
+print("Iterative Routine: ...")
+flow_network.update_blood_flow()
+print("Iterative Routine: DONE")
 
 # Write the results to file
 flow_network.write_network()

@@ -89,7 +89,7 @@ class FlowNetwork(object):
         # to save the value of Alpha's during the iteration and display in the final plot
         self.alphaSave = [1]
         # to stop our computation after a certain iteration
-        self.stop = False
+        self.our_convergence_criteria = False
         # array for discharge hematicrit
         self.pressure_node = None
         # assistant variables for an iterative process over 4000 iteration

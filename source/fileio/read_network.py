@@ -1,4 +1,3 @@
-import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
@@ -293,6 +292,7 @@ class ReadNetworkIgraph(ReadNetwork):
         # print("Number of  es: " + str(flownetwork.nr_of_es))
         #
 
+
 class ReadNetworkPkl(ReadNetwork):
     def read(self, flownetwork):
         # todo: import graph from edge_data and vertex_data pickle files.
@@ -302,105 +302,3 @@ class ReadNetworkPkl(ReadNetwork):
         # with open(path_vs_dict, "rb") as f:
         #     data_vertex = pickle.load(f, encoding="latin1")
         pass
-
-
-class ReadNetworkSingleHexagon(ReadNetwork):
-    """
-    Generate a hexagonal network consisting of a single hexagonal with constant vessel diameters and lengths.
-    The network has one inflow and two outflows.
-    """
-
-    def read(self, flownetwork):
-        vessel_diameter = self._PARAMETERS["hexa_diameter"]
-        vessel_length = self._PARAMETERS["hexa_edge_length"]
-
-        flownetwork.nr_of_vs = 6
-
-        # EDGE LIST
-        edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0)])
-        # Sort edge_list such that always lower index is in first column.
-        edge_list = np.sort(edge_list, axis=1)
-        # Sort edge_list based on first column.
-        edge_list = edge_list[edge_list[:, 0].argsort()]
-        flownetwork.nr_of_es = len(edge_list)
-        # Edge attributes
-        flownetwork.length = np.ones(flownetwork.nr_of_es) * vessel_length
-        flownetwork.diameter = np.ones(flownetwork.nr_of_es) * vessel_diameter
-        flownetwork.edge_list = edge_list
-
-        df_boundaries = pd.DataFrame(
-            {'vs_ids': np.array(self._PARAMETERS["hexa_boundary_vertices"], dtype=np.int),
-             'vals': np.array(self._PARAMETERS["hexa_boundary_values"], dtype=np.float),
-             'types': np.array(self._PARAMETERS["hexa_boundary_types"], dtype=np.int)})
-
-        df_boundaries = df_boundaries.sort_values('vs_ids')
-
-        flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
-        flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
-        flownetwork.boundary_type = df_boundaries["types"].to_numpy()
-        # print(f"Network {self._PARAMETERS['network_name']}")
-        # print("Number of  vs: " + str(flownetwork.nr_of_vs))
-        # print("Number of boundary vs: " + str(len(flownetwork.boundary_vs)))
-        # print("Number of  es: " + str(flownetwork.nr_of_es))
-
-class ReadNetworkSingleHexagonTrifurcation(ReadNetwork):
-
-    def read(self, flownetwork):
-        vessel_diameter = self._PARAMETERS["hexa_diameter"]
-        vessel_length = self._PARAMETERS["hexa_edge_length"]
-
-        # EDGE LIST
-        # edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 3)])
-        edge_list = np.array([(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 2), (3, 5)])
-        # Sort edge_list such that always lower index is in first column.
-        edge_list = np.sort(edge_list, axis=1)
-        flownetwork.nr_of_vs = 6
-        # Sort edge_list based on first column.
-        edge_list = edge_list[edge_list[:, 0].argsort()]
-        flownetwork.nr_of_es = len(edge_list)
-        # Edge attributes
-        flownetwork.length = np.ones(flownetwork.nr_of_es) * vessel_length
-        flownetwork.diameter = np.ones(flownetwork.nr_of_es) * vessel_diameter
-        flownetwork.edge_list = edge_list
-
-        df_boundaries = pd.DataFrame(
-            {'vs_ids': np.array(self._PARAMETERS["hexa_boundary_vertices"], dtype=np.int),
-             'vals': np.array(self._PARAMETERS["hexa_boundary_values"], dtype=np.float),
-             'types': np.array(self._PARAMETERS["hexa_boundary_types"], dtype=np.int)})
-
-        df_boundaries = df_boundaries.sort_values('vs_ids')
-
-        flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
-        flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
-        flownetwork.boundary_type = df_boundaries["types"].to_numpy()
-
-
-class ReadNetworkSingleHexagonDoubleEdge(ReadNetwork):
-
-    def read(self, flownetwork):
-        vessel_diameter = self._PARAMETERS["hexa_diameter"]
-        vessel_length = self._PARAMETERS["hexa_edge_length"]
-
-        # EDGE LIST
-        edge_list = np.array([(0, 1), (1, 2), (1, 2), (2, 3)])
-        # Sort edge_list such that always lower index is in first column.
-        edge_list = np.sort(edge_list, axis=1)
-        flownetwork.nr_of_vs = 4
-        # Sort edge_list based on first column.
-        edge_list = edge_list[edge_list[:, 0].argsort()]
-        flownetwork.nr_of_es = len(edge_list)
-        # Edge attributes
-        flownetwork.length = np.ones(flownetwork.nr_of_es) * vessel_length
-        flownetwork.diameter = np.ones(flownetwork.nr_of_es) * vessel_diameter
-        flownetwork.edge_list = edge_list
-
-        df_boundaries = pd.DataFrame(
-            {'vs_ids': np.array(self._PARAMETERS["hexa_boundary_vertices"], dtype=np.int),
-             'vals': np.array(self._PARAMETERS["hexa_boundary_values"], dtype=np.float),
-             'types': np.array(self._PARAMETERS["hexa_boundary_types"], dtype=np.int)})
-
-        df_boundaries = df_boundaries.sort_values('vs_ids')
-
-        flownetwork.boundary_vs = df_boundaries["vs_ids"].to_numpy()
-        flownetwork.boundary_val = df_boundaries["vals"].to_numpy()
-        flownetwork.boundary_type = df_boundaries["types"].to_numpy()

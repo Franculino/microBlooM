@@ -41,6 +41,7 @@ class IterativeRoutine(ABC):
         Call the functions that solve for the pressures and flow rates.
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
+        :ack: burn baby burn (A.S.)
         """
         flownetwork.update_transmissibility()
         flownetwork.imp_buildsystem.build_linear_system(flownetwork)
@@ -122,7 +123,7 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
             if iteration > 0:
                 self.iterative_routine(flownetwork)
                 # Convergence criteria analyzed in flow_balance
-                if flownetwork.stop:
+                if flownetwork.our_convergence_criteria:
                     # to exit from the loop if the criteria is fulfilled
                     flownetwork.convergence_check = True
                     # Save pckl if selected
@@ -132,6 +133,8 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
             else:
                 # Set at the first iteration the starting value of alpha
                 flownetwork.alpha = 1
+                # Flow Balance
+                flownetwork.check_flow_balance()
 
             flownetwork.iteration += 1
 
@@ -179,6 +182,8 @@ class IterativeRoutineBerg(IterativeRoutine):
             else:
                 # Set at the first iteration the starting value of alpha
                 flownetwork.alpha = 0.2
+                # Flow Balance
+                flownetwork.check_flow_balance()
 
             flownetwork.iteration += 1
 
@@ -266,6 +271,8 @@ class IterativeRoutineRasmussen(IterativeRoutine):
             else:
                 # Set at the first iteration the starting value of alpha
                 flownetwork.alpha = 1
+                # Flow Balance
+                flownetwork.check_flow_balance()
 
             flownetwork.iteration += 1
 
