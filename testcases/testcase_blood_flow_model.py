@@ -20,7 +20,7 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 2,  # 1: generate hexagonal graph
+        "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph format (pickle file)
         "write_network_option": 1,  # 1: do not write anything
@@ -39,7 +39,10 @@ PARAMETERS = MappingProxyType(
         "ht_constant": 0.3,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
 
-        # if True set the blood vessel with unrealistic blood flow to zero
+        # Zero Flow Vessel Threshold
+        # True: the vessel with low flow are set to zero
+        # The threshold is set as the max of mass flow balance
+        # The function is reported in set_low_flow_threshold()
         "low_flow_vessel": True,
 
         # Hexagonal network properties. Only required for "read_network_option" 1
@@ -58,7 +61,7 @@ PARAMETERS = MappingProxyType(
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
-        "csv_boundary_vs": "nodeID", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p",
+        "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p",
 
         # Import network from igraph option. Only required for "read_network_option" 3
         "pkl_path_igraph": "data/network/network_graph.pkl",
