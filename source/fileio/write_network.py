@@ -352,3 +352,48 @@ class WriteNetworkVtp(WriteNetwork):
         f.write('</VTKFile>\n')
 
         f.close()
+
+
+class WriteNetworkCsv(WriteNetwork):
+    """
+    Class for writing the results to igraph format.
+    """
+
+    def write(self, flownetwork):
+        """
+        Write the network and simulation data into two csv files
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+
+        # Write all the edge based attributes and results
+        df_edge_data = pd.DataFrame()
+        df_edge_data["vertex_1"] = flownetwork.edge_list[:, 0]
+        df_edge_data["vertex_2"] = flownetwork.edge_list[:, 1]
+
+        if flownetwork.diameter is not None:
+            df_edge_data["diameter"] = flownetwork.diameter
+
+        if flownetwork.length is not None:
+            df_edge_data["length"] = flownetwork.length
+
+        if flownetwork.flow_rate is not None:
+            df_edge_data["flow_rate"] = flownetwork.flow_rate
+
+        if flownetwork.rbc_velocity is not None:
+            df_edge_data["rbc_velocity"] = flownetwork.rbc_velocity
+
+        if flownetwork.ht is not None:
+            df_edge_data["ht"] = flownetwork.ht
+
+        # Write all the vertex based attributes and results
+        df_vertex_data = pd.DataFrame()
+        df_vertex_data["x"] = flownetwork.xyz[:, 0]
+        df_vertex_data["y"] = flownetwork.xyz[:, 1]
+        df_vertex_data["z"] = flownetwork.xyz[:, 2]
+
+        if flownetwork.pressure is not None:
+            df_vertex_data["pressure"] = flownetwork.pressure
+
+        df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_edge_data.csv", index=False)
+        df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_vertex_data.csv", index=False)

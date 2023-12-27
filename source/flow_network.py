@@ -23,6 +23,7 @@ class FlowNetwork(object):
         # Network attributes
         self.min_flow = None
         self.eps_eff = None
+
         self.nr_of_vs = None
         self.nr_of_es = None
 
