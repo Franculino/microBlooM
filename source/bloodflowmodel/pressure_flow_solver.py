@@ -160,7 +160,7 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         """
         pressure = spsolve(flownetwork.system_matrix, flownetwork.rhs)
 
-        if self._PARAMETERS['iterative_routine'] == 2:
+        if self._PARAMETERS['iterative_routine'] == 3:
             # Berg approach
             if flownetwork.iteration == 0:
                 flownetwork.pressure_convergence_criteria_berg = None

@@ -115,14 +115,11 @@ class SetupSimulation(Setup):
         match PARAMETERS["iterative_routine"]:
             case 1:
                 imp_iterative = iterative_routine.IterativeRoutineNone(PARAMETERS)  # No iterative procedure
-            case 2:
-                imp_iterative = iterative_routine.IterativeRoutineMultipleIteration(PARAMETERS)  # Our implementation
-            case 3:
-                imp_iterative = iterative_routine.IterativeRoutineBerg(PARAMETERS)  # Berg Thesis
-            case 4:
-                imp_iterative = iterative_routine.IterativeRoutineRasmussen(PARAMETERS)  # Rasmussen et al. 2018
+            case 2 | 3 | 4:
+                imp_iterative = iterative_routine.IterativeRoutineMultipleIteration(PARAMETERS)
             case _:
-                sys.exit("Error: Choose valid option for the iterative routine (iterative_routine)")
+                print("No Iterative Method selected: Default Selection")
+                imp_iterative = iterative_routine.IterativeRoutineNone(PARAMETERS)  # No iterative procedure
 
         # Flow Balance
         imp_balance = flow_balance.FlowBalanceClass(PARAMETERS)

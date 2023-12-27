@@ -4,6 +4,8 @@ import os
 import warnings
 from types import MappingProxyType
 
+import numpy as np
+
 
 class IterativeRoutine(ABC):
     """
@@ -69,18 +71,13 @@ class IterativeRoutine(ABC):
         # Open the stream and store the pckl
         f = open(path_pckl + 'store_variable' + '.pckl', 'wb')
         pickle.dump(
-            [abs(flownetwork.flow_rate),
-             flownetwork.node_relative_residual,
-             flownetwork.positions_of_elements_not_in_boundary,
+            [flownetwork.flow_rate,
              flownetwork.local_balance_rbc,
              flownetwork.two_MagnitudeThreshold,
-             flownetwork.node_flow_change,
-             flownetwork.vessel_flow_change,
-             flownetwork.indices_over_blue,
-             flownetwork.node_flow_change_total,
-             flownetwork.vessel_flow_change_total,
              flownetwork.pressure,
-             flownetwork.hd], f)
+             flownetwork.hd,
+             flownetwork.iteration,
+             flownetwork.alpha], f)
         f.close()
 
 
@@ -95,16 +92,27 @@ class IterativeRoutineNone(IterativeRoutine):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
+        pass
 
 
 class IterativeRoutineMultipleIteration(IterativeRoutine):
     """
-    Iterative approach based on our definition
+    Iterative approach based on our convergence criteria, Berg and Rasmussen
+    - our convergence criteria:
+        - value: max value of RBCs-flow balance
+        - threshold: defined as two magnitude higher that the Zero Flow threshold for the respective network
+    - Berg convergence criteria:
+        - value: custom residual defined in berg_convergence()
+        - threshold: 1e-6
+    - Rasmussen convergence criteria:
+        - value: Flow and Hematocrit absolute difference
+        - threshold: defined as eight magnitude lower than the initial value of both values
     """
 
     def _iterative_method(self, flownetwork):
         """
-        Iterative method based on the convergence criteria of Max Residual under a certain threshold
+        Iterative method used to iterate over.
+        The different criteria are selected via a match case.
 
         @param flownetwork: flow network object
         @type flownetwork: source.flow_network.FlowNetwork
@@ -122,70 +130,78 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
             # ----- iterative routine -----
             if iteration > 0:
                 self.iterative_routine(flownetwork)
-                # Convergence criteria analyzed in flow_balance
-                if flownetwork.our_convergence_criteria:
-                    # to exit from the loop if the criteria is fulfilled
-                    flownetwork.convergence_check = True
-                    # Save pckl if selected
+
+                match self._PARAMETERS['iterative_routine']:
+
+                    # OUR
+                    case 2:
+                        # Convergence criteria analyzed in flow_balance
+                        if flownetwork.our_convergence_criteria:
+                            # to exit from the loop if the criteria is fulfilled
+                            flownetwork.convergence_check = True
+                            # TODO: residual over the iteration they alha and residual
+                            # iteration and reisual value
+                            # cvs file with it and residual value
+                        else:
+                            flownetwork.iteration += 1
+
+                    # BERG
+                    case 3:
+                        # Residual of Berg
+                        residual_berg = self.berg_convergence(flownetwork)
+                        # Convergence criteria
+                        if flownetwork.berg_criteria >= residual_berg:
+                            # to exit from the loop if the criteria is fulfilled
+                            flownetwork.convergence_check = True
+                        else:
+                            flownetwork.iteration += 1
+
+                    # Rasmussen
+                    case 4:
+                        # Convergence Criteria
+                        if flownetwork.flow_convergence_criteria <= flownetwork.rasmussen_flow_threshold and flownetwork.hd_convergence_criteria <= flownetwork.rasmussen_hd_threshold:
+                            # to exit from the loop if the criteria is fulfilled
+                            flownetwork.convergence_check = True
+                        else:
+                            flownetwork.iteration += 1
+                # Save pckl if selected at the last iteration
+                if flownetwork.convergence_check:
+                    # CSV to save iteration, residual value and alpha value
+                    match self._PARAMETERS['iterative_routine']:
+                        # OUR
+                        case 2:
+                            scores = ['Our', flownetwork.maxBalance, flownetwork.two_MagnitudeThreshold, flownetwork.iteration, flownetwork.alpha]
+                        # Berg
+                        case 3:
+                            scores = ['Berg', residual_berg, flownetwork.berg_criteria, flownetwork.iteration, flownetwork.alpha]
+                        # Rasmussen
+                        case 4:
+                            scores = ['Rasmussen [flow, HD]', [flownetwork.flow_convergence_criteria, flownetwork.hd_convergence_criteria],
+                                      [flownetwork.rasmussen_flow_threshold, flownetwork.rasmussen_hd_threshold], flownetwork.iteration, flownetwork.alpha]
+
+                    names = ['Method', 'Residual Value', 'Threshold', 'Iteration', 'Alpha']
+                    np.savetxt(self._PARAMETERS['path_output_file'] + 'RESULT.csv', [names, scores], delimiter=',', fmt='%s')
+
                     if self._PARAMETERS['pckl_save']:
                         self.save_pckl_data(flownetwork, path_pckl=self._PARAMETERS['path_output_file'] + self._PARAMETERS['network_name'] + '/')
 
             else:
-                # Set at the first iteration the starting value of alpha
-                flownetwork.alpha = 1
-                # Flow Balance
+                match self._PARAMETERS['iterative_routine']:
+                    # OUR
+                    case 2:
+                        # Set at the first iteration the starting value of alpha
+                        flownetwork.alpha = 1
+                    # Berg
+                    case 3:
+                        # Set at the first iteration the starting value of alpha
+                        flownetwork.alpha = 0.2
+                    # Rasmussen
+                    case 4:
+                        # Set at the first iteration the starting value of alpha
+                        flownetwork.alpha = 1
+                # Flow Balance: in the iterative is automatically check, but at the first iteration (0) it is necessary
                 flownetwork.check_flow_balance()
-
-            flownetwork.iteration += 1
-
-        print(f"Convergence: DONE in -> {flownetwork.iteration}")
-
-
-class IterativeRoutineBerg(IterativeRoutine):
-    """
-    Iterative method based on the convergence criteria define by the PhD's thesis of Berg
-    """
-
-    def _iterative_method(self, flownetwork):
-        """
-        Iterative method based on the convergence criteria of the desiged "residual" from Berg
-
-        @param flownetwork: flow network object
-        @type flownetwork: source.flow_network.FlowNetwork
-        """
-
-        # warning handled for np.nan and np.inf
-        warnings.filterwarnings("ignore")
-        flownetwork.convergence_check = False
-
-        print("Convergence: ...")
-
-        while flownetwork.convergence_check is False:
-            # Variable needed for the computation
-            iteration = flownetwork.iteration
-
-            # ----- iterative routine -----
-            if iteration > 0:
-                self.iterative_routine(flownetwork)
-                # ----- iterative routine -----
-
-                # Residual of Berg
-                residual_berg = self.berg_convergence(flownetwork)
-                # Convergence criteria
-                if flownetwork.berg_criteria >= residual_berg:
-                    # to exit from the loop if the criteria is fulfilled
-                    flownetwork.convergence_check = True
-                    # Save pckl if selected
-                    if self._PARAMETERS['pckl_save']:
-                        self.save_pckl_data(flownetwork, path_pckl=self._PARAMETERS['path_output_file'] + self._PARAMETERS['network_name'] + '/')
-
-            else:
-                # Set at the first iteration the starting value of alpha
-                flownetwork.alpha = 0.2
-                # Flow Balance
-                flownetwork.check_flow_balance()
-
-            flownetwork.iteration += 1
+                flownetwork.iteration += 1
 
         print(f"Convergence: DONE in -> {flownetwork.iteration}")
 
@@ -196,7 +212,7 @@ class IterativeRoutineBerg(IterativeRoutine):
         :type flownetwork: source.flow_network.FlowNetwork
         """
 
-        # First initialation
+        # First initialization
         if flownetwork.iteration == 0:
             flownetwork.bergIteration.append(None)
             flownetwork.Berg1.append(None)
@@ -231,49 +247,3 @@ class IterativeRoutineBerg(IterativeRoutine):
             residual = residual12 + residual_parte_3
             flownetwork.bergIteration.append(residual)
         return residual
-
-
-class IterativeRoutineRasmussen(IterativeRoutine):
-    """
-    Iterative method based on the convergence criteria define by the Rasmussen 2018
-    """
-
-    def _iterative_method(self, flownetwork):
-        """
-        Iterative method based on the absolute flow and hematocrit change under a certain threshold
-
-        @param flownetwork: flow network object
-        @type flownetwork: source.flow_network.FlowNetwork
-        """
-
-        # warning handled for np.nan and np.inf
-        warnings.filterwarnings("ignore")
-        flownetwork.convergence_check = False
-
-        print("Convergence: ...")
-
-        while flownetwork.convergence_check is False:
-            # Variable needed for the computation
-            iteration = flownetwork.iteration
-
-            # ----- iterative routine -----
-            if iteration > 0:
-                self.iterative_routine(flownetwork)
-
-                # Convergence Criteria
-                if flownetwork.flow_convergence_criteria <= flownetwork.rasmussen_flow_threshold and flownetwork.hd_convergence_criteria <= flownetwork.rasmussen_hd_threshold:
-                    # to exit from the loop if the criteria is fulfilled
-                    flownetwork.convergence_check = True
-                    # Save pckl if selected
-                    if self._PARAMETERS['pckl_save']:
-                        self.save_pckl_data(flownetwork, path_pckl=self._PARAMETERS['path_output_file'] + self._PARAMETERS['network_name'] + '/')
-
-            else:
-                # Set at the first iteration the starting value of alpha
-                flownetwork.alpha = 1
-                # Flow Balance
-                flownetwork.check_flow_balance()
-
-            flownetwork.iteration += 1
-
-        print(f"Convergence: DONE in -> {flownetwork.iteration}")

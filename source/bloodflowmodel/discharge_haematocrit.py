@@ -848,7 +848,6 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
 
             # Relaxation factor
             match self._PARAMETERS['iterative_routine']:
-
                 # Sor: our implementation
                 # Decreases the value of alpha every 50 iterations of the 10%
                 case 2:

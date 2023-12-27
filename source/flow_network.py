@@ -114,7 +114,7 @@ class FlowNetwork(object):
         # Threshold for Rasmussen approach
         self.rasmussen_hd_threshold = None
         self.rasmussen_flow_threshold = None
-        # Assistence for iterative approaches
+        # Assistence for iterative approaches of Berg
         self.inflow = None
         self.inflow_pressure_node = None
         self.average_inlet_pressure = []

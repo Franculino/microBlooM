@@ -102,19 +102,19 @@ class FlowBalanceClass(FlowBalance):
         # Zero-flow-threshold
         # The zero flow threshold is set as the max of the mass balance error for the internal nodes
         # it is computed the new flow inside
-        if self._PARAMETERS["low_flow_vessel"] is True and flownetwork.zeroFlowThreshold is None:
+        if self._PARAMETERS["ZeroFlowThreshold"] is True and flownetwork.zeroFlowThreshold is None:
             flownetwork.flow_rate = set_low_flow_threshold(flownetwork, local_balance)
 
-        # ----- Iterative procedure with our convergence criteria -----
         # Compute the max residual of RBCs
-        if self._PARAMETERS["iterative_routine"] == 2:
-            # RBC balance
-            flow_rbcs = self._get_flow_balance_rbcs(flownetwork)
-            local_balance_rbc = np.abs(flow_rbcs[is_inside_node])
-            maxBalance, meanBalance = max(local_balance_rbc), np.mean(local_balance_rbc)
-            flownetwork.local_balance_rbc = local_balance_rbc
-            flownetwork.maxBalance = maxBalance
+        # RBC balance
+        flow_rbcs = self._get_flow_balance_rbcs(flownetwork)
+        local_balance_rbc = np.abs(flow_rbcs[is_inside_node])
+        maxBalance, meanBalance = max(local_balance_rbc), np.mean(local_balance_rbc)
+        flownetwork.local_balance_rbc = local_balance_rbc
+        flownetwork.maxBalance = maxBalance
 
+        # ----- Iterative procedure with our convergence criteria -----
+        if self._PARAMETERS["iterative_routine"] == 2:
             if iteration > 2:
                 flownetwork.node_relative_residual = {node: [] for node in positions_of_elements_not_in_boundary}
                 flownetwork.two_MagnitudeThreshold = 1 * 10 ** (3 - flownetwork.zeroFlowThresholdMagnitude)
@@ -130,8 +130,6 @@ class FlowBalanceClass(FlowBalance):
 
                 elif iteration == 1:
                     flownetwork.families_dict_total = copy.deepcopy(dict_for_families_total(flownetwork))
-
-            flownetwork.local_balance_rbc = local_balance_rbc
 
     def knowledge(self, flownetwork, local_balance_rbc, positions_of_elements_not_in_boundary):
         """

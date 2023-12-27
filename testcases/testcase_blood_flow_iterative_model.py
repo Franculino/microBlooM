@@ -35,10 +35,10 @@ PARAMETERS = MappingProxyType(
         "solver_option": 1,     # 1: Direct solver
                                 # 2: PyAMG solver visual
                                 # ...: other solvers
-        "iterative_routine": 2,     # 1: Forward problem
+        "iterative_routine": 3,     # 1: Forward problem
                                     # 2: Iterative routine (our)
-                                    # 3: Iterative routine (Berg Thesis)
-                                    # 4: Iterative routine (Rasmussen et al. 2018)
+                                    # 3: Iterative routine (Berg Thesis) [https://oatao.univ-toulouse.fr/25471/1/Berg_Maxime.pdf]
+                                    # 4: Iterative routine (Rasmussen et al. 2018) [https://onlinelibrary.wiley.com/doi/10.1111/micc.12445]
 
         # Blood properties
         "ht_constant": 4E-05,  # only required if RBC impact is considered
@@ -46,14 +46,11 @@ PARAMETERS = MappingProxyType(
         "boundary_hematocrit": 0.4,
         "network_name": "MVN1_testing",
 
-        # if True, set the blood vessel with unrealistic blood flow to zero
-        "low_flow_vessel": True,
-
-        # Machine error for float
-        "machine_error": 1E-15,
-
-        # zeroFlowThreshold default is False, true in case of iterative routine
-        "zeroFlowThreshold": False,
+        # Zero Flow Vessel Threshold
+        # True: the vessel with low flow are set to zero
+        # The threshold is set as the max of mass-flow balance
+        # The function is reported in set_low_flow_threshold()        
+        "ZeroFlowThreshold": True,
 
         # Hexagonal network properties. Only required for "read_network_option" 1
         # For options 4-6 the hexagonal nr_of_hexagon_x and nr_of_hexagon_y are not needed
@@ -73,7 +70,7 @@ PARAMETERS = MappingProxyType(
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
-        "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
+        "csv_boundary_vs": "nodeID", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p", # boundaryValue
 
         # Import network from igraph option. Only required for "read_network_option" 3
         "pkl_path_igraph": "B6_B_01/b6_B_pre_stroke.pkl",
@@ -86,7 +83,7 @@ PARAMETERS = MappingProxyType(
         "write_path_igraph": "data/out/vtp/[name_file].vtp",
         # only required for "write_network_option" 2
         "save": True,
-        "path_for_graph": "data/out/plot",
+        "path_for_graph": "data/out/plot/",
 
         # Write option in a case of print in output file (.txt)
         "path_output_file": "data/out/log_file/",
