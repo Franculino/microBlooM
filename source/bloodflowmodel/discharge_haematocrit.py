@@ -118,7 +118,16 @@ class DischargeHaematocritPries1990(DischargeHaematocrit):
         q_p1 + q_p2 = q_d,
         qRBC_p1 + qRBC_p2 = qRBC_d1
 
-        if there is one in/out use a value
+        The input value can be up to three inflows and three outflows.
+        The structure of the variables is [flow/hemat]_[position of the vessel]_[par/d]:
+        - flow: flow rate
+        - hemat: hematocrit
+        - position of the vessel (a,b,c): the order is not central but in case of one vessel have to be used the (a) value, for two vessels (a,b) for three all of them.
+        - par: parent
+        - d: daughter
+        The not used variables for that specific case take as input None.
+
+        If the RBCbalance is not set to zero, it means that is not balanced.
         """
 
         tollerance = 1.00E-05

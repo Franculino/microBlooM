@@ -85,7 +85,8 @@ PARAMETERS = MappingProxyType(
         "save": True,
         "path_for_graph": "data/out/plot/",
 
-        # Write option in a case of print in output file (.txt)
+        # Write option in a case of print a output file
+        # This is also the path to output the csv file as output
         "path_output_file": "data/out/log_file/",
 
         # save in a pckl central data

@@ -139,9 +139,6 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                         if flownetwork.our_convergence_criteria:
                             # to exit from the loop if the criteria is fulfilled
                             flownetwork.convergence_check = True
-                            # TODO: residual over the iteration they alha and residual
-                            # iteration and reisual value
-                            # cvs file with it and residual value
                         else:
                             flownetwork.iteration += 1
 
@@ -164,6 +161,7 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                             flownetwork.convergence_check = True
                         else:
                             flownetwork.iteration += 1
+
                 # Save pckl if selected at the last iteration
                 if flownetwork.convergence_check:
                     # CSV to save iteration, residual value and alpha value
@@ -186,6 +184,7 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                         self.save_pckl_data(flownetwork, path_pckl=self._PARAMETERS['path_output_file'] + self._PARAMETERS['network_name'] + '/')
 
             else:
+
                 match self._PARAMETERS['iterative_routine']:
                     # OUR
                     case 2:
@@ -199,6 +198,7 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
                     case 4:
                         # Set at the first iteration the starting value of alpha
                         flownetwork.alpha = 1
+
                 # Flow Balance: in the iterative is automatically check, but at the first iteration (0) it is necessary
                 flownetwork.check_flow_balance()
                 flownetwork.iteration += 1
@@ -212,8 +212,8 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
         :type flownetwork: source.flow_network.FlowNetwork
         """
 
-        # First initialization
         if flownetwork.iteration == 0:
+            # First initialization
             flownetwork.bergIteration.append(None)
             flownetwork.Berg1.append(None)
             flownetwork.Berg2.append(None)
@@ -223,6 +223,7 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
             flownetwork.BergHD.append(None)
             flownetwork.BergSecondPartEq.append(None)
             residual = None
+
         else:
             # 1/ (h_d Q)^n _i
             # interpret as the inlow RBcs at iteration n
@@ -246,4 +247,5 @@ class IterativeRoutineMultipleIteration(IterativeRoutine):
             # 1/ (h_d Q)^n _i * sum(|delta(H_dQ)|^n_k) + ||X^n - X^n-1|| / X^n_i
             residual = residual12 + residual_parte_3
             flownetwork.bergIteration.append(residual)
+
         return residual
