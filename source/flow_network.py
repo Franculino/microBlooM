@@ -56,6 +56,9 @@ class FlowNetwork(object):
         self._imp_solver = imp_solver
         self._imp_rbcvelocity = imp_rbcvelocity
 
+        # Threshold for zero-loops
+        self.zeroFlowThreshold = None
+
         # "Reference" to parameter dict
         self._PARAMETERS = PARAMETERS
         return

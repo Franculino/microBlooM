@@ -48,9 +48,44 @@ class PressureFlowSolver(ABC):
         edge_list = flownetwork.edge_list
         transmiss = flownetwork.transmiss
         pressure = flownetwork.pressure
+        nr_of_es = flownetwork.nr_of_es
 
-        # Update flow rates based on the transmissibility and pressure.
-        flownetwork.flow_rate = transmiss * (pressure[edge_list[:, 0]] - pressure[edge_list[:, 1]])
+        # Compute the flow rates based on the transmissibility and pressure.
+        pressure_0 = pressure[edge_list[:, 0]]
+        pressure_1 = pressure[edge_list[:, 1]]
+        flow_rate = transmiss * (pressure_0 - pressure_1)
+
+        # Update flow rate
+        flownetwork.flow_rate = flow_rate
+
+
+def set_low_flow_threshold(flownetwork, local_balance):
+    # max of the mass balance error for the internal nodes
+    flownetwork.zeroFlowThreshold = np.max(local_balance)
+
+    # check how the flow it will change
+    # Print to display the percentage of Zero flow vessel
+    print(f"Percentage of zero flow vessel {np.round((len(flownetwork.flow_rate[flownetwork.flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)}%")
+    # Print to display the percentage of Zero flow vessel
+    print(f"Min flow rate = {np.min(np.abs(flownetwork.flow_rate[flownetwork.flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flownetwork.flow_rate))}")
+
+    # print to check the value of the threshold
+    print("Tolerance :" + str(flownetwork.zeroFlowThreshold))
+    # update the flow rate
+    return _update_low_flow(flownetwork, flownetwork.flow_rate)
+
+
+def _update_low_flow(flownetwork, flow_rate):
+    # Update flow rate based on the zero flow threshold
+    flow_rate = np.where(np.abs(flow_rate) < flownetwork.zeroFlowThreshold, 0, flow_rate)
+
+    # check how the flow it is changed
+    # Print to display the percentage of Zero flow vessel
+    print(f"Percentage of zero flow vessel {np.round((len(flow_rate[flow_rate == 0]) / flownetwork.nr_of_es) * 100, decimals=2)}")
+    # Print to display the min and max flow_rate
+    print(f"Min flow rate = {np.min(np.abs(flow_rate[flow_rate != 0]))} and max flow_rate = {np.max(np.abs(flow_rate))} %")
+
+    return flow_rate
 
 
 class PressureFlowSolverSparseDirect(PressureFlowSolver):
@@ -104,21 +139,21 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
         # array with values +/-50% of the pressure boundary value.
         res = []
         if flownetwork.pressure is None:
-            if (1 in flownetwork.boundary_type) and not(2 in flownetwork.boundary_type):  # only pressure boundaries
+            if (1 in flownetwork.boundary_type) and not (2 in flownetwork.boundary_type):  # only pressure boundaries
                 boundary_inlet = np.max(flownetwork.boundary_val)
                 boundary_outlet = np.min(flownetwork.boundary_val)
-                x0 = boundary_inlet - np.arange(0.001, 1, 0.999/flownetwork.nr_of_vs) * (boundary_inlet - boundary_outlet)
+                x0 = boundary_inlet - np.arange(0.001, 1, 0.999 / flownetwork.nr_of_vs) * (boundary_inlet - boundary_outlet)
                 x0[flownetwork.boundary_vs] = flownetwork.boundary_val
             elif (1 in flownetwork.boundary_type) and (2 in flownetwork.boundary_type):
-                boundary_pressure_vs = flownetwork.boundary_vs[flownetwork.boundary_type==1]
-                boundary_pressure_val = flownetwork.boundary_val[flownetwork.boundary_type==1]
-                x0 = np.arange(0.5, 1.5, 1/flownetwork.nr_of_vs) * np.max(boundary_pressure_val)
+                boundary_pressure_vs = flownetwork.boundary_vs[flownetwork.boundary_type == 1]
+                boundary_pressure_val = flownetwork.boundary_val[flownetwork.boundary_type == 1]
+                x0 = np.arange(0.5, 1.5, 1 / flownetwork.nr_of_vs) * np.max(boundary_pressure_val)
                 x0[boundary_pressure_vs] = boundary_pressure_val
             else:
                 sys.exit("Warning Message: only flow boundary conditions were assigned! Define new boundary conditions,"
                          " including at least one pressure boundary condition!")
-            flownetwork.pressure, info= ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600,
-                                                 cycle="V", return_info=True)
+            flownetwork.pressure, info = ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600,
+                                                  cycle="V", return_info=True)
         else:
             x0 = flownetwork.pressure
             flownetwork.pressure, info = ml.solve(b, x0=x0, tol=tol_solver, residuals=res, accel="cg", maxiter=600,

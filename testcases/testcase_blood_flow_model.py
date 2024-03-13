@@ -39,6 +39,12 @@ PARAMETERS = MappingProxyType(
         "ht_constant": 0.3,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
 
+        # Zero Flow Vessel Threshold
+        # True: the vessel with low flow are set to zero
+        # The threshold is set as the max of mass flow balance
+        # The function is reported in set_low_flow_threshold()
+        "ZeroFlowThreshold": True,
+
         # Hexagonal network properties. Only required for "read_network_option" 1
         "nr_of_hexagon_x": 3,
         "nr_of_hexagon_y": 3,
