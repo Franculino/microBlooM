@@ -107,6 +107,9 @@ class DischargeHaematocritVitroPries2005(DischargeHaematocrit):
 
 
 class DischargeHaematocritPries1990(DischargeHaematocrit):
+    """
+    Class for updating the discharge haematocrit based on the phase separation suggested by Pries et al (1990).
+    """
 
     @staticmethod
     def q_rbc(case, flow_a_par, flow_b_par, flow_c_par, flow_a_d, flow_b_d, flow_c_d, hemat_a_par, hemat_b_par, hemat_c_par, hemat_a_d, hemat_b_d, hemat_c_d):
