@@ -242,17 +242,17 @@ class WriteNetworkVtp(WriteNetwork):
             graph.vs["pressure"] = flownetwork.pressure
 
         # Edges
-        not_convergence_vessel = np.zeros(flownetwork.nr_of_es)
-        not_convergence_vessel[flownetwork.vessel_general] = 1
         if flownetwork.vessel_general is not None:
+            not_convergence_vessel = np.zeros(flownetwork.nr_of_es)
+            not_convergence_vessel[flownetwork.vessel_general] = 1
             graph.es["not_convergence_vessel"] = not_convergence_vessel
 
         # Vertex
-        not_convergence_node = np.zeros(flownetwork.nr_of_vs)
-        not_convergence_node[flownetwork.indices_over] = 1
-        not_convergence_node_blue = np.zeros(flownetwork.nr_of_vs)
-        not_convergence_node_blue[flownetwork.indices_over_blue] = 1
         if flownetwork.vessel_general is not None:
+            not_convergence_node = np.zeros(flownetwork.nr_of_vs)
+            not_convergence_node[flownetwork.indices_over] = 1
+            not_convergence_node_blue = np.zeros(flownetwork.nr_of_vs)
+            not_convergence_node_blue[flownetwork.indices_over_blue] = 1
             graph.vs["not_convergence_node"] = not_convergence_node
 
         # Make a copy of the graph so that modifications are possible, without
