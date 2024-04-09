@@ -80,7 +80,7 @@ class WriteNetworkIgraph(WriteNetwork):
         if flownetwork.hd is not None:
             graph.es["hd"] = flownetwork.hd
 
-        if flownetwork.xyz is not None:  # TODO cancellare questa parte (?)
+        if flownetwork.xyz is not None:  
             graph.vs["xyz"] = flownetwork.xyz.tolist()
 
         if flownetwork.vessel_general is not None:
