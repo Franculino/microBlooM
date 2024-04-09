@@ -89,7 +89,7 @@ class WriteNetworkIgraph(WriteNetwork):
         if flownetwork.pressure is not None:
             graph.vs["pressure"] = flownetwork.pressure
 
-        graph.write_pickle(self._PARAMETERS["write_path_results"])
+        graph.write_pickle(self._PARAMETERS["write_path_igraph"])
         # todo: check that old graph is not overwritten
         # todo: handle boundaries
 
@@ -269,7 +269,7 @@ class WriteNetworkVtp(WriteNetwork):
         G.delete_edges(np.nonzero(G.is_loop())[0].tolist())
 
         tab = "  "
-        fname = self._PARAMETERS["write_path_results"]
+        fname = self._PARAMETERS["write_path_igraph"]
         f = open(fname, 'w')
 
         # Find unconnected vertices:
@@ -395,5 +395,5 @@ class WriteNetworkCsv(WriteNetwork):
         if flownetwork.pressure is not None:
             df_vertex_data["pressure"] = flownetwork.pressure
 
-        df_edge_data.to_csv(self._PARAMETERS["write_path_results"] + "_edge_data.csv", index=False)
-        df_vertex_data.to_csv(self._PARAMETERS["write_path_results"] + "_vertex_data.csv", index=False)
+        df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_edge_data.csv", index=False)
+        df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_vertex_data.csv", index=False)
