@@ -56,7 +56,7 @@ PARAMETERS = MappingProxyType(
         # Hexagonal network properties. Only required for "read_network_option" 1
         # For options 4-6 the hexagonal nr_of_hexagon_x and nr_of_hexagon_y are not needed
         "nr_of_hexagon_x": 3,
-        "nr_of_hexagon_y": 5,
+        "nr_of_hexagon_y": 3,
         "hexa_edge_length": 62.e-6,
         "hexa_diameter": 4.e-6,
         "hexa_boundary_vertices": [0, 27],
@@ -73,14 +73,15 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue", 
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "B6_B_01/b6_B_pre_stroke.pkl",
+        "pkl_path_igraph": "data/network/network_graph.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_results": "data/network/results",
+        # Note: the extension of the output file is automatically added later in the function
+        "write_path_igraph": "data/network/network_simulated",
         # only required for "write_network_option" 2
         "save": True,
         "path_for_graph": "data/output/plot/",
