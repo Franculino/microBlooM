@@ -241,13 +241,13 @@ class WriteNetworkVtp(WriteNetwork):
         if flownetwork.pressure is not None:
             graph.vs["pressure"] = flownetwork.pressure
 
-        # Edges
+        # Non convergence - Edges
         if flownetwork.vessel_general is not None:
             not_convergence_vessel = np.zeros(flownetwork.nr_of_es)
             not_convergence_vessel[flownetwork.vessel_general] = 1
             graph.es["not_convergence_vessel"] = not_convergence_vessel
 
-        # Vertex
+        # Non convergence - Vertices
         if flownetwork.vessel_general is not None:
             not_convergence_node = np.zeros(flownetwork.nr_of_vs)
             not_convergence_node[flownetwork.indices_over] = 1
