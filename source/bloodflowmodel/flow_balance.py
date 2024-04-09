@@ -35,6 +35,10 @@ class FlowBalance(ABC):
 
 
 class FlowBalanceClass(FlowBalance):
+    """
+    Abstract base class for checking flow balance at internal nodes and 
+    whether the system is globally balanced.
+    """
 
     def _get_flow_balance(self, flownetwork):
 
