@@ -106,10 +106,6 @@ class ReadNetworkHexagonal(ReadNetwork):
                     edge_list[eid, 1] = ii_br
                     eid += 1
 
-        edge_list = np.append(edge_list, [[5, 14]], axis=0)
-        edge_list = np.append(edge_list, [[13, 22]], axis=0)
-        nr_of_edges += 2
-
         # Sort edge_list such that always lower index is in first column.
         edge_list = np.sort(edge_list, axis=1)
 
