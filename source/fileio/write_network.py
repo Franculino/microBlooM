@@ -1,3 +1,4 @@
+import pickle
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import igraph
@@ -77,7 +78,14 @@ class WriteNetworkIgraph(WriteNetwork):
         if flownetwork.ht is not None:
             graph.es["ht"] = flownetwork.ht
 
-        graph.vs["xyz"] = flownetwork.xyz.tolist()
+        if flownetwork.hd is not None:
+            graph.es["hd"] = flownetwork.hd
+
+        if flownetwork.xyz is not None:  
+            graph.vs["xyz"] = flownetwork.xyz.tolist()
+
+        if flownetwork.vessel_general is not None:
+            graph.vs["not_converging"] = flownetwork.vessel_general
 
         if flownetwork.pressure is not None:
             graph.vs["pressure"] = flownetwork.pressure
@@ -224,10 +232,27 @@ class WriteNetworkVtp(WriteNetwork):
         if flownetwork.ht is not None:
             graph.es["ht"] = flownetwork.ht
 
+        if flownetwork.hd is not None:
+            graph.es["hd"] = flownetwork.hd
+
         graph.vs["xyz"] = flownetwork.xyz.tolist()
 
         if flownetwork.pressure is not None:
             graph.vs["pressure"] = flownetwork.pressure
+
+        # Non convergence - Edges
+        if flownetwork.vessel_general is not None:
+            not_convergence_vessel = np.zeros(flownetwork.nr_of_es)
+            not_convergence_vessel[flownetwork.vessel_general] = 1
+            graph.es["not_convergence_vessel"] = not_convergence_vessel
+
+        # Non convergence - Vertices
+        if flownetwork.vessel_general is not None:
+            not_convergence_node = np.zeros(flownetwork.nr_of_vs)
+            not_convergence_node[flownetwork.indices_over] = 1
+            not_convergence_node_blue = np.zeros(flownetwork.nr_of_vs)  # our threshold is "blue threshold" based on our convergence criteria 
+            not_convergence_node_blue[flownetwork.indices_over_blue] = 1
+            graph.vs["not_convergence_node"] = not_convergence_node
 
         # Make a copy of the graph so that modifications are possible, without
         # changing the original. Add indices that can be used for comparison with
@@ -247,8 +272,7 @@ class WriteNetworkVtp(WriteNetwork):
         f = open(fname, 'w')
 
         # Find unconnected vertices:
-        unconnected = np.nonzero([x == 0 for x in G.strength(weights=
-                                                             [1 for i in range(G.ecount())])])[0].tolist()
+        unconnected = np.nonzero([x == 0 for x in G.strength(weights=[1 for i in range(G.ecount())])])[0].tolist()  # TODO: correct weighted_degree
 
         # Header
         f.write('<?xml version="1.0"?>\n')
@@ -271,12 +295,12 @@ class WriteNetworkVtp(WriteNetwork):
         f.write('{}<PointData Scalars="Scalars_p">\n'.format(3 * tab))
 
         for key in keys:
-            self._write_array(f, G.vs[key], key, verbose=True) # verbose = verbose
+            self._write_array(f, G.vs[key], key, verbose=True)  # verbose = verbose
         f.write('{}</PointData>\n'.format(3 * tab))
 
         # Edge data
         keys = G.es.attribute_names()
-        keysToRemove = [] # Currently no keys are removed. May be changed later.
+        keysToRemove = []  # Currently no keys are removed. May be changed later.
         # keysToRemove = ['diameters', 'lengths', 'points', 'rRBC', 'tRBC', 'connectivity']
         for key in keysToRemove:
             if key in keys:
@@ -284,12 +308,12 @@ class WriteNetworkVtp(WriteNetwork):
         f.write('{}<CellData Scalars="diameter">\n'.format(3 * tab))
 
         for key in keys:
-            self._write_array(f, G.es[key], key, zeros=len(unconnected), verbose=True) # verbose = verbose
+            self._write_array(f, G.es[key], key, zeros=len(unconnected), verbose=True)  # verbose = verbose
         f.write('{}</CellData>\n'.format(3 * tab))
 
         # Vertices
         f.write('{}<Points>\n'.format(3 * tab))
-        self._write_array(f, np.vstack(G.vs["xyz"]), "xyz", verbose=True) # verbose = verbose
+        self._write_array(f, np.vstack(G.vs["xyz"]), "xyz", verbose=True)  # verbose = verbose
         f.write('{}</Points>\n'.format(3 * tab))
 
         # Unconnected vertices
@@ -370,5 +394,6 @@ class WriteNetworkCsv(WriteNetwork):
         if flownetwork.pressure is not None:
             df_vertex_data["pressure"] = flownetwork.pressure
 
-        df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_edge_data.csv", index=False)
-        df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_vertex_data.csv", index=False)
+        df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_edge_data.csv", index=False)
+        df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_vertex_data.csv", index=False)
+

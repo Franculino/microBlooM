@@ -8,6 +8,8 @@ import source.bloodflowmodel.transmissibility as transmissibility
 import source.bloodflowmodel.pressure_flow_solver as pressure_flow_solver
 import source.bloodflowmodel.build_system as build_system
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
+import source.bloodflowmodel.iterative as iterative_routine
+import source.bloodflowmodel.flow_balance as flow_balance
 import source.fileio.read_target_values as read_target_values
 import source.fileio.read_parameters as read_parameters
 import source.inverseproblemmodules.adjoint_method_implementations as adjoint_method_parameters
@@ -46,6 +48,7 @@ class SetupSimulation(Setup):
     """
     Class for setting up a simulation that only includes the blood flow model
     """
+
     def setup_bloodflow_model(self, PARAMETERS):
         """
         Set up the simulation and returns various implementations of the blood flow model
@@ -101,22 +104,37 @@ class SetupSimulation(Setup):
                 imp_hd = discharge_haematocrit.DischargeHaematocritVitroPries2005(PARAMETERS)
                 imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
+            case 4:  # Discharging Hematocrit based on the empirical laws by Pries (1990)
+                imp_hd = discharge_haematocrit.DischargeHaematocritPries1990(PARAMETERS)
+                imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
+                imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS)  # No Fahraeus effect (u_RBC = u_Bulk)
             case _:
                 sys.exit("Error: Choose valid option for the handling of RBCs (rbc_impact_option)")
 
         # Initialise the classes handling the solution of the linear system (build system and solver)
         match PARAMETERS["solver_option"]:
             case 1:
-                imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
+                imp_buildsystem = build_system.BuildSystemSparseCsc(PARAMETERS)  # Fast approach to build the system
                 imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirect(PARAMETERS)  # Direct solver
             case 2:
-                imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
+                imp_buildsystem = build_system.BuildSystemSparseCsc(PARAMETERS)  # Fast approach to build the system
                 imp_solver = pressure_flow_solver.PressureFlowSolverPyAMG(PARAMETERS)  # Iterative solver
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
-        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
+        match PARAMETERS["iterative_routine"]:
+            case 1:
+                imp_iterative = iterative_routine.IterativeRoutineNone(PARAMETERS)  # No iterative procedure
+            case 2 | 3 | 4:
+                imp_iterative = iterative_routine.IterativeRoutineMultipleIteration(PARAMETERS)
+            case _:
+                print("No Iterative Method selected: Default Selection")
+                imp_iterative = iterative_routine.IterativeRoutineNone(PARAMETERS)  # No iterative procedure
 
+        # Flow Balance
+        imp_balance = flow_balance.FlowBalanceClass(PARAMETERS)
+
+        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver, imp_iterative, imp_balance
 
     def setup_inverse_model(self, PARAMETERS):
         """

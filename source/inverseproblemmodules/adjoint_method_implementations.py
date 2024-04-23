@@ -123,7 +123,7 @@ class AdjointMethodImplementations(ABC):
         # = 2*(u_sim_ij-u_tar)/sigma^2 * d u_ij / d_pressure_i * (+1)
         data[is_target_type_2, 0] = 2. * u_difference / np.square(sigma_u) * 4. * \
                                     flownetwork.transmiss[eids_u_target] * hd_ht_ratio[eids_u_target] / (
-                                                np.pi * np.square(flownetwork.diameter[eids_u_target]))
+                                            np.pi * np.square(flownetwork.diameter[eids_u_target]))
         # = 2 * (u_sim_ij - u_tar) / sigma ^ 2 * du_ij / d_pressure_j * (-1)
         data[is_target_type_2, 1] = -data[is_target_type_2, 0]
 
@@ -227,7 +227,7 @@ class AdjointMethodImplementations(ABC):
         # val_sim < val_min:
         val_difference[value_sim < val_min_tar] = (value_sim - val_min_tar)[value_sim < val_min_tar]
 
-        cost_terms = np.square(val_difference/edge_constraint_sigma)
+        cost_terms = np.square(val_difference / edge_constraint_sigma)
 
         inversemodel.f_h = np.sum(cost_terms)
 
@@ -284,9 +284,10 @@ class AdjointMethodImplementationsEdge(AdjointMethodImplementations, ABC):
         # Constraints of type 1 (flow rate)
         # True if current edge constraint is of type 1 (flow rate) and has a matching edge parameter.
         is_current_target_q = np.logical_and(np.in1d(inversemodel.edge_constraint_eid, inversemodel.edge_param_eid),
-                                           is_target_type_1)
+                                             is_target_type_1)
         # True if current edge parameter has a matching edge constraint of type 1 (flow rate)
-        is_current_parameter_q = np.in1d(inversemodel.edge_param_eid, inversemodel.edge_constraint_eid[is_target_type_1])
+        is_current_parameter_q = np.in1d(inversemodel.edge_param_eid,
+                                         inversemodel.edge_constraint_eid[is_target_type_1])
 
         q_difference = val_difference[is_current_target_q]  # q_simulated - q_target / q_min / q_max
         sigma_flow = inversemodel.edge_constraint_sigma[is_current_target_q]
@@ -423,8 +424,8 @@ class AdjointMethodImplementationsRelDiam(AdjointMethodImplementationsEdge):
         hd_ht_ratio[ht_param_es > 0.] = hd_param_es[ht_param_es > 0.] / ht_param_es[ht_param_es > 0.]
         # Return the derivative
         return 4. / np.pi * hd_ht_ratio * (
-                    d_flowrate_d_alpha / np.square(diam_param_es) - 2. * flowrate_param_es / (
-                        np.square(inversemodel.diameter_baselinevalue) * np.power(inversemodel.alpha, 3)))
+                d_flowrate_d_alpha / np.square(diam_param_es) - 2. * flowrate_param_es / (
+                np.square(inversemodel.diameter_baselinevalue) * np.power(inversemodel.alpha, 3)))
 
     def _get_d_transmiss_d_alpha(self, inversemodel, flownetwork):
         """
@@ -442,7 +443,7 @@ class AdjointMethodImplementationsRelDiam(AdjointMethodImplementationsEdge):
         mu_rel_param_es = flownetwork.mu_rel[inversemodel.edge_param_eid]
 
         return np.pi * np.power(inversemodel.diameter_baselinevalue, 4) / (
-                    32. * length_param_es * mu_plasma * mu_rel_param_es) * np.power(inversemodel.alpha, 3)
+                32. * length_param_es * mu_plasma * mu_rel_param_es) * np.power(inversemodel.alpha, 3)
 
 
 class AdjointMethodImplementationsRelTransmiss(AdjointMethodImplementationsEdge):

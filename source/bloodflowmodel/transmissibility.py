@@ -2,6 +2,7 @@ import sys
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import numpy as np
+import copy
 
 
 class Transmissibility(ABC):
@@ -30,7 +31,7 @@ class Transmissibility(ABC):
         mu_plasma = self._PARAMETERS["mu_plasma"]
 
         # Poiseuille's law to calculate transmissibility without red blood cell influence.
-        return np.pi * np.power(diameter, 4) / (128*mu_plasma*length)
+        return np.pi * np.power(diameter, 4) / (128 * mu_plasma * length)
 
     @abstractmethod
     def update_transmiss(self, flownetwork):
@@ -54,7 +55,7 @@ class TransmissibilityPoiseuille(Transmissibility):
         :type flownetwork: source.flow_network.FlowNetwork
         """
         flownetwork.mu_rel = np.ones(flownetwork.nr_of_es)
-        flownetwork.transmiss = self._get_transmiss_poiseuille(flownetwork) # implementation from base class
+        flownetwork.transmiss = self._get_transmiss_poiseuille(flownetwork)  # implementation from base class
 
 
 class TransmissibilityVitroPries(Transmissibility):
@@ -75,11 +76,11 @@ class TransmissibilityVitroPries(Transmissibility):
         transmiss_poiseuille = self._get_transmiss_poiseuille(flownetwork)  # Transmissibility without red blood cells.
 
         # Relative viscosity based on Pries, Neuhaus, Gaehtgens (1992)
-        diameter_um = 1.e6 * flownetwork.diameter  # Diameter in micro meters
+        diameter_um = flownetwork.diameter * 1E06  # Diameter in micro meters
         hd = flownetwork.hd
 
         C = (0.8 + np.exp(-0.075 * diameter_um)) * (-1. + 1. / (1. + 1.e-11 * np.power(diameter_um, 12.))) + 1. / (
-                    1 + 1.e-11 * np.power(diameter_um, 12.))  # Eq.(4) in paper
+                1 + 1.e-11 * np.power(diameter_um, 12.))  # Eq.(4) in paper
         mu_rel_45 = 220 * np.exp(-1.3 * diameter_um) + 3.2 - 2.44 * np.exp(
             -0.06 * np.power(diameter_um, 0.645))  # Eq.(2) in paper
 

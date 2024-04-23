@@ -66,8 +66,6 @@ class RbcVelocityFahraeus(RbcVelocity):
         :param flownetwork: flow network object
         :type: source.flow_network.FlowNetwork
         """
-        hd = flownetwork.hd
-        ht = flownetwork.ht
 
         # Make sure that if ht=0, the ratio hd/ht is 1
         hd_ht_ratio = np.ones(flownetwork.nr_of_es)
