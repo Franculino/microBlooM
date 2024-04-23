@@ -25,12 +25,16 @@ class FlowBalance(ABC):
     def _get_flow_balance(self, flownetwork):
         """
         Abstract method to get the flow_balance
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
         """
 
     @abstractmethod
     def check_flow_balance(self, flownetwork):
         """
         Abstract method to get the check flow_balance
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
         """
 
 
@@ -41,6 +45,10 @@ class FlowBalanceClass(FlowBalance):
     """
 
     def _get_flow_balance(self, flownetwork):
+        """
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """      
 
         nr_of_vs = flownetwork.nr_of_vs
         nr_of_es = flownetwork.nr_of_es
@@ -58,6 +66,10 @@ class FlowBalanceClass(FlowBalance):
 
     @staticmethod
     def _get_flow_balance_rbcs(flownetwork):
+        """
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """    
 
         nr_of_vs = flownetwork.nr_of_vs
         nr_of_es = flownetwork.nr_of_es
@@ -71,15 +83,15 @@ class FlowBalanceClass(FlowBalance):
         for eid in range(nr_of_es):
             flow_rbcs[edge_list[eid, 0]] += np.multiply(flow_rate[eid], hd[eid])
             flow_rbcs[edge_list[eid, 1]] -= np.multiply(flow_rate[eid], hd[eid])
-
         return flow_rbcs
 
     def check_flow_balance(self, flownetwork, tol=1.00E-5):
         """
         Function to check the mass-flow balance of the network
-        @param flownetwork: flow network object
-        @type flownetwork: source.flow_network.FlowNetwork
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
         """
+        
         nr_of_vs = flownetwork.nr_of_vs
         flow_rate = flownetwork.flow_rate
         boundary_vs = flownetwork.boundary_vs
@@ -139,13 +151,12 @@ class FlowBalanceClass(FlowBalance):
         """
         The function is designed to print all the relevant information about a non converging network.
         The network is defined as non converging if it doesn't reach convergence after 4000 iterations.
-
-        @param flownetwork:flow network object
-        @type flownetwork: source.flow_network.FlowNetwork
-        @param local_balance_rbc: local balance of rbcs
-        @type local_balance_rbc: np.array
-        @param positions_of_elements_not_in_boundary: internal element of the network
-        @type positions_of_elements_not_in_boundary: np.array
+        :param flownetwork:flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        :param local_balance_rbc: local balance of rbcs
+        :type local_balance_rbc: np.array
+        :param positions_of_elements_not_in_boundary: internal element of the network
+        :type positions_of_elements_not_in_boundary: np.array
         """
         # VARIABLES for the function
         node_relative_residual, node_residual = np.zeros(flownetwork.nr_of_vs), np.zeros(flownetwork.nr_of_vs)
@@ -343,5 +354,4 @@ def dict_for_families_total(flownetwork):
                 families_dict[node_id]["par"].append(edge)
             else:
                 families_dict[node_id]["dgs"].append(edge)
-
     return families_dict

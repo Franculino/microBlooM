@@ -200,7 +200,7 @@ class AdjointMethodImplementations(ABC):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
-        # Type of target value (1: Flow rate, 2: Velocity, todo: 3-mean flow rate)
+        # Type of target value (1: Flow rate, 2: Velocity)
         # True if current target value is of the respective type
         is_target_type_1 = np.in1d(inversemodel.edge_constraint_type, 1)  # constraint type 1: Flow rate constraint
         is_target_type_2 = np.in1d(inversemodel.edge_constraint_type, 2)  # constraint type 2: Velocity constraint
@@ -254,7 +254,7 @@ class AdjointMethodImplementationsEdge(AdjointMethodImplementations, ABC):
         d_flowrate_d_alpha = self._get_d_flowrate_d_alpha(inversemodel, flownetwork)  # d q_ij / d alpha_ij
         d_velocity_d_alpha = self._get_d_velocity_d_alpha(inversemodel, flownetwork)  # d u_ij / d alpha_ij
 
-        # Type of target value (1: Flow rate, 2: Velocity, todo: 3-mean flow rate)
+        # Type of target value (1: Flow rate, 2: Velocity)
         # True if current target value is of the respective type
         is_target_type_1 = np.in1d(inversemodel.edge_constraint_type, 1)  # constraint type 1: Flow rate constraint
         is_target_type_2 = np.in1d(inversemodel.edge_constraint_type, 2)  # constraint type 2: Velocity constraint

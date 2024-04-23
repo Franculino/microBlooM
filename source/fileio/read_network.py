@@ -280,7 +280,6 @@ class ReadNetworkIgraph(ReadNetwork):
 
 class ReadNetworkPkl(ReadNetwork):
     def read(self, flownetwork):
-        # todo: import graph from edge_data and vertex_data pickle files.
         # Need example format from franca. that always consistent
         # with open(path_es_dict, "rb") as f:
         #     data_edge = pickle.load(f, encoding="latin1")

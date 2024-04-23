@@ -49,6 +49,7 @@ class PressureFlowSolver(ABC):
         edge_list = flownetwork.edge_list
         transmiss = flownetwork.transmiss
         pressure = flownetwork.pressure
+        nr_of_es = flownetwork.nr_of_es
 
         # Compute the flow rates based on the transmissibility and pressure.
         pressure_0 = pressure[edge_list[:, 0]]
@@ -91,7 +92,6 @@ def pressure_berg(flownetwork, pressure):
     # inflow_pressure_node: are all the inflow node
     average_inlet_pressure = np.average(flownetwork.pressure[flownetwork.inflow_pressure_node])
     flownetwork.average_inlet_pressure.append(average_inlet_pressure)
-
     return pressure_norm / average_inlet_pressure
 
 
@@ -143,7 +143,6 @@ def set_low_flow_threshold(flownetwork, local_balance):
     # print to check the value of the threshold
     print("Tolerance :" + str(flownetwork.zeroFlowThreshold))
     # update the flow rate
-
     return _update_low_flow(flownetwork, flownetwork.flow_rate)
 
 

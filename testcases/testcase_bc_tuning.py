@@ -1,6 +1,7 @@
 """
-A python script to estimate edge parameters such as diameters and transmissibilities of microvascular networks based
-on given flow rates and velocities in selected edges. Capabilities:
+A python script to estimate vertex parameters such as boundary conditions of microvascular networks based
+on given flow rates and velocities in selected edges.
+Capabilities:
 1. Import a network from file or generate a hexagonal network
 2. Compute the edge transmissibilities with taking the impact of RBCs into account (Fahraeus, Fahraeus-Linquist effects)
 3. Solve for flow rates, pressures and RBC velocities
@@ -25,23 +26,23 @@ PARAMETERS = MappingProxyType(
         # Setup parameters for blood flow model
         "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
-                                   # 3: todo import graph from igraph files
-                                   # 4: todo import graph from edge_data and vertex_data pickle files
+                                   # 3: import graph from igraph format (pickle file)
         "write_network_option": 2,  # 1: do not write anything
-                                    # 2: igraph format
-                                    # 3-...: todo other file formats. also handle overwrite data, etc
+                                    # 2: write to igraph format (.pkl file)
+                                    # 3: write to vtp format (.vtp)
+                                    # 4: write to two csv files (.csv)
         "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
                                        # 2: Constant haematocrit
-                                       # 3: todo: RBC tracking
-                                       # 4-xxx: todo: steady state RBC laws
-        "rbc_impact_option": 2,  # 1: hd = ht (makes only sense if tube_haematocrit_option:1 or ht=0)
+        "rbc_impact_option": 2,  # 1: No RBCs (hd=0) - makes only sense if tube_haematocrit_option:1 or ht=0
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
-                                 # 3: todo Other laws. in vivo?
+                                 # 3: Laws by Pries and Secomb (2005)
         "solver_option": 1,  # 1: Direct solver
-                             # 2: todo: other solvers (CG, AMG, ...)
+                             # 2: PyAMG solver
+
         # Blood properties
         "ht_constant": 0.3,
         "mu_plasma": 0.0012,
+
         # Hexagonal network properties
         "nr_of_hexagon_x": 5,
         "nr_of_hexagon_y": 5,
@@ -50,19 +51,32 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_vertices": [0, 65, 21, 48, 41, 31, 56],
         "hexa_boundary_values": [2, 1, 3, 1, 1, 5, 2],
         "hexa_boundary_types": [1, 1, 1, 1, 1, 1, 1],  # 1: pressure, 2: flow rate
+
         # Import network from csv options
-        "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
-        "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
-        "csv_path_boundary_data": "data/network/b6_B_pre_061/boundary_node_data.csv",
+        "csv_path_vertex_data": "data/network/node_data.csv",
+        "csv_path_edge_data": "data/network/edge_data.csv",
+        "csv_path_boundary_data": "data/network/boundary_node_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
+
+        # Import network from igraph option. Only required for "read_network_option" 3
+        "pkl_path_igraph": "data/network/network_graph.pkl",
+        "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
+        "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
+        "ig_boundary_value": "boundaryValue",
+
         # Write options
         "write_override_initial_graph": False,
-        "write_path_igraph": "data/network/b6_B_pre_061_simulated.pkl", # only required for "write_network_option" 2
+        # Note: the extension of the output file is automatically added later in the function
+        "write_path_igraph": "data/network/network_simulated",
+
+
         ##########################
         # Inverse problem options
+        ##########################
+
         # Define parameter space
         "parameter_space": 11,  # 1: Relative diameter to baseline (alpha = d/d_base)
                                 # 2: Relative transmissibility to baseline (alpha = T/T_base)
@@ -70,13 +84,15 @@ PARAMETERS = MappingProxyType(
         "parameter_restriction": 1,  # 1: No restriction of parameter values (alpha_prime = alpha)
                                      # 2: Restriction of parameter by a +/- tolerance to baseline
         "inverse_model_solver": 1,  # Direct solver
-                                    # 2: todo: other solvers (CG, AMG, ...)
+                                    # 2: PyAMG solver
+
         # Filepath to prescribe target values / constraints on edges
         "csv_path_edge_target_data": "data/inverse_model/edge_target_BC_tuning.csv",
         # Filepath to define the edge parameter space (only for tuning of diameters and transmissibilities)
         "csv_path_edge_parameterspace": "not needed",
         # Filepath to define the vertex parameter space (only for tuning of boundary conditions)
         "csv_path_vertex_parameterspace": "data/inverse_model/vertex_parameters.csv",
+
         # Gradient descent options:
         "gamma": .5,
         "phi": .5,  # for parameter_restriction 2

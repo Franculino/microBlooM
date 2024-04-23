@@ -11,9 +11,9 @@ import source.inverse_model as inverse_model
 from types import MappingProxyType
 
 
-class SolutionMonitoring(object):
+class SimulationMonitoring(object):
     """
-    Class for monitoring the solution for the inverse model.
+    Class for monitoring the simulation for the inverse model.
     """
 
     def __init__(self, flownetwork: flow_network.FlowNetwork, inversemodel: inverse_model.InverseModel,
@@ -32,12 +32,12 @@ class SolutionMonitoring(object):
         and the current values of the edge ids which have target ranges.
         """
 
-        csv_path = self._PARAMETERS["csv_path_solution_monitoring"]
+        csv_path = self._PARAMETERS["csv_path_simulation_monitoring"]
         current_iteration = self.inversemodel.current_iteration
 
         filepath_target = csv_path + "data_convergence_target_" + str(current_iteration) + ".csv"
         filepath_range = csv_path + "data_convergence_range_" + str(current_iteration) + ".csv"
-        filepath_cost_funtion = csv_path + "cost_funtion_" + str(current_iteration) + ".csv"
+        filepath_cost_function = csv_path + "cost_function_" + str(current_iteration) + ".csv"
 
         # Create arrays for plotting cost function vs iterations
         f_h = self.inversemodel.f_h
@@ -63,19 +63,15 @@ class SolutionMonitoring(object):
         target_values_rbc_velocity = edge_constraint_value[is_target_type_2]
 
         # Export a csv file for the current values with target value - precision measurements
-        data_target = {}
-        if np.size(current_flow_rate) > 0:
-            data_target["eid_target_flow_rate"] = edge_id_target[is_target_type_1]
-            data_target["current_flow_rate"] = current_flow_rate
-            data_target["target_flow_rate"] = target_values_flow_rate
-        elif np.size(current_rbc_velocity) > 0:
-            data_target["eid_target_rbc_velocity"] = edge_id_target[is_target_type_2]
-            data_target["current_rbc_velocity"] = current_rbc_velocity
-            data_target["target_rbc_velocity"] = target_values_rbc_velocity
-
-        df_target = [pd.DataFrame({k: v}) for k, v in data_target.items()]
-        df_target = pd.concat(df_target, axis=1)
-        df_target.to_csv(filepath_target, index=False)
+        if np.size(current_flow_rate) > 0 or np.size(current_rbc_velocity) > 0:
+            data_target = {}
+            data_target["eid_target"] = np.append(edge_id_target[is_target_type_1], edge_id_target[is_target_type_2])
+            data_target["type"] = np.append(np.ones(np.size(current_flow_rate), dtype=int), np.ones(np.size(current_rbc_velocity), dtype=int) * 2)
+            data_target["current"] = np.append(current_flow_rate,current_rbc_velocity)
+            data_target["target"] = np.append(target_values_flow_rate, target_values_rbc_velocity)
+            df_target = [pd.DataFrame({k: v}) for k, v in data_target.items()]
+            df_target = pd.concat(df_target, axis=1)
+            df_target.to_csv(filepath_target, index=False)
 
         # For the constraint edges with target ranges, so that the constraint range (edge_tar_range_pm) is not zero
         is_range_type_1 = np.logical_and(edge_constraint_type == 1, np.logical_not(edge_constraint_range == 0.))
@@ -88,21 +84,16 @@ class SolutionMonitoring(object):
         range_values_rbc_velocity = edge_constraint_range[is_range_type_2]
 
         # Export a csv file for the current values with target ranges
-        data_range = {}
-        if np.size(current_flow_rate_range) > 0:
-            data_range["eid_range_flow_rate"] = edge_id_target[is_range_type_1]
-            data_range["current_flow_rate"] = current_flow_rate_range
-            data_range["mean_flow_rate"] = mean_values_flow_rate
-            data_range["range_flow_rate"] = range_values_flow_rate
-        elif np.size(current_rbc_velocity_range) > 0:
-            data_range["eid_range_rbc_velocity"] = edge_id_target[is_range_type_2]
-            data_range["current_rbc_velocity"] = current_rbc_velocity_range
-            data_range["mean_rbc_velocity"] = mean_values_rbc_velocity
-            data_range["range_rbc_velocity"] = range_values_rbc_velocity
-
-        df_range = [pd.DataFrame({k: v}) for k, v in data_range.items()]
-        df_range = pd.concat(df_range, axis=1)
-        df_range.to_csv(filepath_range, index=False)
+        if np.size(current_flow_rate_range) > 0 or np.size(current_rbc_velocity_range) > 0:
+            data_range = {}
+            data_range["eid_range"] = np.append(edge_id_target[is_range_type_1], edge_id_target[is_range_type_2])
+            data_range["type"] = np.append(np.ones(np.size(current_flow_rate_range), dtype=int), np.ones(np.size(current_rbc_velocity_range), dtype=int) * 2)
+            data_range["current"] = np.append(current_flow_rate_range, current_rbc_velocity_range)
+            data_range["mean"] = np.append(mean_values_flow_rate, mean_values_rbc_velocity)
+            data_range["range"] = np.append(range_values_flow_rate,range_values_rbc_velocity)
+            df_range = [pd.DataFrame({k: v}) for k, v in data_range.items()]
+            df_range = pd.concat(df_range, axis=1)
+            df_range.to_csv(filepath_range, index=False)
 
         # Export a csv file for cost function vs iterations
         data = {}
@@ -110,16 +101,16 @@ class SolutionMonitoring(object):
         data["cost_function"] = self.inversemodel.f_h_array
         df = [pd.DataFrame({k: v}) for k, v in data.items()]
         df = pd.concat(df, axis=1)
-        df.to_csv(filepath_cost_funtion, index=False)
+        df.to_csv(filepath_cost_function, index=False)
 
         return
 
     def plot_cost_fuction_vs_iterations(self):
         """
-        Plot the cost function vs iterations.
+        Export a plot of the cost function vs iterations.
         """
 
-        png_path = self._PARAMETERS["png_path_solution_monitoring"]
+        png_path = self._PARAMETERS["png_path_simulation_monitoring"]
         current_iteration = self.inversemodel.current_iteration
 
         filepath_png = png_path + "cost_function_vs_iterations_" + str(current_iteration) + ".png"
@@ -143,10 +134,10 @@ class SolutionMonitoring(object):
 
     def export_sim_data_node_edge_csv(self):
         """
-        Export two different csv files for the simulation values for each node and edge.
+        Export two different csv files for the current simulation values for each node and edge.
         """
 
-        csv_path = self._PARAMETERS["csv_path_solution_monitoring"]
+        csv_path = self._PARAMETERS["csv_path_simulation_monitoring"]
         current_iteration = self.inversemodel.current_iteration
 
         filepath_vs = csv_path + "data_vs_" + str(current_iteration) + ".csv"
@@ -158,7 +149,7 @@ class SolutionMonitoring(object):
         data_vs["coord_x"] = self.flownetwork.xyz[:, 0].transpose()
         data_vs["coord_y"] = self.flownetwork.xyz[:, 1].transpose()
         data_vs["coord_z"] = self.flownetwork.xyz[:, 2].transpose()
-        data_vs["sim_pressure"] = self.flownetwork.pressure
+        data_vs["pressure"] = self.flownetwork.pressure
         df_vs = [pd.DataFrame({k: v}) for k, v in data_vs.items()]
         df_vs = pd.concat(df_vs, axis=1)
         df_vs.to_csv(filepath_vs, index=False)
@@ -184,8 +175,8 @@ class SolutionMonitoring(object):
         data_es[labels[0]] = parameter_baseline_value
         data_es[labels[1]] = tuned_parameter
         data_es["length"] = self.flownetwork.length
-        data_es["sim_flow_rate"] = self.flownetwork.flow_rate
-        data_es["sim_rbc_velocity"] = self.flownetwork.rbc_velocity
+        data_es["flow_rate"] = self.flownetwork.flow_rate
+        data_es["rbc_velocity"] = self.flownetwork.rbc_velocity
         df_es = [pd.DataFrame({k: v}) for k, v in data_es.items()]
         df_es = pd.concat(df_es, axis=1)
         df_es.to_csv(filepath_es, index=False)
@@ -193,8 +184,11 @@ class SolutionMonitoring(object):
         return
 
     def export_network_pkl(self):
+        """
+        Export a pickle file for the current network.
+        """
 
-        pkl_path = self._PARAMETERS["pkl_path_solution_monitoring"]
+        pkl_path = self._PARAMETERS["pkl_path_simulation_monitoring"]
         current_iteration = self.inversemodel.current_iteration
 
         filepath = pkl_path + "network_" + str(current_iteration) + ".pkl"

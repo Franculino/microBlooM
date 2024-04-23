@@ -2,6 +2,7 @@ import pickle
 from abc import ABC, abstractmethod
 from types import MappingProxyType
 import igraph
+import pandas as pd
 from copy import deepcopy
 import numpy as np
 import sys
@@ -89,15 +90,13 @@ class WriteNetworkIgraph(WriteNetwork):
         if flownetwork.pressure is not None:
             graph.vs["pressure"] = flownetwork.pressure
 
-        graph.write_pickle(self._PARAMETERS["write_path_igraph"])
-        # todo: check that old graph is not overwritten
-        # todo: handle boundaries
+        graph.write_pickle(self._PARAMETERS["write_path_igraph"] + ".pkl")
 
 
 class WriteNetworkVtp(WriteNetwork):
     """
     Class for writing the results to vtp format. Can be used to visualise results in paraview.
-    Function taken from Franca/Chryso. Todo: Documentation
+    Function taken from Franca/Chryso.
     """
 
     def _write_array(self, f, array, name, zeros=0, verbose=False):
@@ -269,7 +268,7 @@ class WriteNetworkVtp(WriteNetwork):
         G.delete_edges(np.nonzero(G.is_loop())[0].tolist())
 
         tab = "  "
-        fname = self._PARAMETERS["write_path_igraph"]
+        fname = self._PARAMETERS["write_path_igraph"] + ".vtp"
         f = open(fname, 'w')
 
         # Find unconnected vertices:
@@ -397,3 +396,4 @@ class WriteNetworkCsv(WriteNetwork):
 
         df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_edge_data.csv", index=False)
         df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_vertex_data.csv", index=False)
+
