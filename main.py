@@ -13,7 +13,7 @@
 # import testcases.testcase_inverse_problem
 
 # 5) Run test case to tune boundary pressures with the inverse model
-# import testcases.testcase_bc_tuning
+import testcases.testcase_bc_tuning
 
 # Import a testcase based on the options above. 
 # If not stated otherwise, testcases.testcase_blood_flow_model is executed by default
