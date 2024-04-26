@@ -1,3 +1,4 @@
+import sys
 from types import MappingProxyType
 import source.flow_network as flow_network
 import source.inverseproblemmodules.adjoint_method_implementations as adj_method_parameters
@@ -10,7 +11,7 @@ import numpy as np
 
 
 class InverseModel(object):
-
+    # todo docstring and explain all attributes
     def __init__(self, flownetwork: flow_network.FlowNetwork, imp_readtargetvalues: read_target_values.ReadTargetValues,
                  imp_readparameters: read_parameters.ReadParameters,
                  imp_adjointmethodparameters: adj_method_parameters.AdjointMethodImplementations,
@@ -23,23 +24,35 @@ class InverseModel(object):
         self._PARAMETERS = PARAMETERS
 
         # Target values
-        self.edge_constraint_eid = None  # edge ids of constraint edges (1d np.array)
-        self.edge_constraint_type = None  # constraint type - 1: Flow rate, 2: Velocity, ... (1d np.array)
-        self.edge_constraint_value = None  # constraint value (1d np.array)
-        self.edge_constraint_range_pm = None  # constraint range (1d np.array)
-        self.edge_constraint_sigma = None  # constraint sigma of the cost function (1d np.array)
-        self.nr_of_edge_constraints = None  # number of constraint edges
+        self.edge_constraint_eid = None
+        self.edge_constraint_type = None  # 1: Flow rate, 2: Velocity, ...
+        self.edge_constraint_value = None
+        self.edge_constraint_range_pm = None
+        self.edge_constraint_sigma = None
+        self.nr_of_edge_constraints = None
+
+        self.measurements_value = None
+        self.measurements_eid = None
+        self.current_measurement_values = None
 
         # Parameter space
         # Edge parameters
-        self.edge_param_eid = None  # edge ids of parameters (1d np.array)
-        self.parameter_pm_range = None  # parameter range - tolerance to baseline (1d np.array)
-        self.nr_of_edge_parameters = None  # number of edge parameters
+        self.edge_param_eid = None
+        self.parameter_pm_range = None
+        self.nr_of_edge_parameters = None
 
         # Vertex parameters
-        self.vertex_param_vid = None  # vetrex ids of parameters (1d np.array)
-        # self.vertex_param_pm_range = None
-        self.nr_of_vertex_parameters = None  # number of vertex parameters
+        self.vertex_param_vid = None
+        self.nr_of_vertex_parameters = None
+        self.max_pressure = None
+        self.min_pressure = None
+
+        # Targets and ranges in the boundary
+        self.targets_boundary_ed = None
+        self.targets_boundary_v = None
+        self.ranges_boundary_ed = None
+        self.ranges_boundary_v = None
+        self.is_target = None
 
         # Total parameters
         self.nr_of_parameters = None
@@ -49,28 +62,31 @@ class InverseModel(object):
         self.alpha_prime = None
         self.alpha_pm_range = None
 
-        self.transmiss_baselinevalue = None  # baseline transmissibility (1d np.array)
-        self.diameter_baselinevalue = None  # baseline diameter (1d np.array)
+        self.transmiss_baselinevalue = None
+        self.diameter_baselinevalue = None
+        self.boundary_pressure_baseline = None
 
-        self.boundary_pressure_baselinevalue = None
+        self.boundary_pressure_previous = None
 
         self.mu_rel_tilde = None
         self.transmiss_tilde = None
 
         # Inverse model parameters
-        self.gamma = None  # constant learning rate
-        self.phi = None  # constant parameter to tune the shape of the function between alpha and alpha_prime
+        self.gamma = None
+        self.phi = None
 
         # Inverse model cost terms
         self.f_h = None  # Cost of hard constraint
+        self.f_h_target = None  # Cost of target values term
+        self.f_h_range = None  # Cost of range values term
 
-        # Adjoint method vectors and matrices - derivatives
+        # Adjoint method vectors and matrices
         self.d_f_d_alpha = None  # Vector
         self.d_f_d_pressure = None  # Vector
         self.d_g_d_alpha = None  # coo_matrix
-        self._lambda = None  # Vector
+        self._lambda = None # Vector
 
-        # Gradient descent
+        # Gradient
         self.gradient_alpha = None
         self.gradient_alpha_prime = None
 
@@ -81,10 +97,18 @@ class InverseModel(object):
         self._imp_adjointmethodsolver = imp_adjointmethodsolver
         self._imp_alphamapping = imp_alphamapping
 
-        # Simulation monitoring - Visualisation
+        # Solution monitoring - Visualisation
         self.current_iteration = 0
         self.iteration_array = np.array([])
         self.f_h_array = np.array([])
+        self.BCs_matrix = np.empty((0, len(PARAMETERS["hexa_boundary_vertices"])))
+        self.data_target = {}
+        self.data_range = {}
+        self.evolution_target_values = np.array([])
+        self.current_range_values = np.array([])
+
+        # Current values
+        self.current_target_values = None
 
     def initialise_inverse_model(self):
         """
@@ -107,6 +131,7 @@ class InverseModel(object):
         # Update gradient d f / f alpha_prime (mapping between parameter and pseudo parameter)
         self._imp_alphamapping.update_gradient_alpha_prime(self)
         # Update alpha_prime by using gradient descent with constant learning rate.
+        # Todo: different algorithms, e.g. with adaptive gamma or Adams algorithm
         self.alpha_prime -= self.gamma * self.gradient_alpha_prime
         # Transform pseudo parameter alpha_prime back to alpha space
         self._imp_alphamapping.update_alpha_from_alpha_prime(self)
@@ -117,5 +142,20 @@ class InverseModel(object):
         """
         Method to update the cost function value
         """
-        # Update the cost function value
-        self._imp_adjointmethodparameters.update_cost_hardconstraint(self, self._flow_network)
+        match self._PARAMETERS["cost_function_option"]:
+            case 1:
+                # Update the cost function value
+                self._imp_adjointmethodparameters.update_cost_hardconstraint(self, self._flow_network)
+            case 2 | 3:
+                # Update the cost function value
+                self._imp_adjointmethodparameters.update_cost_hardconstraint_2_3(self, self._flow_network)
+
+    def update_target_values(self):
+        """
+        Updates self.current_target_values using red blood cell velocity.
+        """
+        self.current_target_values = self._flow_network.rbc_velocity[self.edge_constraint_eid]
+        self.current_measurement_values = self._flow_network.rbc_velocity[self.measurements_eid]
+
+    def update_gamma(self, PARAMETERS):
+        self.gamma = PARAMETERS["gamma"]

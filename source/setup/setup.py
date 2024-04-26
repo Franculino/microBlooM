@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from types import MappingProxyType
+
 import source.fileio.read_network as read_network
 import source.fileio.write_network as write_network
 import source.bloodflowmodel.tube_haematocrit as tube_haematocrit
@@ -8,8 +8,6 @@ import source.bloodflowmodel.transmissibility as transmissibility
 import source.bloodflowmodel.pressure_flow_solver as pressure_flow_solver
 import source.bloodflowmodel.build_system as build_system
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
-import source.bloodflowmodel.iterative as iterative_routine
-import source.bloodflowmodel.flow_balance as flow_balance
 import source.fileio.read_target_values as read_target_values
 import source.fileio.read_parameters as read_parameters
 import source.inverseproblemmodules.adjoint_method_implementations as adjoint_method_parameters
@@ -28,7 +26,7 @@ class Setup(ABC):
     @abstractmethod
     def setup_bloodflow_model(self, PARAMETERS):
         """
-        Abstract method to set up the forward blood flow model
+        Abstract method to set up the simulation
         """
 
     @abstractmethod
@@ -37,24 +35,17 @@ class Setup(ABC):
         Abstract method to set up the inverse model
         """
 
-    @abstractmethod
-    def setup_distensibility_model(self, PARAMETERS):
-        """
-        Abstract method to set up the distensibility model
-        """
-
 
 class SetupSimulation(Setup):
     """
     Class for setting up a simulation that only includes the blood flow model
     """
-
     def setup_bloodflow_model(self, PARAMETERS):
         """
         Set up the simulation and returns various implementations of the blood flow model
         :param PARAMETERS: Global simulation parameters stored in an immutable dictionary.
         :type PARAMETERS: MappingProxyType (basically an immutable dictionary).
-        :returns: the implementation objects. Error if invalid option is chosen.
+        :returns: the implementation objects. Error if invalid option is chosen. todo return specification
         """
 
         # Initialise the class to read / generate a network
@@ -65,6 +56,10 @@ class SetupSimulation(Setup):
                 imp_read = read_network.ReadNetworkCsv(PARAMETERS)  # Imports an arbitrary network from csv files
             case 3:
                 imp_read = read_network.ReadNetworkIgraph(PARAMETERS)  # Imports a graph from igraph file (pickle file)
+            case 4:
+                imp_read = read_network.ReadNetworkPkl(PARAMETERS)  # Imports a graph from pkl files
+            case 5:
+                imp_read = read_network.ReadTortuousNetwork(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to generate or import a network (read_network_option)")
 
@@ -98,43 +93,27 @@ class SetupSimulation(Setup):
                 imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS)  # No Fahraeus effect (u_RBC = u_Bulk)
             case 2:  # Takes RBCs into account based on the empirical laws by Pries, Neuhaus, Gaehtgens (1992)
                 imp_hd = discharge_haematocrit.DischargeHaematocritVitroPries1992(PARAMETERS)
-                imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
+                imp_transmiss = transmissibility.TransmissibilityVitroPries1992(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
             case 3:  # Takes RBCs into account based on the empirical laws by Pries and Secomb (2005)
                 imp_hd = discharge_haematocrit.DischargeHaematocritVitroPries2005(PARAMETERS)
-                imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
+                imp_transmiss = transmissibility.TransmissibilityVitroPries2005(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
-            case 4:  # Discharging Hematocrit based on the empirical laws by Pries (1990)
-                imp_hd = discharge_haematocrit.DischargeHaematocritPries1990(PARAMETERS)
-                imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
-                imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS)  # No Fahraeus effect (u_RBC = u_Bulk)
             case _:
                 sys.exit("Error: Choose valid option for the handling of RBCs (rbc_impact_option)")
 
         # Initialise the classes handling the solution of the linear system (build system and solver)
         match PARAMETERS["solver_option"]:
             case 1:
-                imp_buildsystem = build_system.BuildSystemSparseCsc(PARAMETERS)  # Fast approach to build the system
+                imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
                 imp_solver = pressure_flow_solver.PressureFlowSolverSparseDirect(PARAMETERS)  # Direct solver
             case 2:
-                imp_buildsystem = build_system.BuildSystemSparseCsc(PARAMETERS)  # Fast approach to build the system
+                imp_buildsystem = build_system.BuildSystemSparseCoo(PARAMETERS)  # Fast approach to build the system
                 imp_solver = pressure_flow_solver.PressureFlowSolverPyAMG(PARAMETERS)  # Iterative solver
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
-        match PARAMETERS["iterative_routine"]:
-            case 1:
-                imp_iterative = iterative_routine.IterativeRoutineNone(PARAMETERS)  # No iterative procedure
-            case 2 | 3 | 4:
-                imp_iterative = iterative_routine.IterativeRoutineMultipleIteration(PARAMETERS)
-            case _:
-                print("No Iterative Method selected: Default Selection")
-                imp_iterative = iterative_routine.IterativeRoutineNone(PARAMETERS)  # No iterative procedure
-
-        # Flow Balance
-        imp_balance = flow_balance.FlowBalanceClass(PARAMETERS)
-
-        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver, imp_iterative, imp_balance
+        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
 
     def setup_inverse_model(self, PARAMETERS):
         """

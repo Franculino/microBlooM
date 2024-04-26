@@ -3,6 +3,8 @@ from types import MappingProxyType
 import numpy as np
 import sys
 
+from numpy import double
+
 
 class ReadParameters(ABC):
     """
@@ -104,15 +106,28 @@ class ReadParametersVertices(ReadParameters):
                                               df_parameter_space['vertex_param_pm_range'][0]
         else:
             # Sort prescribed edge ids with parameters according to ascending edge ids.
-            df_parameter_space = df_parameter_space.sort_values('vertex_param_vid')
+            selected_edge_pairs = flownetwork.edge_list[flownetwork.bc_edges]
+            vids_params = np.array([pair[0] if pair[0] in flownetwork.boundary_vs else pair[1]
+                                    for pair in selected_edge_pairs])
+            # Set 'vertex_param_vid' as the index in df_parameter_space
+            df_parameter_space = df_parameter_space.set_index('vertex_param_vid')
+            # Reindex df_parameter_space to match the order in vids_params
+            # This will arrange the rows of df_parameter_space to follow the order specified in vids_params
+            sorted_df = df_parameter_space.reindex(vids_params)
+            # Reset the index to move 'vertex_param_vid' from an index back to a column
+            # This step ensures that 'vertex_param_vid' is again a column in the sorted_df DataFrame,
+            # allowing for easy access and manipulation as a standard column
+            sorted_df = sorted_df.reset_index()
+
+            # df_parameter_space = df_parameter_space.sort_values('vertex_param_vid')
             # Check for duplicate eids
-            if True in df_parameter_space.duplicated(subset=['vertex_param_vid']).to_numpy():
+            if True in sorted_df.duplicated(subset=['vertex_param_vid']).to_numpy():
                 sys.exit("Error: Duplicate edge id in parameter space definition.")
 
             # Assign data to inversemodel object
             # Edge attributes
-            inversemodel.vertex_param_vid = df_parameter_space["vertex_param_vid"].to_numpy().astype(np.int)
-            inversemodel.parameter_pm_range = df_parameter_space["vertex_param_pm_range"].to_numpy().astype(np.double)
+            inversemodel.vertex_param_vid = sorted_df["vertex_param_vid"].to_numpy().astype(int)
+            inversemodel.parameter_pm_range = sorted_df["vertex_param_pm_range"].to_numpy().astype(double)
 
             is_a_boundary_vertex = np.in1d(inversemodel.vertex_param_vid, flownetwork.boundary_vs)
             if False in is_a_boundary_vertex:
@@ -126,3 +141,26 @@ class ReadParametersVertices(ReadParameters):
 
         inversemodel.nr_of_vertex_parameters = np.size(inversemodel.vertex_param_vid)
         inversemodel.nr_of_parameters = inversemodel.nr_of_vertex_parameters
+
+        match self._PARAMETERS["cost_function_option"]:
+            case 1 | 2:
+                inversemodel.is_target = np.in1d(inversemodel.edge_constraint_range_pm, 0)
+            case 3:
+                # Find the most frequent value in the array
+                values, counts = np.unique(inversemodel.edge_constraint_sigma, return_counts=True)
+                most_frequent_value = values[np.argmax(counts)]
+
+                # Create a boolean array where the condition is True if the value is not the most frequent one
+                inversemodel.is_target = ~np.in1d(inversemodel.edge_constraint_sigma, most_frequent_value)
+
+        nr_ranges = np.count_nonzero(~inversemodel.is_target)
+
+        match self._PARAMETERS["cost_function_option"]:
+            case 1:
+                if nr_ranges != 0:
+                    sys.exit("If you want to use cost function 1 do not add ranges.")
+            case 2 | 3:
+                if nr_ranges == 0:
+                    sys.exit("If you want to use cost function 2 or 3, add both exact targets and range ones.")
+            case _:
+                sys.exit("Error: Choose valid cost function option")

@@ -40,6 +40,7 @@ class AdjointMethodSolver(ABC):
         # Update the gradient with respect to alpha.
         inversemodel.gradient_alpha = gradient
 
+
 class AdjointMethodSolverSparseDirect(AdjointMethodSolver):
     """
     Class for updating the gradient in alpha space with a sparse direct solver.

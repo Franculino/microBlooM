@@ -17,6 +17,7 @@ class RbcVelocity(ABC):
         """
         self._PARAMETERS = PARAMETERS
 
+
     @abstractmethod
     def update_velocity(self, flownetwork):
         """
@@ -33,9 +34,12 @@ class RbcVelocity(ABC):
         :return: Bulk flow velocity in every edge
         :rtype: 1d numpy array
         """
+
         diameter = flownetwork.diameter
         flow_rate = flownetwork.flow_rate
-
+        flownetwork.bulk_flow_velocity = flow_rate / (np.square(diameter) * np.pi / 4)
+        pos_bulk_velocity = abs(flownetwork.bulk_flow_velocity)
+        flownetwork.null_velocity_edges = np.where(pos_bulk_velocity < 1e-6)
         return flow_rate / (np.square(diameter) * np.pi / 4)
 
 
@@ -66,9 +70,12 @@ class RbcVelocityFahraeus(RbcVelocity):
         :param flownetwork: flow network object
         :type: source.flow_network.FlowNetwork
         """
+        hd = flownetwork.hd
+        ht = flownetwork.ht
 
         # Make sure that if ht=0, the ratio hd/ht is 1
         hd_ht_ratio = np.ones(flownetwork.nr_of_es)
         hd_ht_ratio[flownetwork.ht > 0.] = flownetwork.hd[flownetwork.ht > 0.] / flownetwork.ht[flownetwork.ht > 0.]
 
         flownetwork.rbc_velocity = self._get_bulk_flow_velocity(flownetwork) * hd_ht_ratio
+

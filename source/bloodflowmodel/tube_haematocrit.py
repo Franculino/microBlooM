@@ -37,7 +37,7 @@ class TubeHaematocritNewtonian(TubeHaematocrit):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
-        flownetwork.ht = np.zeros(flownetwork.nr_of_es, dtype=np.float)
+        flownetwork.ht = np.zeros(flownetwork.nr_of_es, dtype=float)
 
 
 class TubeHaematocritConstant(TubeHaematocrit):
@@ -51,12 +51,12 @@ class TubeHaematocritConstant(TubeHaematocrit):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
-        ht_constant = np.float(self._PARAMETERS["ht_constant"])
+        ht_constant = float(self._PARAMETERS["ht_constant"])
         if ht_constant < 0 or ht_constant > 1:
             sys.exit("Error: Ht has to be in range 0 to 1.")
 
         # Assign constant haematocrit to all edges
-        flownetwork.ht = np.ones(flownetwork.nr_of_es, dtype=np.float) * ht_constant
+        flownetwork.ht = np.ones(flownetwork.nr_of_es, dtype=float) * ht_constant
 
 
 class TubeHaematocritTracking(TubeHaematocrit):
@@ -64,4 +64,3 @@ class TubeHaematocritTracking(TubeHaematocrit):
         pass
         # todo implement with RBC tracking (need to have access to "cloud" class object). Count number of RBCs per edge
         #  and compute corresponding ht
-
