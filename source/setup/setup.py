@@ -14,7 +14,8 @@ import source.inverseproblemmodules.adjoint_method_implementations as adjoint_me
 import source.inverseproblemmodules.adjoint_method_solver as adjoint_method_solver
 import source.inverseproblemmodules.alpha_restriction as alpha_mapping
 import source.fileio.read_distensibility_parameters as read_distensibility_parameters
-import source.distensibilitymodules.initialise_distensibility_law as initialise_distensibility_law
+import source.fileio.read_vascular_properties as read_vascular_properties
+import source.distensibilitymodules.initialise_tube_law as initialise_tube_law
 import source.distensibilitymodules.update_diam_distensibility_law as update_diam_distensibility_law
 import source.strokemodules.ischaemic_stroke_state as ischaemic_stroke_state
 import source.fileio.read_autoregulation_parameters as read_autoregulation_parameters
@@ -118,6 +119,10 @@ class SetupSimulation(Setup):
                 imp_hd = discharge_haematocrit.DischargeHaematocritVitroPries2005(PARAMETERS)
                 imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
                 imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
+            case 4:  # Takes RBCs into account based on the empirical laws by Payne et al. (2023)
+                imp_hd = discharge_haematocrit.DischargeHaematocritPayne2023(PARAMETERS)
+                imp_transmiss = transmissibility.TransmissibilityVitroPriesPayne2023(PARAMETERS)
+                imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option for the handling of RBCs (rbc_impact_option)")
 
@@ -132,7 +137,34 @@ class SetupSimulation(Setup):
             case _:
                 sys.exit("Error: Choose valid option for the solver (solver_option)")
 
-        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver
+        # Initialise the class to read the vascular properties
+        match PARAMETERS["read_vascular_properties_option"]:
+            case 1:  # Do not read anything
+                imp_read_vascular_properties = read_vascular_properties.ReadVascularPropertiesNothing(PARAMETERS)
+            case 2:  # Read vascular properties from a csv file
+                imp_read_vascular_properties = read_vascular_properties.ReadVascularPropertiesFromFile(PARAMETERS)
+            case _:
+                sys.exit("Error: Choose valid option to import the vascular properties (read_vascular_properties_option)")
+
+        # Initialise the class for the tube law of elastic vessels
+        match PARAMETERS["tube_law_ref_state_option"]:
+            case 1:  # Do not define the reference state of the tube law
+                imp_tube_law_ref_state = initialise_tube_law.TubeLawInitialisionNothing(PARAMETERS)
+            case 2:  # Define the reference state of the tube law, linearised. p_ext = p_base, d_ref = d_base
+                imp_tube_law_ref_state = initialise_tube_law.TubeLawPassiveReferenceBaselinePressure(PARAMETERS)
+            case 3:  # Define the reference state of the tube law, linearised. p_ext=0, d_ref computed based on Sherwin et al. (2003).
+                imp_tube_law_ref_state = initialise_tube_law.TubeLawPassiveReferenceConstantExternalPressureSherwin(PARAMETERS)
+            case 4:  # Define the reference state of the tube law, linearised. p_ext=0, d_ref computed based on Payne et al. (2023).
+                imp_tube_law_ref_state = initialise_tube_law.TubeLawPassiveReferenceConstantExternalPressureSherwin(PARAMETERS)
+            case 5:  # Define the reference state of the tube law, linearised. p_ext=0, d_ref computed based on Urquiza et al. (2006).
+                imp_tube_law_ref_state = initialise_tube_law.TubeLawPassiveReferenceConstantExternalPressureUrquiza(PARAMETERS)
+            case 6:  # Define the reference state of the tube law, linearised. p_ext=0, d_ref computed based on Rammos et al. (1998).
+                imp_tube_law_ref_state = initialise_tube_law.TubeLawPassiveReferenceConstantExternalPressureRammos(PARAMETERS)
+            case _:
+                sys.exit("Error: Choose valid option to define the reference state (tube_law_ref_state_option)")
+
+        return imp_read, imp_write, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, imp_solver, \
+            imp_read_vascular_properties, imp_tube_law_ref_state
 
     def setup_inverse_model(self, PARAMETERS):
         """
@@ -184,6 +216,7 @@ class SetupSimulation(Setup):
         :returns: the implementation objects. Error if invalid option is chosen.
         """
 
+        # Initialise the class to read the parameters related to the distensibility of blood vessels
         match PARAMETERS["read_dist_parameters_option"]:
             case 1:  # Do not read anything
                 imp_read_dist_parameters = read_distensibility_parameters.ReadDistensibilityParametersNothing(PARAMETERS)
@@ -191,20 +224,6 @@ class SetupSimulation(Setup):
                 imp_read_dist_parameters = read_distensibility_parameters.ReadDistensibilityParametersFromFile(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to read distensibility parameters (read_dist_parameters_option)")
-
-        match PARAMETERS["dist_ref_state_option"]:
-            case 1:  # No update of diameters due to vessel distensibility
-                imp_dist_ref_state = initialise_distensibility_law.DistensibilityInitialiseNothing(PARAMETERS)
-            case 2:  # Passive diameter changes, linearised. p_ext = p_base, d_ref = d_base
-                imp_dist_ref_state = initialise_distensibility_law.DistensibilityLawPassiveReferenceBaselinePressure(PARAMETERS)
-            case 3:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Sherwin et al. (2003).
-                imp_dist_ref_state = initialise_distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureSherwin(PARAMETERS)
-            case 4:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Urquiza et al. (2006).
-                imp_dist_ref_state = initialise_distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureUrquiza(PARAMETERS)
-            case 5:  # Passive diameter changes, linearised. p_ext=0, d_ref computed based on Rammos et al. (1998).
-                imp_dist_ref_state = initialise_distensibility_law.DistensibilityLawPassiveReferenceConstantExternalPressureRammos(PARAMETERS)
-            case _:
-                sys.exit("Error: Choose valid option to define the reference state (dist_ref_state_option)")
 
         match PARAMETERS["dist_pres_area_relation_option"]:
             case 1:  # No update of diameters due to vessel distensibility
@@ -218,7 +237,7 @@ class SetupSimulation(Setup):
             case _:
                 sys.exit("Error: Choose valid option to define the p-A ralation (dist_pres_area_relation_option)")
 
-        return imp_read_dist_parameters, imp_dist_ref_state, imp_dist_pres_area_relation
+        return imp_read_dist_parameters, imp_dist_pres_area_relation
 
 
     def setup_ischaemic_stroke_model(self, PARAMETERS):
@@ -249,6 +268,7 @@ class SetupSimulation(Setup):
         :returns: the implementation objects. Error if invalid option is chosen.
         """
 
+        # Initialise the class to read the parameters related to the autoregulatory blood vessels
         match PARAMETERS["read_auto_parameters_option"]:
             case 1:  # Do not read anything
                 imp_read_auto_parameters = read_autoregulation_parameters.ReadAutoregulationParametersNothing(PARAMETERS)
@@ -257,21 +277,26 @@ class SetupSimulation(Setup):
             case _:
                 sys.exit("Error: Choose valid option to read autoregulation parameters (read_auto_parameters_option)")
 
-        match PARAMETERS["compliance_relation_option"]:
+        # Initialise the class to compute the compliance at the baseline
+        match PARAMETERS["base_compliance_relation_option"]:
             case 1:  # Do not specify compliance relation
                 imp_auto_baseline = initialise_autoregulation_model.AutoregulationModelInitialiseNothing(PARAMETERS)
-            case 2:  # Specify the compliance at the baseline according to p-A relation proposed by Sherwin et al. (2003)
-                imp_auto_baseline = initialise_autoregulation_model.AutoregulationModelInitialiseSherwinRelation(PARAMETERS)
+            case 2:  # Compute the compliance at the baseline according to the relation proposed by Payne et al. (2023)
+                imp_auto_baseline = initialise_autoregulation_model.AutoregulationModelInitialisePayneRelation(PARAMETERS)
+            case 3:  # Compute the compliance at the baseline using the definition C = dV/dPt based on Sherwin et al. (2023)
+                imp_auto_baseline = initialise_autoregulation_model.AutoregulationModelInitialiseOurRelation(PARAMETERS)
             case _:
-                sys.exit("Error: Choose valid option to specify compliance relation (compliance_relation_option)")
+                sys.exit("Error: Choose valid option to specify compliance relation (base_compliance_relation_option)")
 
         match PARAMETERS["auto_feedback_model_option"]:
             case 1:  # Do not specify compliance relation
                 imp_auto_feedback_model = update_diam_autoregulation_model.AutoregulationModelUpdateNothing(PARAMETERS)
-            case 2:  # Specify the compliance at the baseline according to p-A relation proposed by Sherwin et al. (2003)
+            case 2:  # Feedback model: Update diameters based on the autoregulation model proposed by Payne et al. 2023
                 imp_auto_feedback_model = update_diam_autoregulation_model.AutoregulationModelUpdatePayne2023(PARAMETERS)
-            case 3:  # Specify the compliance at the baseline according to p-A relation proposed by Sherwin et al. (2003)
-                imp_auto_feedback_model = update_diam_autoregulation_model.AutoregulationModelUpdateUrsino1997(PARAMETERS)
+            case 3:  # Feedback model: Update diameters based on the autoregulation model according Dominik's approach
+                imp_auto_feedback_model = update_diam_autoregulation_model.AutoregulationModelDominikModel(PARAMETERS)
+            case 4:  # Feedback model: Update diameters by adjusting the autoregulation model proposed by Payne et al. 2023
+                imp_auto_feedback_model = update_diam_autoregulation_model.AutoregulationModelOurApproach(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option to specify the compliance feedback model (auto_feedback_model_option)")
 

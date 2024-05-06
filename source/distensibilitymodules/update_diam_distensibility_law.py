@@ -52,6 +52,9 @@ class DistensibilityLawUpdatePassiveSherwin(DistensibilityLawUpdate):
         """
         # Edge ids that are a vessel with distensibility (diameter changes are possible)
         eids_dist = distensibility.eid_vessel_distensibility
+        # Specify the reference pressure and diameter based on the tube law initialisation
+        distensibility.pressure_ref = flownetwork.pressure_ref
+        distensibility.diameter_ref = flownetwork.diameter_ref[eids_dist]
         # Compute p-p_ref for each vertex of the entire network
         pressure_difference_vertex = flownetwork.pressure - distensibility.pressure_ref
         # Compute p-p_ref for each edge that can change due to the distensibility. Take the mean pressure of adjacent
@@ -62,8 +65,8 @@ class DistensibilityLawUpdatePassiveSherwin(DistensibilityLawUpdate):
         diameter_new = np.copy(flownetwork.diameter)
         # Compute the updated diameters
         diameter_new[eids_dist] = distensibility.diameter_ref + pressure_difference_dist_edges * np.square(
-            distensibility.diameter_ref) * (1 - np.square(distensibility.nu)) / (
-                                              2. * distensibility.e_modulus * distensibility.wall_thickness)
+            distensibility.diameter_ref) * (1 - np.square(flownetwork.nu)) / (
+                                              2. * flownetwork.e_modulus[eids_dist] * flownetwork.wall_thickness[eids_dist])
         # Update diameters
         flownetwork.diameter = diameter_new
 
@@ -80,6 +83,9 @@ class DistensibilityLawUpdatePassiveUrquiza(DistensibilityLawUpdate):
         """
         # Edge ids that are a vessel with distensibility (diameter changes are possible)
         eids_dist = distensibility.eid_vessel_distensibility
+        # Specify the reference pressure and diameter based on the tube law initialisation
+        distensibility.pressure_ref = flownetwork.pressure_ref
+        distensibility.diameter_ref = flownetwork.diameter_ref[eids_dist]
         # Compute p-p_ref for each vertex of the entire network
         pressure_difference_vertex = flownetwork.pressure - distensibility.pressure_ref
         # Compute p-p_ref for each edge that can change due to the distensibility. Take the mean pressure of adjacent
@@ -90,7 +96,7 @@ class DistensibilityLawUpdatePassiveUrquiza(DistensibilityLawUpdate):
         diameter_new = np.copy(flownetwork.diameter)
         # Compute the updated diameters
         diameter_new[eids_dist] = distensibility.diameter_ref + pressure_difference_dist_edges * np.square(
-            distensibility.diameter_ref) / (2. * distensibility.e_modulus * distensibility.wall_thickness)
+            distensibility.diameter_ref) / (2. * flownetwork.e_modulus[eids_dist] * flownetwork.wall_thickness[eids_dist])
         # Update diameters
         flownetwork.diameter = diameter_new
 
@@ -107,6 +113,9 @@ class DistensibilityLawUpdatePassiveRammos(DistensibilityLawUpdate):
         """
         # Edge ids that are a vessel with distensibility (diameter changes are possible)
         eids_dist = distensibility.eid_vessel_distensibility
+        # Specify the reference pressure and diameter based on the tube law initialisation
+        distensibility.pressure_ref = flownetwork.pressure_ref
+        distensibility.diameter_ref = flownetwork.diameter_ref[eids_dist]
         # Compute p-p_ref for each vertex of the entire network
         pressure_difference_vertex = flownetwork.pressure - distensibility.pressure_ref
         # Compute p-p_ref for each edge that can change due to the distensibility. Take the mean pressure of adjacent
@@ -118,6 +127,6 @@ class DistensibilityLawUpdatePassiveRammos(DistensibilityLawUpdate):
         # Compute the updated diameters
         diameter_new[eids_dist] = np.sqrt(np.square(distensibility.diameter_ref) *
                                           (1 + pressure_difference_dist_edges * distensibility.diameter_ref /
-                                           (distensibility.e_modulus * distensibility.wall_thickness)))
+                                           (flownetwork.e_modulus[eids_dist] * flownetwork.wall_thickness[eids_dist])))
         # Update diameters
         flownetwork.diameter = diameter_new

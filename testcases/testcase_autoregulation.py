@@ -27,11 +27,11 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 3,  # 1: generate hexagonal graph
+        "read_network_option": 2,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph file (pickle file)
                                    # 4: todo import graph from edge_data and vertex_data pickle files
-        "write_network_option": 4,  # 1: do not write anything
+        "write_network_option": 3,  # 1: do not write anything
                                     # 2: write to igraph format # todo: handle overwriting data from import file
                                     # 3: write to vtp format
                                     # 4: write to two csv files
@@ -63,13 +63,13 @@ PARAMETERS = MappingProxyType(
         "diameter_blocked_edges": .5e-6,
 
         # Import network from csv options. Only required for "read_network_option" 2
-        "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
-        "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
+        "csv_path_vertex_data": "data/network_payne/nodes.csv",
+        "csv_path_edge_data": "data/network_payne/edges.csv",
         "csv_path_boundary_data": "data/network/b6_B_pre_061/boundary_node_data.csv",
         "csv_diameter": "D", "csv_length": "L",
-        "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
+        "csv_edgelist_v1": "Source vx", "csv_edgelist_v2": "Target vx",
         "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
-        "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p",
+        "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
         "pkl_path_igraph": "data/network/B6_B_01/b6_B_pre_stroke.pkl",
@@ -79,7 +79,7 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "data/network/b6_B_pre_061/results",  # only required for "write_network_option" 2, 3, 4
+        "write_path_igraph": "data/network_payne/results_2version.vtp",  # only required for "write_network_option" 2, 3, 4
 
         ##########################
         # Stroke options

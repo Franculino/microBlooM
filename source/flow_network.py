@@ -6,6 +6,8 @@ import source.bloodflowmodel.transmissibility as transmissibility
 import source.bloodflowmodel.pressure_flow_solver as pressureflowsolver
 import source.bloodflowmodel.build_system as buildsystem
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
+import source.distensibilitymodules.initialise_tube_law as initialise_tube_law
+import source.fileio.read_vascular_properties as read_vascular_properties
 from types import MappingProxyType
 
 
@@ -16,7 +18,16 @@ class FlowNetwork(object):
                  imp_tube_hd: dischargehaematocrit.DischargeHaematocrit,
                  imp_transmiss: transmissibility.Transmissibility, imp_buildsystem: buildsystem.BuildSystem,
                  imp_solver: pressureflowsolver.PressureFlowSolver, imp_rbcvelocity: rbc_velocity.RbcVelocity,
+                 imp_read_vascular_properties: read_vascular_properties.ReadVascularProperties,
+                 imp_tube_law_ref_state: initialise_tube_law.TubeLawInitialision,
                  PARAMETERS: MappingProxyType):
+
+        self.percent = None  #### REMOVE
+        self.rel_stiffness = None  #### REMOVE
+        self.rel_compliance = None  #### REMOVE
+        self.shear_stress_baseline = None #### REMOVE
+        self.sens_direct = None  #### REMOVE
+        self.sens_shear = None  #### REMOVE
 
         # Network attributes
         self.nr_of_vs = None
@@ -38,13 +49,23 @@ class FlowNetwork(object):
         self.rbc_velocity = None
 
         # Network boundaries
-        self.boundary_vs = None # vertex ids of boundaries (1d np.array)
-        self.boundary_val =  None # boundary values (1d np.array)
-        self.boundary_type = None # boundary type (1: pressure, 2: flow rate)
+        self.boundary_vs = None  # vertex ids of boundaries (1d np.array)
+        self.boundary_val = None  # boundary values (1d np.array)
+        self.boundary_type = None  # boundary type (1: pressure, 2: flow rate)
 
         # Solver
-        self.system_matrix = None # system matrix of linear system of equations
-        self.rhs = None # right hand side of linear system of equations
+        self.system_matrix = None  # system matrix of linear system of equations
+        self.rhs = None  # right hand side of linear system of equations
+
+        # Tube law: Reference values
+        self.pressure_ref = None
+        self.diameter_ref = None
+        self.pressure_external = None
+
+        # Tube law: Material parameters (constants)
+        self.e_modulus = None  # E modulus for each vessel with distensibility
+        self.wall_thickness = None  # Vessel wall thickness
+        self.nu = 0.5  # Poisson ratio of the vessel wall. nu = 0.5, if vessel walls are incompressible
 
         # "References" to implementations
         self._imp_readnetwork = imp_readnetwork
@@ -55,6 +76,8 @@ class FlowNetwork(object):
         self._imp_buildsystem = imp_buildsystem
         self._imp_solver = imp_solver
         self._imp_rbcvelocity = imp_rbcvelocity
+        self._imp_tube_law_ref_state = imp_tube_law_ref_state
+        self._imp_read_vascular_properties = imp_read_vascular_properties
 
         # "Reference" to parameter dict
         self._PARAMETERS = PARAMETERS
@@ -87,4 +110,11 @@ class FlowNetwork(object):
         self._imp_buildsystem.build_linear_system(self)
         self._imp_solver.update_pressure_flow(self)
         self._imp_rbcvelocity.update_velocity(self)
+
+    def initialise_tube_law(self):
+        """
+        Update transmissibility of all edges in the vascular network.
+        """
+        self._imp_read_vascular_properties.read(self)
+        self._imp_tube_law_ref_state.initialise_ref_state(self)
 

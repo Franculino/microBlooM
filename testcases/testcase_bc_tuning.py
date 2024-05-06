@@ -12,6 +12,7 @@ on given flow rates and velocities in selected edges. Capabilities:
 9. Optimisation of pressures for a fixed number of iteration steps.
 10. Save the results in a file.
 """
+import sys
 
 from source.flow_network import FlowNetwork
 from source.inverse_model import InverseModel
@@ -114,12 +115,16 @@ print("Update flow, pressure and velocity: DONE")
 
 inverse_model.initialise_inverse_model()
 inverse_model.update_cost()
+print(flow_network.nr_of_vs)
 
 nr_of_iterations = int(PARAMETERS["max_nr_of_iterations"])
 print("Solve the inverse problem and update the diameters: ...")
 cost_h = [inverse_model.f_h]
 for i in range(nr_of_iterations):
     inverse_model.update_state()
+    print(inverse_model.d_g_d_alpha.todense())
+    print(inverse_model.d_g_d_alpha.shape)
+
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
     inverse_model.update_cost()

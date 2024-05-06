@@ -14,3 +14,5 @@
 
 # Run test case to tune boundary pressures with the inverse model
 # import testcases.testcase_bc_tuning
+
+import testcases.testcase_autoregulation

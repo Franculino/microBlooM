@@ -231,6 +231,9 @@ class WriteNetworkVtp(WriteNetwork):
         if flownetwork.pressure is not None:
             graph.vs["pressure"] = flownetwork.pressure
 
+        graph.es["shear_stress_baseline"] = flownetwork.shear_stress_baseline
+
+
         # Make a copy of the graph so that modifications are possible, without
         # changing the original. Add indices that can be used for comparison with
         # the original, even after some edges / vertices in the copy have been
@@ -363,6 +366,18 @@ class WriteNetworkCsv(WriteNetwork):
         if flownetwork.ht is not None:
             df_edge_data["ht"] = flownetwork.ht
 
+        if flownetwork.rel_stiffness is not None:
+            df_edge_data["rel_stiffness"] = flownetwork.rel_stiffness
+
+        if flownetwork.rel_compliance is not None:
+            df_edge_data["rel_compliance"] = flownetwork.rel_compliance
+
+        if flownetwork.sens_direct is not None:
+            df_edge_data["sens_direct"] = flownetwork.sens_direct
+
+        if flownetwork.sens_shear is not None:
+            df_edge_data["sens_shear"] = flownetwork.sens_shear
+
         # Write all the vertex based attributes and results
         df_vertex_data = pd.DataFrame()
         df_vertex_data["x"] = flownetwork.xyz[:, 0]
@@ -372,5 +387,5 @@ class WriteNetworkCsv(WriteNetwork):
         if flownetwork.pressure is not None:
             df_vertex_data["pressure"] = flownetwork.pressure
 
-        df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_edge_data.csv", index=False)
-        df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_vertex_data.csv", index=False)
+        df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_edge_data_"+str(flownetwork.percent)+".csv", index=False)
+        df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_vertex_data_"+str(flownetwork.percent)+".csv", index=False)
