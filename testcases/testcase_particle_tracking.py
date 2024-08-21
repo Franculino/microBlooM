@@ -117,7 +117,7 @@ def move_particle(vs_coords, es, current_position, current_tube, remaining_time,
                 return new_position, current_tube
 
 
-graph = ig.Graph.Read_Pickle('testcases\network_simulated3.pkl')
+graph = ig.Graph.Read_Pickle('testcases/network_simulated3.pkl')
 es = np.array(graph.get_edgelist())
 vs_coords = np.array(graph.vs['xyz'])
 length = np.array(graph.es['length'])
