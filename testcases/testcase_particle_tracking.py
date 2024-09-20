@@ -1,4 +1,5 @@
 import sys
+import time
 import numpy as np
 import pandas as pd
 import matplotlib.animation as animation
@@ -8,14 +9,14 @@ import matplotlib.pyplot as plt
 from source.flow_network import FlowNetwork
 from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
-from source.particle_tracking.passive_particle_tracking import Particle_tracker
+from source.particle_tracking.passive_particle_tracking_v2 import Particle_tracker
 import source.setup.setup as setup
 
 # MappingProxyType is basically a const dict.
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,  # 1: generate hexagonal graph
+        "read_network_option": 3,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph format (pickle file)
         "write_network_option": 1,  # 1: do not write anything
@@ -63,7 +64,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "data/network/network_graph.pkl",
+        "pkl_path_igraph": "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/testcases/Graph_Manuel3.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
@@ -73,13 +74,12 @@ PARAMETERS = MappingProxyType(
         # Note: the extension of the output file is automatically added later in the function
         "write_path_igraph": "data/network/network_simulated",
 
-        # Options for initializing the partciles inside the network:
+        # Options for initializing the particles:
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "N_timesteps": 30,
-        "inflow_vertices": {18:3, 54:4, 23:5}, # vertices from which particles can enter the network : 
-                                                # number of timesteps until next parcile entering thorugh that vertex
-        "outflow_vertices": [65]
+        "N_timesteps": 500,
+        "interval_mode": 2,
+        "use_tortuosity": 1,  # 0: Tortuosity off, 1: Tortuosity on
     }
 )
 
@@ -114,13 +114,42 @@ print("Check flow balance: ...")
 flow_network.check_flow_balance()
 print("Check flow balance: DONE")
 
+# Track the time for the particle-related steps
+start_time_total = time.process_time()  # Start time for particle tracking process
+
+# Initialization of particles
 print("Initialization of particles into the network: ...")
+start_initialization = time.process_time()
 particle_tracker = Particle_tracker(PARAMETERS, flow_network)
-print("Initialization of particles into the network: DONE")
+initialization_time = time.process_time() - start_initialization
+print(f"Initialization of particles into the network: DONE in {initialization_time:.4f} seconds")
 
+# Simulation of particles
 print("Simulation of particles into the network: ...")
-particles_evolution = particle_tracker.simulate()
-print("Siimulation of particles into the network: DONE")
+start_simulation = time.process_time()
+particles_evolution = particle_tracker.evolve_particles()
+simulation_time = time.process_time() - start_simulation
+print(f"Simulation of particles into the network: DONE in {simulation_time:.4f} seconds")
 
-particle_tracker.animate_particles()
+# Transformation to global coordinates
+print("Transforming particles to global coordinates: ...")
+start_transformation = time.process_time()
+particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+transformation_time = time.process_time() - start_transformation
+print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
+
+# Define output directory for the VTK files
+output_directory = "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/data/network/output"
+
+# Create VTK files per timestep
+print("Creating VTK files for particles per timestep: ...")
+start_vtk_creation = time.process_time()
+particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
+vtk_creation_time = time.process_time() - start_vtk_creation
+print(f"VTK files created in directory: {output_directory} in {vtk_creation_time:.4f} seconds")
+
+# Total time for particle processing
+total_particle_process_time = time.process_time() - start_time_total
+print(f"\nTotal time for particle processing: {total_particle_process_time:.4f} seconds")
+
 

@@ -19,10 +19,10 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,  # 1: generate hexagonal graph
+        "read_network_option": 3,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph format (pickle file)
-        "write_network_option": 1,  # 1: do not write anything
+        "write_network_option": 2,  # 1: do not write anything
                                     # 2: write to igraph format (.pkl)
                                     # 3: write to vtp format (.vtp)
                                     # 4: write to two csv files (.csv)
@@ -67,7 +67,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "data/network/network_graph.pkl",
+        "pkl_path_igraph": "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/testcases/Graph_Manuel3.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
