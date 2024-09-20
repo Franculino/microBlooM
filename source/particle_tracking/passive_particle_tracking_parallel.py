@@ -42,9 +42,10 @@ class Particle_tracker(object):
         self.graph.es['rbc_velocity'] = self.rbc_velocity # Rbc_velocity
         
         self.use_tortuosity = PARAMETERS["use_tortuosity"]
+        self.parallel = PARAMETERS['parallel']
         self.N_particles = self._PARAMETERS["initial_number_particles"]
         self.initial_particle_tube = self._PARAMETERS["initial_vessels"]
-        self.delta_t = 6 * self.length.min()/(self.rbc_velocity.max())
+        self.delta_t = 5 * self.length.min()/(self.rbc_velocity.max())
         self.N_timesteps =  self._PARAMETERS["N_timesteps"]
         self.inflow_vertices, self.outflow_vertices = self.detect_inflow_outflow_vertices()
         self.inflow_vertices = np.array(self.inflow_vertices)
@@ -342,96 +343,6 @@ class Particle_tracker(object):
         
         return new_vessels
 
-    def transform_to_global_coordinates(self):
-        """
-        Transforms the local coordinates of the particles to global coordinates.
-        """
-        particles_evolution_global = np.full((self.N_particles_total, self.N_timesteps + 1, 3), np.nan)
-        self.vessel_data = {}
-
-        if self.use_tortuosity == 1:
-            for vessel_id in range(len(self.es)):
-   
-                vessel_points = np.array(self.points[vessel_id])
-                vessel_lengths = np.array(self.lengths[vessel_id])
-                vessel_total_length = self.length[vessel_id]
-
-                if vessel_id in self.indices_rbc_negativa:
-                    vessel_points = vessel_points[::-1]
-                    vessel_lengths = vessel_lengths[::-1]
-                
-                normalized_lengths = np.cumsum(vessel_lengths) / vessel_total_length
-                normalized_lengths = np.insert(normalized_lengths, 0, 0)  
-                
-                self.vessel_data[vessel_id] = {
-                    'points': vessel_points,
-                    'normalized_lengths': normalized_lengths
-                }
-
-            for p in range(self.N_particles_total):
-                for t in range(self.N_timesteps + 1):
-                    
-                    vessel_id = self.particles_evolution[p, t, 0]
-                    local_coord = self.particles_evolution[p, t, 1]
-
-                    if np.isnan(vessel_id) or np.isnan(local_coord):
-                        continue
-
-                    vessel_id = int(vessel_id)
-
-                    vessel_points = self.vessel_data[vessel_id]['points']
-                    normalized_lengths = self.vessel_data[vessel_id]['normalized_lengths']
-                    
-                    point_idx = np.searchsorted(normalized_lengths, local_coord, side='right') - 1
-                    point_idx = min(point_idx, len(vessel_points) - 2)
-
-                    point_start = vessel_points[point_idx]
-                    point_end = vessel_points[point_idx + 1]
-                    
-                    local_start = normalized_lengths[point_idx]
-                    local_end = normalized_lengths[point_idx + 1]
-                    
-                    interpolation_factor = (local_coord - local_start) / (local_end - local_start)
-                    particle_global_position = point_start + interpolation_factor * (point_end - point_start)
-
-                    particles_evolution_global[p, t] = particle_global_position
-            return particles_evolution_global
-
-        elif self.use_tortuosity == 0:
-            # Iterate over each particle
-            for p in range(self.N_particles_total):
-                # Iterate over each timestep
-                for t in range(self.N_timesteps + 1):
-                    # Get the vessel ID and the local coordinate at the current timestep
-                    vessel_id = self.particles_evolution[p, t, 0]
-                    local_coord = self.particles_evolution[p, t, 1]
-
-                    # Check if the value is NaN, indicating that the particle is no longer active or has exited
-                    if np.isnan(vessel_id) or np.isnan(local_coord):
-                        continue
-
-                    vessel_id = int(vessel_id)  # Ensure it is an integer to use as an index
-
-                    # Get the global coordinates of the two ends of the vessel
-                    start_vertex = self.es[vessel_id, 0]
-                    end_vertex = self.es[vessel_id, 1]
-                    start_coords = self.vs_coords[start_vertex]
-                    end_coords = self.vs_coords[end_vertex]
-
-                    # Calculate the direction vector of the vessel and the global position of the particle
-                    direction_vector = end_coords - start_coords
-                    particle_global_position = start_coords + local_coord * direction_vector
-
-                    # Store the calculated global position in the corresponding array
-                    particles_evolution_global[p, t] = particle_global_position
-            return particles_evolution_global
-
-
-        else:
-            # Default case if no valid mode is selected
-            raise ValueError(f"Invalid use_tortuosity: {self.use_tortuosity}. It must be either 0 or 1.")
-        
-
     def create_vtk_particles_per_timestep(self,particles_evolution_global, output_dir):
         num_particles, num_timesteps, _ = particles_evolution_global.shape
         
@@ -466,6 +377,7 @@ class Particle_tracker(object):
             for pos in valid_positions:
                 points.InsertNextPoint(pos)
             polydata.SetPoints(points)
+            
             # Create and assign the timestep scalar
             scalars = vtk.vtkFloatArray()
             scalars.SetName("Timestep")
@@ -480,3 +392,174 @@ class Particle_tracker(object):
             writer.SetFileName(timestep_file)
             writer.SetInputData(polydata)
             writer.Write()
+
+    def transform_to_global_coordinates(self, parallel=False):
+        """
+        Transforms the local coordinates of the particles to global coordinates.
+        If `parallel` is set to True, the computation will be distributed across MPI processes.
+        """
+        if self.parallel == True:
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
+            rank = comm.Get_rank()
+            size = comm.Get_size()
+
+            particles_per_process = self.N_particles_total // size
+            start_particle = rank * particles_per_process
+            end_particle = (rank + 1) * particles_per_process if rank != size - 1 else self.N_particles_total
+            local_particles_count = end_particle - start_particle
+
+            particles_evolution_global_local = np.full((local_particles_count, self.N_timesteps + 1, 3), np.nan)
+            
+            if self.use_tortuosity == 1:
+                self.vessel_data = {}
+                for vessel_id in range(len(self.es)):
+                    vessel_points = np.array(self.points[vessel_id])
+                    vessel_lengths = np.array(self.lengths[vessel_id])
+                    vessel_total_length = self.length[vessel_id]
+
+                    if vessel_id in self.indices_rbc_negativa:
+                        vessel_points = vessel_points[::-1]
+                        vessel_lengths = vessel_lengths[::-1]
+
+                    normalized_lengths = np.cumsum(vessel_lengths) / vessel_total_length
+                    normalized_lengths = np.insert(normalized_lengths, 0, 0)
+
+                    self.vessel_data[vessel_id] = {
+                        'points': vessel_points,
+                        'normalized_lengths': normalized_lengths
+                    }
+            
+            for t in range(self.N_timesteps + 1):
+                for p in range(start_particle, end_particle):
+                    local_idx = p - start_particle  # Local index of the particle
+                    vessel_id = self.particles_evolution[p, t, 0]
+                    local_coord = self.particles_evolution[p, t, 1]
+
+                    if np.isnan(vessel_id) or np.isnan(local_coord):
+                        continue
+
+                    vessel_id = int(vessel_id)
+
+                    if self.use_tortuosity == 1:
+                        vessel_points = self.vessel_data[vessel_id]['points']
+                        normalized_lengths = self.vessel_data[vessel_id]['normalized_lengths']
+                        
+                        point_idx = np.searchsorted(normalized_lengths, local_coord, side='right') - 1
+                        point_idx = min(point_idx, len(vessel_points) - 2)
+
+                        point_start = vessel_points[point_idx]
+                        point_end = vessel_points[point_idx + 1]
+
+                        local_start = normalized_lengths[point_idx]
+                        local_end = normalized_lengths[point_idx + 1]
+
+                        interpolation_factor = (local_coord - local_start) / (local_end - local_start)
+                        particle_global_position = point_start + interpolation_factor * (point_end - point_start)
+
+                    elif self.use_tortuosity == 0:
+                       
+                        start_vertex = self.es[vessel_id, 0]
+                        end_vertex = self.es[vessel_id, 1]
+                        start_coords = self.vs_coords[start_vertex]
+                        end_coords = self.vs_coords[end_vertex]
+
+                        direction_vector = end_coords - start_coords
+                        particle_global_position = start_coords + local_coord * direction_vector
+
+                    particles_evolution_global_local[local_idx, t] = particle_global_position
+
+            particles_evolution_global = None
+            if rank == 0:
+                particles_evolution_global = np.zeros((self.N_particles_total, self.N_timesteps + 1, 3))
+
+            sendcounts = np.array([particles_per_process] * size)
+            sendcounts[-1] = self.N_particles_total - (size - 1) * particles_per_process
+            displacements = np.array([i * particles_per_process for i in range(size)])
+
+            comm.Gatherv(
+                particles_evolution_global_local, 
+                [particles_evolution_global, 
+                sendcounts * (self.N_timesteps + 1) * 3, 
+                displacements * (self.N_timesteps + 1) * 3, 
+                MPI.DOUBLE], 
+                root=0
+            )
+            if rank == 0:
+                return particles_evolution_global
+            else:
+                return None  
+        else:
+        
+            particles_evolution_global = np.full((self.N_particles_total, self.N_timesteps + 1, 3), np.nan)
+            self.vessel_data = {}
+
+            if self.use_tortuosity == 1:
+                for vessel_id in range(len(self.es)):
+                    vessel_points = np.array(self.points[vessel_id])
+                    vessel_lengths = np.array(self.lengths[vessel_id])
+                    vessel_total_length = self.length[vessel_id]
+
+                    if vessel_id in self.indices_rbc_negativa:
+                        vessel_points = vessel_points[::-1]
+                        vessel_lengths = vessel_lengths[::-1]
+
+                    normalized_lengths = np.cumsum(vessel_lengths) / vessel_total_length
+                    normalized_lengths = np.insert(normalized_lengths, 0, 0)
+
+                    self.vessel_data[vessel_id] = {
+                        'points': vessel_points,
+                        'normalized_lengths': normalized_lengths
+                    }
+
+                for p in range(self.N_particles_total):
+                    for t in range(self.N_timesteps + 1):
+                        vessel_id = self.particles_evolution[p, t, 0]
+                        local_coord = self.particles_evolution[p, t, 1]
+
+                        if np.isnan(vessel_id) or np.isnan(local_coord):
+                            continue
+
+                        vessel_id = int(vessel_id)
+
+                        vessel_points = self.vessel_data[vessel_id]['points']
+                        normalized_lengths = self.vessel_data[vessel_id]['normalized_lengths']
+
+                        point_idx = np.searchsorted(normalized_lengths, local_coord, side='right') - 1
+                        point_idx = min(point_idx, len(vessel_points) - 2)
+
+                        point_start = vessel_points[point_idx]
+                        point_end = vessel_points[point_idx + 1]
+
+                        local_start = normalized_lengths[point_idx]
+                        local_end = normalized_lengths[point_idx + 1]
+
+                        interpolation_factor = (local_coord - local_start) / (local_end - local_start)
+                        particle_global_position = point_start + interpolation_factor * (point_end - point_start)
+
+                        particles_evolution_global[p, t] = particle_global_position
+                return particles_evolution_global
+
+            elif self.use_tortuosity == 0:
+                for p in range(self.N_particles_total):
+                    for t in range(self.N_timesteps + 1):
+                        vessel_id = self.particles_evolution[p, t, 0]
+                        local_coord = self.particles_evolution[p, t, 1]
+
+                        if np.isnan(vessel_id) or np.isnan(local_coord):
+                            continue
+
+                        vessel_id = int(vessel_id)
+                        start_vertex = self.es[vessel_id, 0]
+                        end_vertex = self.es[vessel_id, 1]
+                        start_coords = self.vs_coords[start_vertex]
+                        end_coords = self.vs_coords[end_vertex]
+
+                        direction_vector = end_coords - start_coords
+                        particle_global_position = start_coords + local_coord * direction_vector
+
+                        particles_evolution_global[p, t] = particle_global_position
+                return particles_evolution_global
+
+            else:
+                raise ValueError(f"Invalid use_tortuosity: {self.use_tortuosity}. It must be either 0 or 1.")
