@@ -45,7 +45,7 @@ class Particle_tracker(object):
         self.parallel = PARAMETERS['parallel']
         self.N_particles = self._PARAMETERS["initial_number_particles"]
         self.initial_particle_tube = self._PARAMETERS["initial_vessels"]
-        self.delta_t = 5 * self.length.min()/(self.rbc_velocity.max())
+        self.delta_t = 5 * abs(self.length).min()/(abs(self.rbc_velocity).max())
         self.N_timesteps =  self._PARAMETERS["N_timesteps"]
         self.inflow_vertices, self.outflow_vertices = self.detect_inflow_outflow_vertices()
         self.inflow_vertices = np.array(self.inflow_vertices)
@@ -63,10 +63,21 @@ class Particle_tracker(object):
 
             self.points = graph2.es["points"]
             self.lengths = graph2.es["lengths2"]
+            
+            # check if the points and the nodes of the edges are defined in the same direction:
+            for edge in self.graph.es:
+                source, target = edge.tuple
+                coords_source = self.graph.vs[source]['xyz']
+                coords_target = self.graph.vs[target]['xyz']
+                edge_points = self.points[edge.index]
+
+                if not (np.allclose(coords_source, edge_points[0]) and np.allclose(coords_target, edge_points[-1])):
+                    self.points[edge.index].reverse()
+
         else:
-            # Si no hay tortuosidad, los datos no son necesarios
+
             self.points = None
-            self.lengths2 = None
+            self.lengths = None
 
         self.intervals = self.get_intervals()
         self.initialize_particles_evolution()

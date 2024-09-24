@@ -64,7 +64,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/testcases/Graph_Manuel3.pkl",
+        "pkl_path_igraph": "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/testcases/MVN1_def.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
@@ -77,12 +77,12 @@ PARAMETERS = MappingProxyType(
         # Options for initializing the particles:
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "N_timesteps": 500,
-        "interval_mode": 0, # 0: the same inflowing frequency in every inflowing vertex
+        "N_timesteps": 200,
+        "interval_mode": 1, # 0: the same inflowing frequency in every inflowing vertex
                             # 1: inflowing frequency based on flow_rate of vessels connected to each vertex
         "particles_frequency": 5, # Only required if "interval_mode" 0. Every "particles_freq" 
                              # timesteps a particle will enter through each inflow. Minimum possible value: 1. 
-        "use_tortuosity": 0,  # 0: Tortuosity off, 1: Tortuosity on
+        "use_tortuosity": 1,  # 0: Tortuosity off, 1: Tortuosity on
         "parallel": True  # Set to True for parallel execution, False for sequential
                           # NOTE: For running the parallel version the user should:
                           #          1- Have an MPI implementation installed on the system
