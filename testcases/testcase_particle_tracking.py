@@ -46,11 +46,11 @@ PARAMETERS = MappingProxyType(
                                     # 4: Iterative routine (Rasmussen et al. 2018) [https://onlinelibrary.wiley.com/doi/10.1111/micc.12445]
 
         # Hexagonal network properties. Only required for "read_network_option" 1
-        "nr_of_hexagon_x": 5,
-        "nr_of_hexagon_y": 5,
+        "nr_of_hexagon_x": 11,
+        "nr_of_hexagon_y": 11,
         "hexa_edge_length": 62.e-6,
         "hexa_diameter": 4.e-6,
-        "hexa_boundary_vertices": [0, 65],
+        "hexa_boundary_vertices": [0, 275],
         "hexa_boundary_values": [2, 1],
         "hexa_boundary_types": [1, 1],
 
@@ -77,16 +77,20 @@ PARAMETERS = MappingProxyType(
         # Options for initializing the particles:
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "N_timesteps": 200,
+        "N_timesteps": 3000,
+        "times_basic_delta_t":5,   # The basic timestep is computed as the minimum vessel length divided by
+                                    # the maximum rbc_velocity. The timestep used is computed as:
+                                    #   delta_t = times_basic_delta_t * basic_timestep
+
         "interval_mode": 1, # 0: the same inflowing frequency in every inflowing vertex
                             # 1: inflowing frequency based on flow_rate of vessels connected to each vertex
         "particles_frequency": 5, # Only required if "interval_mode" 0. Every "particles_freq" 
-                             # timesteps a particle will enter through each inflow. Minimum possible value: 1. 
+                                  # timesteps a particle will enter through each inflow. Minimum possible value: 1. 
         "use_tortuosity": 1,  # 0: Tortuosity off, 1: Tortuosity on
         "parallel": True  # Set to True for parallel execution, False for sequential
                           # NOTE: For running the parallel version the user should:
-                          #          1- Have an MPI implementation installed on the system
-                          #          2- Have 'mpi4py' Python package installed in the used Python interpreter
+                          #          1- Have an MPI implementation installed on the system.
+                          #          2- Have 'mpi4py' Python package installed in the used Python interpreter.
                           #          2- Execute in the terminal: 'mpiexec -np x python main.py'
                           #             Where -np is the number of processe selected. 
 

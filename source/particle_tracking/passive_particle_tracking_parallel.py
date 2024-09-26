@@ -45,7 +45,8 @@ class Particle_tracker(object):
         self.parallel = PARAMETERS['parallel']
         self.N_particles = self._PARAMETERS["initial_number_particles"]
         self.initial_particle_tube = self._PARAMETERS["initial_vessels"]
-        self.delta_t = 5 * abs(self.length).min()/(abs(self.rbc_velocity).max())
+        self.times_basic_delta_t = self._PARAMETERS['times_basic_delta_t']
+        self.delta_t = self.times_basic_delta_t * abs(self.length).min()/(abs(self.rbc_velocity).max())
         self.N_timesteps =  self._PARAMETERS["N_timesteps"]
         self.inflow_vertices, self.outflow_vertices = self.detect_inflow_outflow_vertices()
         self.inflow_vertices = np.array(self.inflow_vertices)
@@ -63,8 +64,8 @@ class Particle_tracker(object):
 
             self.points = graph2.es["points"]
             self.lengths = graph2.es["lengths2"]
-            
-            # check if the points and the nodes of the edges are defined in the same direction:
+
+            # check if the points (subnodes) and the nodes of the edges are defined in the same direction.
             for edge in self.graph.es:
                 source, target = edge.tuple
                 coords_source = self.graph.vs[source]['xyz']
@@ -72,7 +73,8 @@ class Particle_tracker(object):
                 edge_points = self.points[edge.index]
 
                 if not (np.allclose(coords_source, edge_points[0]) and np.allclose(coords_target, edge_points[-1])):
-                    self.points[edge.index].reverse()
+                    self.points[edge.index] = self.points[edge.index][::-1]
+                    self.lengths[edge.index] = self.lengths[edge.index][::-1]
 
         else:
 
@@ -203,7 +205,7 @@ class Particle_tracker(object):
 
     def initial_particles(self):
         """
-        Initialize the particle positions at time 0.
+        Initialize the particles position of those particles that start inside the network at time 0.
         """
         initial_particle_tube = np.array(self._PARAMETERS["initial_vessels"]).astype(int)
         initial_local_coord = np.full(self.N_particles, 0.5)
@@ -211,7 +213,7 @@ class Particle_tracker(object):
         return initial
     
     def evolve_particles(self):
-        """Evolve particles across each timestep."""
+        """Evolve particles across each timestep. Computes the movement of every particles in the net"""
         print('Timestep: ', self.delta_t)
         for t in range(1, self.N_timesteps + 1):
             # Determine active particles for this timestep
@@ -258,6 +260,7 @@ class Particle_tracker(object):
             if np.any(second_prediction_position > 1):
                 print("A particles is not being propagated correctly: you should decrease the timestep")
 
+            # Manage particles that exit the network.
             if index_out_particles:
                 for idx in index_out_particles:
                     self.out_particles.append(change_vessel_positive[idx])
@@ -275,6 +278,21 @@ class Particle_tracker(object):
                 self.particles_evolution[self.particles_per_timestep[t]:self.particles_per_timestep[t + 1], t, 1] = 0.0
 
     def select_vessels_positive(self, old_vessels, graph, outflow_vertices, es):
+        """
+        Selects the vessels into which the particles that change vessel in one timestep go.
+        Checks if the end of the previous eddge is an outflow vertex.
+        
+        Parameters:
+        - old_vessels: list of inflow vertices where particles will enter.
+        - graph: the network graph representing the flow.
+        - outflow_vertices: 
+        - es: edge list representing the vessels in the network.
+        
+        Returns:
+        - new_vessels: array of selected vessels into which the particles will inflow.
+        - index_out_particles: particles that reach an ouflow vertex.
+        """
+
         last_nodes = es[old_vessels, 1]
         new_vessels = np.zeros(len(old_vessels))
         index_out_particles = []
@@ -409,6 +427,8 @@ class Particle_tracker(object):
         Transforms the local coordinates of the particles to global coordinates.
         If `parallel` is set to True, the computation will be distributed across MPI processes.
         """
+
+        # PARALLEL IMPLEMENTATION
         if self.parallel == True:
             from mpi4py import MPI
             comm = MPI.COMM_WORLD
@@ -423,23 +443,25 @@ class Particle_tracker(object):
             particles_evolution_global_local = np.full((local_particles_count, self.N_timesteps + 1, 3), np.nan)
             
             if self.use_tortuosity == 1:
-                self.vessel_data = {}
-                for vessel_id in range(len(self.es)):
-                    vessel_points = np.array(self.points[vessel_id])
-                    vessel_lengths = np.array(self.lengths[vessel_id])
-                    vessel_total_length = self.length[vessel_id]
+                if rank == 0:
+                    self.vessel_data = {}
+                    for vessel_id in range(len(self.es)):
+                        vessel_points = np.array(self.points[vessel_id])
+                        vessel_lengths = np.array(self.lengths[vessel_id])
+                        vessel_total_length = self.length[vessel_id]
 
-                    if vessel_id in self.indices_rbc_negativa:
-                        vessel_points = vessel_points[::-1]
-                        vessel_lengths = vessel_lengths[::-1]
+                        if vessel_id in self.indices_rbc_negativa:
+                            vessel_points = vessel_points[::-1]
+                            vessel_lengths = vessel_lengths[::-1]
 
-                    normalized_lengths = np.cumsum(vessel_lengths) / vessel_total_length
-                    normalized_lengths = np.insert(normalized_lengths, 0, 0)
+                        normalized_lengths = np.cumsum(vessel_lengths) / vessel_total_length
+                        normalized_lengths = np.insert(normalized_lengths, 0, 0)
 
-                    self.vessel_data[vessel_id] = {
-                        'points': vessel_points,
-                        'normalized_lengths': normalized_lengths
-                    }
+                        self.vessel_data[vessel_id] = {
+                            'points': vessel_points,
+                            'normalized_lengths': normalized_lengths
+                        }
+                self.vessel_data = comm.bcast(self.vessel_data, root=0)
             
             for t in range(self.N_timesteps + 1):
                 for p in range(start_particle, end_particle):
@@ -501,7 +523,9 @@ class Particle_tracker(object):
             else:
                 return None  
         else:
-        
+            
+            # SEQUENTIAL IMPLEMENTATION 
+
             particles_evolution_global = np.full((self.N_particles_total, self.N_timesteps + 1, 3), np.nan)
             self.vessel_data = {}
 
