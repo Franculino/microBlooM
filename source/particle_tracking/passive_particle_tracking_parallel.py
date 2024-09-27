@@ -61,6 +61,7 @@ class Particle_tracker(object):
 
         if self.use_tortuosity == 1:
             graph2 = igraph.Graph.Read_Pickle(self._PARAMETERS['pkl_path_igraph'])
+            self.vessel_data = {}
 
             self.points = graph2.es["points"]
             self.lengths = graph2.es["lengths2"]
@@ -444,7 +445,7 @@ class Particle_tracker(object):
             
             if self.use_tortuosity == 1:
                 if rank == 0:
-                    self.vessel_data = {}
+
                     for vessel_id in range(len(self.es)):
                         vessel_points = np.array(self.points[vessel_id])
                         vessel_lengths = np.array(self.lengths[vessel_id])
@@ -462,6 +463,7 @@ class Particle_tracker(object):
                             'normalized_lengths': normalized_lengths
                         }
                 self.vessel_data = comm.bcast(self.vessel_data, root=0)
+                comm.Barrier()
             
             for t in range(self.N_timesteps + 1):
                 for p in range(start_particle, end_particle):
