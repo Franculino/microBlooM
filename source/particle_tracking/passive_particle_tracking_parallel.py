@@ -147,8 +147,13 @@ class Particle_tracker(object):
                 flow_rate_inflow.append(total_flow_rate)
 
             flow_rate_inflow = np.array(flow_rate_inflow)
-            intervals = abs(np.max(abs(flow_rate_inflow)) / flow_rate_inflow)
-            intervals = list((intervals / np.min(intervals)).astype(int))
+            intervals_normalized = abs(np.max(abs(flow_rate_inflow)) / flow_rate_inflow)
+            intervals_normalized = (intervals_normalized / np.min(intervals_normalized))
+            # avoid rollover of numpy integers
+            intervals = np.clip(intervals_normalized, a_min=None, a_max=1e6)
+            intervals = list(intervals.astype(int))
+            
+
             return intervals
         else:
             # Default case if no valid mode is selected
@@ -162,6 +167,7 @@ class Particle_tracker(object):
 
         # Total number of particles
         self.N_particles_total = int(self.N_particles + total_particles_added)
+        print('Total number of simulated particles:', self.N_particles_total)
         self.particles_per_timestep = self.predict_particles(self.N_particles, self.N_timesteps + 1, self.get_intervals())
 
         # Adjust particles_per_timestep
