@@ -77,17 +77,17 @@ PARAMETERS = MappingProxyType(
         # Options for initializing the particles:
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "N_timesteps": 3000,
-        "times_basic_delta_t":5,   # The basic timestep is computed as the minimum vessel length divided by
+        "N_timesteps": 10000,
+        "times_basic_delta_t":8,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
                                     #   delta_t = times_basic_delta_t * basic_timestep
 
         "interval_mode": 1, # 0: the same inflowing frequency in every inflowing vertex
                             # 1: inflowing frequency based on flow_rate of vessels connected to each vertex
-        "particles_frequency": 5, # Only required if "interval_mode" 0. Every "particles_freq" 
+        "particles_frequency": 10, # Only required if "interval_mode" 0. Every "particles_freq" 
                                   # timesteps a particle will enter through each inflow. Minimum possible value: 1. 
         "use_tortuosity": 1,  # 0: Tortuosity off, 1: Tortuosity on
-        "parallel": True  # Set to True for parallel execution, False for sequential
+        "parallel": False  # Set to True for parallel execution, False for sequential
                           # NOTE: For running the parallel version the user should:
                           #          1- Have an MPI implementation installed on the system.
                           #          2- Have 'mpi4py' Python package installed in the used Python interpreter.
@@ -204,7 +204,7 @@ if rank == 0:
     start_vtk_creation = time.process_time()
     particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
     vtk_creation_time = time.process_time() - start_vtk_creation
-    print(f"VTK files created in directory: {output_directory} in {vtk_creation_time:.4f} seconds")
+    print(f"VTK files created in {vtk_creation_time:.4f} seconds. Directory: {output_directory} in {vtk_creation_time:.4f} seconds")
 
     # Total time for particle processing
     total_particle_process_time = time.process_time() - start_time_total

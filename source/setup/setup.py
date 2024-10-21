@@ -87,6 +87,8 @@ class SetupSimulation(Setup):
                 imp_ht = tube_haematocrit.TubeHaematocritNewtonian(PARAMETERS)  # Neglects the impact of RBCs (ht = 0)
             case 2:
                 imp_ht = tube_haematocrit.TubeHaematocritConstant(PARAMETERS)  # Constant ht for all edges
+            case 3:
+                imp_ht = tube_haematocrit.TubeHaematocritTracking(PARAMETERS) # updating ht each timestep
             case _:
                 sys.exit("Error: Choose valid option for the tube haematocrit (tube_haematocrit_option)")
 

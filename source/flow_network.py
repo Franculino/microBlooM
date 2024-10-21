@@ -39,7 +39,7 @@ class FlowNetwork(object):
         self.hd = None  # discharge haematocrit (1d np.array)
         self.flow_rate = None  # flow rate (1d np.array)
         self.rbc_velocity = None  # rbc velocity (1d np.array)
-
+        self.volume  = None # volume of each vessel (1d np.array)
         # Connected Nodes
         self.edge_connected = None
         self.edge_connected_position = None
@@ -138,7 +138,9 @@ class FlowNetwork(object):
         self.node_residual = None
         self.positions_of_elements_not_in_boundary = None
         self.local_balance_rbc = None
-
+        # Variable for RBC tracking
+        self.num_particles_in_vessel = None
+        self.rbc_volume = None
         return
 
     def read_network(self):
