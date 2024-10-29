@@ -77,8 +77,8 @@ PARAMETERS = MappingProxyType(
         # Options for initializing the particles:
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "N_timesteps": 3000,
-        "times_basic_delta_t":10,   # The basic timestep is computed as the minimum vessel length divided by
+        "N_timesteps": 400,
+        "times_basic_delta_t":8,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
                                     #   delta_t = times_basic_delta_t * basic_timestep
 
@@ -87,12 +87,14 @@ PARAMETERS = MappingProxyType(
         "particles_frequency": 10, # Only required if "interval_mode" 0. Every "particles_freq" 
                                   # timesteps a particle will enter through each inflow. Minimum possible value: 1. 
         "use_tortuosity": 1,  # 0: Tortuosity off, 1: Tortuosity on
-        "parallel": False  # Set to True for parallel execution, False for sequential
+        "parallel": False,  # Set to True for parallel execution, False for sequential
                           # NOTE: For running the parallel version the user should:
                           #          1- Have an MPI implementation installed on the system.
                           #          2- Have 'mpi4py' Python package installed in the used Python interpreter.
                           #          2- Execute in the terminal: 'mpiexec -np x python main.py'
                           #             Where -np is the number of processe selected. 
+        "initialization_constant": 0.2,
+        "rbc_volume": 4.9e-17
 
                           
 
@@ -185,30 +187,30 @@ if rank == 0:
     print("Transforming particles to global coordinates: ...")
 start_transformation = time.process_time()
 
-# if PARAMETERS['parallel']:
-#     comm.Barrier()
-#     particles_evolution_global = particle_tracker.transform_to_global_coordinates()
-#     comm.Barrier()
-# else:
-#     particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+if PARAMETERS['parallel']:
+    comm.Barrier()
+    particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+    comm.Barrier()
+else:
+    particles_evolution_global = particle_tracker.transform_to_global_coordinates()
 
-# if rank == 0:
-#     transformation_time = time.process_time() - start_transformation
-#     print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
+if rank == 0:
+    transformation_time = time.process_time() - start_transformation
+    print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
 
-#     # Define output directory for the VTK files
-#     output_directory = "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/data/network/output"
+    # Define output directory for the VTK files
+    output_directory = "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/data/network/output"
 
-#     # Create VTK files per timestep
-#     print("Creating VTK files for particles per timestep: ...")
-#     start_vtk_creation = time.process_time()
-#     particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
-#     vtk_creation_time = time.process_time() - start_vtk_creation
-#     print(f"VTK files created in {vtk_creation_time:.4f} seconds. Directory: {output_directory} in {vtk_creation_time:.4f} seconds")
+    # Create VTK files per timestep
+    print("Creating VTK files for particles per timestep: ...")
+    start_vtk_creation = time.process_time()
+    particle_tracker.create_vtk_particles_per_timestep(output_directory)
+    vtk_creation_time = time.process_time() - start_vtk_creation
+    print(f"VTK files created in {vtk_creation_time:.4f} seconds. Directory: {output_directory} in {vtk_creation_time:.4f} seconds")
 
-#     # Total time for particle processing
-#     total_particle_process_time = time.process_time() - start_time_total
-#     print(f"\nTotal time for particle processing: {total_particle_process_time:.4f} seconds")
+    # Total time for particle processing
+    total_particle_process_time = time.process_time() - start_time_total
+    print(f"\nTotal time for particle processing: {total_particle_process_time:.4f} seconds")
 
 if rank == 0:
     print("Computation of velocity: ...")
@@ -218,6 +220,8 @@ if rank == 0:
     velocity_time = time.process_time() - start_simulation
     nkind_matrix = particle_tracker.compute_nkind_matrix()
     particle_tracker.save_matrices_to_csv()
+    particle_tracker.save_global_coordinates_to_csv()
+
 
 
 

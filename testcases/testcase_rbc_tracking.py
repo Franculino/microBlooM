@@ -76,12 +76,12 @@ PARAMETERS = MappingProxyType(
         "write_path_igraph": "data/network/network_simulated",
 
         # Options for initializing the particles:
-        "initial_particles_mode": 0, # 0: use initial_number_particles and initial_vessels to set the initial positions
+        "initial_particles_mode": 1, # 0: use initial_number_particles and initial_vessels to set the initial positions
                                      # 1: use initial_hematocrit to stablish a constant initial hematocrit in all the network
                                      #    that will determine the intial number of particles in each vessel
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "ht_initial": 0.4, 
+        "ht_initial": 0.2, 
         "rbc_volume": 4.9e-17,
         "N_timesteps": 300,
         "times_basic_delta_t":10,   # The basic timestep is computed as the minimum vessel length divided by
