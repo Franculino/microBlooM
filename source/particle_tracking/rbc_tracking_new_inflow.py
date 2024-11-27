@@ -83,9 +83,7 @@ class Particle_tracker(object):
 
             self.points = None
             self.lengths = None
-
-        self.intervals = self.get_intervals()
-
+    
         # for computing the hematocrit
         self.flow_network.num_particles_in_vessel = np.zeros(len(self.flow_network.edge_list), dtype=int)
         self.ht_initial = PARAMETERS["ht_initial"]
@@ -228,17 +226,17 @@ class Particle_tracker(object):
                     self.volume_evolution[vessel_idx, t-1] = self.volume[vessel_idx]
                     
                 # Determine active particles for this timestep
-                active_particles_count = int(self.particles_per_timestep[t] - np.sum(self.inactive_particles[:self.particles_per_timestep[t]]))
-                active_particles = np.where(~self.inactive_particles)[0]
+                current_timestep_particles = self.particles_evolution[:self.N_particles_count, t, 0].astype(float)
+                active_particles = np.where(~np.isnan(current_timestep_particles))[0]
 
                 # Calculate the total distance to travel for all particles
-                initial_vessels_per_iteration = self.particles_evolution[active_particles[:active_particles_count], t - 1, 0].astype(int)
+                initial_vessels_per_iteration = self.particles_evolution[active_particles, t - 1, 0].astype(int)
                 velocities_per_iteration = abs(self.rbc_velocity[initial_vessels_per_iteration])
                 length_per_iteration = self.length[initial_vessels_per_iteration]
                 distance_to_travel = velocities_per_iteration * self.delta_t
 
                 # Calculate the remaining distance in the current vessels
-                local_position_per_iteration = self.particles_evolution[active_particles[:active_particles_count], t - 1, 1]
+                local_position_per_iteration = self.particles_evolution[active_particles, t - 1, 1]
                 first_prediction_position = distance_to_travel / length_per_iteration + local_position_per_iteration
                 change_vessel_positive_active_idx = np.where((first_prediction_position > 1))[0]
                 change_vessel_positive = active_particles[change_vessel_positive_active_idx]
@@ -295,43 +293,26 @@ class Particle_tracker(object):
                         self.inactive_particles[change_vessel_positive[idx]] = True
 
                 # Initialize particles entering the network in the next timestep
-                # if self.particles_per_timestep[t + 1] > self.particles_per_timestep[t]:
-                #     real_timestep = t + 1
-                #     exact_divisors = [i for i in range(len(self.intervals)) if real_timestep % self.intervals[i] == 0]
-                #     nodes_inflowing = self.inflow_vertices[exact_divisors]
-                #     vessels_inflowing = self.select_vessels_inflow(nodes_inflowing, self.graph, self.flow_network.edge_list).astype(int)
-
-                #     remaining_capacity = self.max_particles_vessel[vessels_inflowing] - self.flow_network.num_particles_in_vessel[vessels_inflowing]
-                #     valid_vessels = vessels_inflowing[remaining_capacity > 1]
-                #     valid_nodes = nodes_inflowing[remaining_capacity > 1]
-                #     particles_not_injected = np.sum(remaining_capacity <= 1)
-
-                #     if particles_not_injected > 0:
-                #         self.particles_per_timestep[t + 1:] -= particles_not_injected
-
-                #     number_inflowing_particles = self.particles_per_timestep[t + 1] - self.particles_per_timestep[t]
-                #     self.particles_evolution[self.particles_per_timestep[t]:self.particles_per_timestep[t + 1], t, 0] = valid_vessels.astype(int)
-                #     self.particles_evolution[self.particles_per_timestep[t]:self.particles_per_timestep[t + 1], t, 1] = 0.0
-                #     for vessel in valid_vessels.astype(int):
-                #         self.flow_network.num_particles_in_vessel[vessel] += 1
-                # self.update_network()
-
-            # Initialize particles entering the network in the next timestep
-        
-            # vessels_inflowing = self.select_vessels_inflow(self.inflow_vertices, self.graph, self.flow_network.edge_list).astype(int)
-            remaining_capacity = int(self.max_particles_vessel[self.inflow_vessels] - self.flow_network.num_particles_in_vessel[self.inflow_vessels])
-
-            inflow_particles, number_inflowing_particles = self.update_ghost_particles(self, self.ghost_particles, self.inflow_vessels, remaining_capacity):
-            self.N_particles_count = int(self.N_particles_count + number_inflowing_particles)
-
-            self.expand_arrays_if_needed()
             
-            self.particles_evolution[int(self.N_particles_count - number_inflowing_particles): self.N_particles_count, t, 0] = inflow_particles[:][0]
-            self.particles_evolution[int(self.N_particles_count - number_inflowing_particles): self.N_particles_count, t, 1] = inflow_particles[:][1]
-            # for vessel in valid_vessels.astype(int):
-            #     self.flow_network.num_particles_in_vessel[vessel] += 1
-            self.update_network()
-            print('Timesetp: ', t, 'Ht = :', self.flow_network.ht[0], '  Number of particles: ', self.flow_network.num_particles_in_vessel[0] )
+                # vessels_inflowing = self.select_vessels_inflow(self.inflow_vertices, self.graph, self.flow_network.edge_list).astype(int)
+                # remaining_capacity = self.max_particles_vessel[self.inflow_vessels] - self.flow_network.num_particles_in_vessel[self.inflow_vessels]
+                remaining_capacity = self.max_particles_vessel[self.inflow_vessels] - self.flow_network.num_particles_in_vessel[self.inflow_vessels]
+
+                inflow_particles, number_inflowing_particles = self.update_ghost_particles(self.ghost_particles, self.inflow_vessels, remaining_capacity)
+                self.N_particles_count = int(self.N_particles_count + number_inflowing_particles)
+                self.expand_arrays_if_needed()
+
+                if number_inflowing_particles > 0:
+                    vessels = inflow_particles[:,0]
+                    local_positions = inflow_particles[:,1]
+                    
+                    self.particles_evolution[int(self.N_particles_count - number_inflowing_particles): self.N_particles_count, t, 0] = vessels
+                    self.particles_evolution[int(self.N_particles_count - number_inflowing_particles): self.N_particles_count, t, 1] = local_positions
+                # for vessel_id in np.unique(inflow_particles[:, 0].astype(int)):  
+                #     count_in_vessel = np.sum(inflow_particles[:, 0] == vessel_id)  
+                #     self.flow_network.num_particles_in_vessel[vessel_id] += count_in_vessel
+                self.update_network()
+                print('Timesetp: ', t, 'Ht = :', self.flow_network.ht[0], '  Number of particles: ', self.flow_network.num_particles_in_vessel[0] )
             print('Ya acabo el bucle')
             # self.save_particles_evolution_to_excel()
             # self.save_vessel_data_to_excel()
@@ -550,13 +531,15 @@ class Particle_tracker(object):
         inflow_particles = []
         timestep_particles_count = 0
 
-        for vessel_id in active_vessels:
+        for active_vessel_idx, vessel_id in enumerate(active_vessels):
             # Get the ghost vessel data
+            if vessel_id == 789:
+                 print("hola")
             ghost_data = ghost_particles[vessel_id]
             positions = ghost_data["positions"]
             current_position = ghost_data["current_index"]  # This will track the position along the vessel
             queue_particles = ghost_data["queue"]  # Particles waiting to enter
-            remaining_capacity_vessel = remaining_capacity[vessel_id]
+            remaining_capacity_vessel = remaining_capacity[active_vessel_idx]
             # Get the properties of the ghost vessel
             diameter = self.diameter[vessel_id]
             rbc_velocity = self.rbc_velocity[vessel_id]
@@ -583,17 +566,17 @@ class Particle_tracker(object):
             # Now, we need to determine which particles fall within the range of the distance filled
             start_position = current_position / ghost_length
             end_position = (current_position + distance_to_fill) / ghost_length
-
+            positions = np.array(positions)
             # Get particles that are between start_position and end_position
             particles_in_range = positions[(positions >= start_position) & (positions < end_position)]
-            total_particles = len(particles_in_range) + queue_particles
+            # total_particles = len(particles_in_range) + queue_particles
 
 
-            if total_particles > remaining_capacity_vessel:
+            if len(particles_in_range) > remaining_capacity_vessel:
                 # Select only the first `remaining_capacity_vessel` particles
                 num_to_accept = remaining_capacity_vessel
                 accepted_particles = np.sort(particles_in_range)[:num_to_accept]
-                excess_particles = total_particles - remaining_capacity_vessel
+                excess_particles = len(particles_in_range) - remaining_capacity_vessel
 
                 # Update the queue with the excess particles
                 ghost_data["queue"] = excess_particles
@@ -612,11 +595,11 @@ class Particle_tracker(object):
 
             # Append the accepted particles to inflow_particles
             for pos in accepted_particles:
-                local_position = pos - start_position  # Calculate local position
+                local_position = (-pos + end_position) * ghost_length / self.length[vessel_id]  # Calculate local position
                 inflow_particles.append([vessel_id, local_position])
 
             self.flow_network.num_particles_in_vessel[vessel_id] += len(accepted_particles)
 
             timestep_particles_count += len(accepted_particles)
 
-        return inflow_particles, timestep_particles_count
+        return np.array(inflow_particles), timestep_particles_count
