@@ -84,7 +84,7 @@ PARAMETERS = MappingProxyType(
         "ht_initial": 0.2,
         "ht_boundary_condition":0.3, 
         "rbc_volume": 4.9e-17,
-        "N_timesteps": 100,
+        "N_timesteps": 1000,
         "times_basic_delta_t":1,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
                                     #   delta_t = times_basic_delta_t * basic_timestep

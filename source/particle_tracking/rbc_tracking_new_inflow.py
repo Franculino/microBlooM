@@ -112,7 +112,7 @@ class Particle_tracker(object):
             
             self.N_particles = sum(self.initial_particles_per_vessel)
             # Total number of initialized particles
-            self.N_particles_total = int(self.N_particles + 3000)
+            self.N_particles_total = int(self.N_particles + 300)
             self.N_particles_count = int(self.N_particles)
             print('Total number of initialized particles:', self.N_particles_total)
 
@@ -201,13 +201,13 @@ class Particle_tracker(object):
             new_inactive_particles[:self.inactive_particles.shape[0]] = self.inactive_particles
             
             # Expansión de particle_size
-            new_particle_size = np.zeros(self.N_particles_total)
-            new_particle_size[:self.particle_size.shape[0]] = self.particle_size
+            # new_particle_size = np.zeros(self.N_particles_total)
+            # new_particle_size[:self.particle_size.shape[0]] = self.particle_size
 
             # Asignar los nuevos arrays expandidos
             self.particles_evolution = new_particles_evolution
             self.inactive_particles = new_inactive_particles
-            self.particle_size = new_particle_size
+            # self.particle_size = new_particle_size
             
             print("The arrays have been updated: ", self.N_particles_count, self.N_particles_total)
 
@@ -530,11 +530,10 @@ class Particle_tracker(object):
         """
         inflow_particles = []
         timestep_particles_count = 0
+        k = 300
 
         for active_vessel_idx, vessel_id in enumerate(active_vessels):
             # Get the ghost vessel data
-            if vessel_id == 789:
-                 print("hola")
             ghost_data = ghost_particles[vessel_id]
             positions = ghost_data["positions"]
             current_position = ghost_data["current_index"]  # This will track the position along the vessel
@@ -553,13 +552,23 @@ class Particle_tracker(object):
 
             # If the total length filled exceeds the ghost vessel length, wrap around or reset
             if (current_position + distance_to_fill) / ghost_length > 1:
-                # Reset current position and recalculate particle positions
-                ghost_data["current_index"] = 0  # Reset position to start
-                current_position = 0
-                # Redistribute the particles by recalculating the positions
-                ghost_data["positions"] = np.sort(np.random.rand(ghost_data["number_particles"]))
-                # Recalculate the length of the ghost vessel for the next timestep
-                ghost_length = ghost_data["ghost_length"] 
+                # Reset the current position since the particles have traversed the entire ghost vessel length
+                ghost_data["current_index"] = 0  # Start position at the beginning
+                current_position = 0  # Reset current position for the next timestep
+                if vessel_id == 1011:
+                    print("hola")
+                # Recalculate ghost vessel properties based on updated RBC velocity
+                new_ghost_length = k * abs(rbc_velocity) * self.delta_t  # Compute the new length of the ghost vessel
+                new_ghost_volume = np.pi * (diameter / 2)**2 * new_ghost_length  # Calculate the volume of the ghost vessel cylinder
+                new_num_particles = int((new_ghost_volume * self.ht_boundary_condition) // self.rbc_volume)  # Determine the required number of particles
+
+                # Update the ghost vessel's properties in the dictionary
+                ghost_data["ghost_length"] = new_ghost_length  # Assign the new length
+                ghost_data["number_particles"] = new_num_particles  # Assign the recalculated number of particles
+                ghost_data["ghost_volume"] = new_ghost_volume  # Assign the recalculated number of particles
+                ghost_data["positions"] = np.sort(np.random.rand(new_num_particles))  # Generate new random particle positions
+                positions = ghost_data["positions"]
+                ghost_length = ghost_data["ghost_length"]
                 
             ghost_data["current_index"] += distance_to_fill  # Update position
 
