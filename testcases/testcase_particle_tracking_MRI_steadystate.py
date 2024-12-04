@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from source.flow_network import FlowNetwork
 from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
-from source.particle_tracking.passive_particle_tracking_parallel_MRI import Particle_tracker
+from source.particle_tracking.passive_particle_tracking_MRI_steadystate import Particle_tracker
 import source.setup.setup as setup
 
 # MappingProxyType is basically a const dict.
@@ -78,7 +78,7 @@ PARAMETERS = MappingProxyType(
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
         "N_timesteps": 2000,
-        "times_basic_delta_t":1,   # The basic timestep is computed as the minimum vessel length divided by
+        "times_basic_delta_t":4.5,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
                                     #   delta_t = times_basic_delta_t * basic_timestep
 
@@ -93,7 +93,7 @@ PARAMETERS = MappingProxyType(
                           #          2- Have 'mpi4py' Python package installed in the used Python interpreter.
                           #          2- Execute in the terminal: 'mpiexec -np x python main.py'
                           #             Where -np is the number of processe selected. 
-        "initialization_constant": 0.14,
+        "initialization_constant": 0.18,
         "rbc_volume": 4.9e-17
 
                           
@@ -176,7 +176,11 @@ if rank == 0:
     print("Simulation of particles into the network: ...")
 
 start_simulation = time.process_time()
+particles_evolution_steadystate = particle_tracker.evolve_particles()
+particle_tracker.save_steady_state()
+particle_tracker.initialize_from_steady_state()
 particles_evolution = particle_tracker.evolve_particles()
+
 simulation_time = time.process_time() - start_simulation
 
 if rank == 0:
@@ -202,11 +206,11 @@ if rank == 0:
     output_directory = "C:/Users/UGE/Documents/Manuel/microBlooM/data/network/output"
 
     # Create VTK files per timestep
-    print("Creating VTK files for particles per timestep: ...")
-    start_vtk_creation = time.process_time()
-    particle_tracker.create_vtk_particles_per_timestep(output_directory)
-    vtk_creation_time = time.process_time() - start_vtk_creation
-    print(f"VTK files created in {vtk_creation_time:.4f} seconds. Directory: {output_directory} in {vtk_creation_time:.4f} seconds")
+    # print("Creating VTK files for particles per timestep: ...")
+    # start_vtk_creation = time.process_time()
+    # particle_tracker.create_vtk_particles_per_timestep(output_directory)
+    # vtk_creation_time = time.process_time() - start_vtk_creation
+    # print(f"VTK files created in {vtk_creation_time:.4f} seconds. Directory: {output_directory} in {vtk_creation_time:.4f} seconds")
 
     # Total time for particle processing
     total_particle_process_time = time.process_time() - start_time_total
@@ -221,7 +225,4 @@ if rank == 0:
     nkind_matrix = particle_tracker.compute_nkind_matrix()
     particle_tracker.save_matrices_to_csv()
     particle_tracker.save_global_coordinates_to_csv()
-
-
-
 

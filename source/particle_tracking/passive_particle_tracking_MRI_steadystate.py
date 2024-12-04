@@ -1,3 +1,4 @@
+
 import sys
 import numpy as np
 import pandas as pd
@@ -50,7 +51,7 @@ class Particle_tracker(object):
         self.initial_particle_tube = self._PARAMETERS["initial_vessels"]
         self.times_basic_delta_t = self._PARAMETERS['times_basic_delta_t']
         self.delta_t = self.times_basic_delta_t * abs(self.length).min()/(abs(self.rbc_velocity).max())
-        self.N_timesteps =  self._PARAMETERS["N_timesteps"]
+        # self.N_timesteps =  self._PARAMETERS["N_timesteps"]
         self.inflow_vertices, self.outflow_vertices = self.detect_inflow_outflow_vertices()
         self.inflow_vertices = np.array(self.inflow_vertices)
         self.out_particles = []
@@ -64,6 +65,14 @@ class Particle_tracker(object):
         self.initial_local_coord = np.full(self.N_particles, 0.5) 
         self.initialization_constant = PARAMETERS["initialization_constant"]
         self.rbc_volume = PARAMETERS["rbc_volume"]
+
+        self.outflow_vessels = self.detect_possible_outflow_vessels()
+        self.total_exited_volume = 0
+        self.exiting_volume_per_vessel = self.delta_t * abs(self.flow_rate[self.outflow_vessels])
+        self.exiting_volume_per_timestep = np.sum(self.exiting_volume_per_vessel)
+        total_volume_network = np.sum(self.volume)
+        self.timesteps_until_steadystate = 1 * (total_volume_network // self.exiting_volume_per_timestep) + 1
+        self.N_timesteps =  int(self.timesteps_until_steadystate)
 
         if self.use_tortuosity == 1:
             graph2 = igraph.Graph.Read_Pickle(self._PARAMETERS['pkl_path_igraph'])
@@ -91,6 +100,13 @@ class Particle_tracker(object):
         self.intervals = self.get_intervals()
         self.initialize_particles_evolution_constant()
         self.total_time = 0
+
+        # self.outflow_vessels = self.detect_possible_outflow_vessels()
+        # self.total_exited_volume = 0
+        # self.exiting_volume_per_vessel = self.delta_t * abs(self.flow_rate[self.outflow_vessels])
+        # self.exiting_volume_per_timestep = np.sum(self.exiting_volume_per_vessel)
+        # total_volume_network = np.sum(self.volume)
+        # self.timesteps_until_steadystate = 5 * (total_volume_network // self.exiting_volume_per_timestep) + 1
 
     def detect_inflow_outflow_vertices(self):
         """
@@ -277,11 +293,11 @@ class Particle_tracker(object):
         """Evolve particles across each timestep. Computes the movement of every particles in the net"""
         
         for t in range(1, self.N_timesteps + 1):
-            self.delta_t = 0.0002
+            # self.delta_t = 0.0005
             # if t ==1:
             #     self.delta_t = 0.0005
             #     print(f'Timestep 1500: delta_t updated to {self.delta_t}')
-            print('Timestep: ', self.delta_t)
+            print('Timestep: ', t, self.delta_t)
             # Determine active particles for this timestep
             active_particles_count = int(self.particles_per_timestep[t] - np.sum(self.inactive_particles[:self.particles_per_timestep[t]]))
             active_particles = np.where(~self.inactive_particles)[0]
@@ -811,9 +827,9 @@ class Particle_tracker(object):
         Save the global coordinates matrices (x, y, z) to CSV files with proper number formatting and semicolon separator.
         """
         # Guardar las matrices de coordenadas globales con formato apropiado y separador ';'
-        pd.DataFrame(self.particles_evolution_global[:, :, 0]).to_csv('data/network/global_x_MVN2_t0.csv', index=False, header=False, sep=',', float_format='%.10f')
-        pd.DataFrame(self.particles_evolution_global[:, :, 1]).to_csv('data/network/global_y_MVN2_t0.csv', index=False, header=False, sep=',', float_format='%.10f')
-        pd.DataFrame(self.particles_evolution_global[:, :, 2]).to_csv('data/network/global_z_MVN2_t0.csv', index=False, header=False, sep=',', float_format='%.10f')
+        pd.DataFrame(self.particles_evolution_global[:, :, 0]).to_csv('data/network/global_x_MVN2_steadystate.csv', index=False, header=False, sep=',', float_format='%.10f')
+        pd.DataFrame(self.particles_evolution_global[:, :, 1]).to_csv('data/network/global_y_MVN2_steadystate.csv', index=False, header=False, sep=',', float_format='%.10f')
+        pd.DataFrame(self.particles_evolution_global[:, :, 2]).to_csv('data/network/global_z_MVN2_steadystate.csv', index=False, header=False, sep=',', float_format='%.10f')
 
         print("Global coordinates saved to CSV files with proper formatting.")
 
@@ -822,13 +838,13 @@ class Particle_tracker(object):
         Save the velocity and nkind matrices to CSV files with proper number formatting and semicolon separator.
         """
         # Guardar las matrices de velocidad
-        pd.DataFrame(self.velocity_x).to_csv('data/network/velocity_x_MVN2_t0.csv', index=False, header=False, sep=',', float_format='%.10f')
-        pd.DataFrame(self.velocity_y).to_csv('data/network/velocity_y_MVN2_t0.csv', index=False, header=False, sep=',', float_format='%.10f')
-        pd.DataFrame(self.velocity_z).to_csv('data/network/velocity_z_MVN2_t0.csv', index=False, header=False, sep=',', float_format='%.10f')
+        pd.DataFrame(self.velocity_x).to_csv('data/network/velocity_x_MVN2_steadystate.csv', index=False, header=False, sep=',', float_format='%.10f')
+        pd.DataFrame(self.velocity_y).to_csv('data/network/velocity_y_MVN2_steadystate.csv', index=False, header=False, sep=',', float_format='%.10f')
+        pd.DataFrame(self.velocity_z).to_csv('data/network/velocity_z_MVN2_steadystate.csv', index=False, header=False, sep=',', float_format='%.10f')
         
         # Guardar la matriz nkind
-        pd.DataFrame(self.nkind_matrix).to_csv('data/network/nkind_matrix_MVN2_t0.csv', index=False, header=False, sep=',', float_format='%.0f')
-        pd.DataFrame(self.particles_evolution[:,:,0]).to_csv('data/network/particle_evolution_matrix_MVN2_t0.csv', index=False, header=False, sep=',', float_format='%.0f')
+        pd.DataFrame(self.nkind_matrix).to_csv('data/network/nkind_matrix_MVN2_steadystate.csv', index=False, header=False, sep=',', float_format='%.0f')
+        pd.DataFrame(self.particles_evolution[:,:,0]).to_csv('data/network/particle_evolution_matrix_MVN2_steadystate.csv', index=False, header=False, sep=',', float_format='%.0f')
 
         print("Matrices saved to CSV files with proper formatting.")
 
@@ -862,3 +878,70 @@ class Particle_tracker(object):
         print(f"El archivo '{file_name}' se ha guardado correctamente.")
         print('Total time:', self.total_time)
 
+    def detect_possible_outflow_vessels(self):
+        """
+        Detect outflow vessels connected to outflow vertices.
+        
+        Returns:
+        - outflow_vessels: list of vessel indices that are outflow vessels.
+        """
+        outflow_vessels = []
+
+        for outflow_vertex in self.outflow_vertices:
+            # Get edges (vessels) connected to the inflow vertex
+            connected_edges = self.graph.incident(outflow_vertex, mode="ALL")  # Incident edges to the vertex
+
+            for edge_index in connected_edges:
+                # Check the flow direction and add the edge if it's inflow
+                start, end = self.es[edge_index]  # Start and end nodes of the edge
+                
+                if outflow_vertex == end and abs(self.rbc_velocity[edge_index]) > 0:  # Outgoing flow
+                    outflow_vessels.append(edge_index)
+
+        return outflow_vessels
+    
+    def save_steady_state(self):
+        # Obtén el último timestep del steady state
+        last_timestep = self.N_timesteps
+        active_particles = np.where(~self.inactive_particles)[0]
+        
+        # Guarda las posiciones y los estados de las partículas activas
+        self.steady_state_particles = {
+            "active_particles": active_particles,
+            "positions": self.particles_evolution[active_particles, last_timestep, :].copy()
+        }
+
+    def initialize_from_steady_state(self):
+        """
+        Reinitialize matrix partcle_evolurion using the previously computed steady state.
+        """
+        self.N_timesteps =  self._PARAMETERS["N_timesteps"]
+        self.N_particles = len(self.steady_state_particles["positions"])
+        total_particles_added = self.calculate_total_particles_added()
+        self.delta_t = 0.0002
+
+        # Total number of particles
+        self.N_particles_total = int(self.N_particles + total_particles_added)
+        print('Total number of simulated particles:', self.N_particles_total)
+        self.particles_per_timestep = np.zeros(self.N_timesteps + 1, dtype=int)
+        self.particles_per_timestep = self.predict_particles(self.N_particles, self.N_timesteps + 1, self.get_intervals())
+
+        # Adjust particles_per_timestep
+        self.particles_per_timestep = np.insert(self.particles_per_timestep, 0, self.N_particles)
+
+        # No particles inflowing in timestep 1
+        num_ones = self.get_intervals().count(1)
+        self.particles_per_timestep[1:] -= num_ones
+        self.particles_per_timestep[self.particles_per_timestep < 0] = 0
+        # Reinicia la matriz de evolución
+        self.particles_evolution = np.zeros((self.N_particles_total, self.N_timesteps + 1, 2), dtype=object)
+        self.particles_evolution[:, :, :] = np.nan  # Partículas inactivas están llenas de NaN
+        
+        # Coloca las partículas activas en el nuevo timestep inicial
+        active_particles = self.steady_state_particles["active_particles"]
+        positions = self.steady_state_particles["positions"]
+        
+        self.particles_evolution[:self.N_particles, 0, :] = positions
+        self.inactive_particles = np.ones(self.N_particles_total, dtype=bool)
+        self.inactive_particles[:self.N_particles] = False
+        
