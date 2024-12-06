@@ -65,7 +65,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "C:/Users/UGE/Documents/Manuel/microBlooM/testcases/piece_corrected_SI.pkl",
+        "pkl_path_igraph": "C:/Users/UGE/Documents/Manuel/microBlooM/testcases/MVN1_corrected_SI.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
@@ -81,11 +81,11 @@ PARAMETERS = MappingProxyType(
                                      #    that will determine the intial number of particles in each vessel
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "ht_initial": 0.2,
-        "ht_boundary_condition":0.3, 
+        "ht_initial": 0.08,
+        "ht_boundary_condition":0.2, 
         "rbc_volume": 4.9e-17,
-        "N_timesteps": 1000,
-        "times_basic_delta_t":1,   # The basic timestep is computed as the minimum vessel length divided by
+        "N_timesteps": 800,
+        "times_basic_delta_t":8,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
                                     #   delta_t = times_basic_delta_t * basic_timestep
 
@@ -216,7 +216,7 @@ if rank == 0:
 #     print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
 
 #     # Define output directory for the VTK files
-#     output_directory = "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/data/network/output"
+#     output_directory = "C:/Users/UGE/Documents/Manuel/microBlooM/data/network/output"
 
 #     # Create VTK files per timestep
 #     print("Creating VTK files for particles per timestep: ...")
