@@ -56,6 +56,7 @@ class Particle_tracker(object):
 
         self.indices_rbc_negativa = np.where(self.rbc_velocity < 0)[0]
         self.es[self.indices_rbc_negativa] = self.es[self.indices_rbc_negativa][:, ::-1]
+        self.node_classification = self.classify_nodes(self.graph)
 
         num_vessels = len(self.flow_network.edge_list)
         self.hematocrit_evolution = np.zeros((num_vessels, self.N_timesteps))  # Shape: (vessels, timesteps)
@@ -93,7 +94,7 @@ class Particle_tracker(object):
         self.initial_particles_mode = PARAMETERS["initial_particles_mode"]
 
         if self.initial_particles_mode == 1:
-            self.initialize_particles_with_hematocrit()
+            self.initialize_particles_with_hematocrit2()
         elif self.initial_particles_mode == 0:
             self.N_particles = self._PARAMETERS["initial_number_particles"]
             self.initial_particle_tube = self._PARAMETERS["initial_vessels"]
@@ -107,7 +108,7 @@ class Particle_tracker(object):
         self.total_added_particles = 0
 
 
-    def initialize_particles_with_hematocrit(self):
+    def initialize_particles_with_hematocrit1(self):
 
             self.initial_particles_per_vessel = np.zeros(len(self.es), dtype = int)
             for vessel_id in range(len(self.es)):
@@ -140,6 +141,38 @@ class Particle_tracker(object):
             for vessel in initial_vessels:
                 self.flow_network.num_particles_in_vessel[vessel] += 1
             self.update_network()
+
+    def initialize_particles_with_hematocrit2(self):
+        self.initial_particles_per_vessel = np.zeros(len(self.es), dtype=int)
+        for vessel_id in range(len(self.es)):
+            self.initial_particles_per_vessel[vessel_id] = int((self.volume[vessel_id] * self.ht_initial) // self.rbc_volume)
+        
+        self.N_particles = sum(self.initial_particles_per_vessel)
+        print("Initialized particles:", self.N_particles)
+        # Total number of initialized particles
+        self.N_particles_total = int(self.N_particles + 300)
+        self.N_particles_count = int(self.N_particles)
+        print('Total number of initialized particles:', self.N_particles_total)
+
+        initial_vessels = []
+        initial_local_coords = []
+        for vessel_id in range(len(self.initial_particles_per_vessel)):
+            num_particles_in_vessel = self.initial_particles_per_vessel[vessel_id]
+            
+            if num_particles_in_vessel > 0:
+                initial_vessels.extend([vessel_id] * num_particles_in_vessel)
+                # Generar posiciones aleatorias entre 0.01 y 0.99
+                coords = np.random.uniform(0.01, 0.99, size=num_particles_in_vessel)
+                initial_local_coords.extend(coords)
+
+        self.particles_evolution = np.zeros((self.N_particles_total, self.N_timesteps + 1, 2), dtype=object)
+        self.initial_position = np.array([[int(tube), coord] for tube, coord in zip(initial_vessels, initial_local_coords)])
+        self.particles_evolution[:self.N_particles, 0, :] = self.initial_position
+        self.particles_evolution[self.N_particles:, :, :] = np.nan
+        self.inactive_particles = np.zeros(self.N_particles_total, dtype=bool)
+        for vessel in initial_vessels:
+            self.flow_network.num_particles_in_vessel[vessel] += 1
+        self.update_network()
 
     def detect_inflow_outflow_vertices(self):
             """
@@ -215,135 +248,193 @@ class Particle_tracker(object):
             print("The arrays have been updated: ", self.N_particles_count, self.N_particles_total, self.particle_size)
 
     def evolve_particles(self):
-            """Evolve particles across each timestep. Computes the movement of every particles in the net"""
-            collision_count = 0
-            bifurcation_count = 0
-            self.particle_size = np.zeros(self.particles_evolution.shape[0])
-            # print('Timestep: ', self.delta_t)
+        """Evolve particles across each timestep. Computes the movement of every particles in the net"""
+        collision_count = 0
+        convergent_collision_count = 0
+        divergent_collision_count = 0
+        prolongation_collision = 0
+        size_change_convergent = 0
+        inflow_collisions = 0
+        outflow_collisions = 0
+        bifurcation_count = 0
+        bifurcation_convergent = 0
+        bifurcation_divergent = 0
+        bifurcation_prolongation = 0
+        bifurcation_inflow = 0
+        bifurcation_outflow = 0
+        divergent_collisions_stopped_particles = 0
+        self.particle_size = np.zeros(self.particles_evolution.shape[0])
+        previous_rbc_velocity = self.rbc_velocity.copy()
+        # print('Timestep: ', self.delta_t)
 
-            for t in range(1, self.N_timesteps + 1):
-                self.delta_t = self.times_basic_delta_t * abs(self.length).min()/(abs(self.rbc_velocity).max())
-                print('Delta_t = ', self.delta_t)
+        for t in range(1, self.N_timesteps + 1):
+            self.delta_t = self.times_basic_delta_t * abs(self.length).min()/(abs(self.rbc_velocity).max())
+            print('Delta_t = ', self.delta_t)
 
-                for vessel_idx in range(len(self.flow_network.edge_list)):
-                    # Actualizar el hematocrito, número de partículas y volumen para cada vaso en este timestep
-                    self.hematocrit_evolution[vessel_idx, t-1] = self.flow_network.ht[vessel_idx]
-                    self.num_particles_evolution[vessel_idx, t-1] = self.flow_network.num_particles_in_vessel[vessel_idx]
-                    self.volume_evolution[vessel_idx, t-1] = self.volume[vessel_idx]
-                    
-                # Determine active particles for this timestep
-                current_timestep_particles = self.particles_evolution[:self.N_particles_count, t-1, 0].astype(float)
-                active_particles = np.where(~np.isnan(current_timestep_particles))[0]
-
-                # Calculate the total distance to travel for all particles
-                initial_vessels_per_iteration = self.particles_evolution[active_particles, t - 1, 0].astype(int)
-                particle_diameters = self.diameter[initial_vessels_per_iteration]
-                self.particle_size[active_particles] = self.rbc_volume / (np.pi * particle_diameters**2 / 4)
-                velocities_per_iteration = abs(self.rbc_velocity[initial_vessels_per_iteration])
-                length_per_iteration = self.length[initial_vessels_per_iteration]
-                distance_to_travel = velocities_per_iteration * self.delta_t
-
-                # Calculate the remaining distance in the current vessels
-                local_position_per_iteration = self.particles_evolution[active_particles, t - 1, 1]
-                first_prediction_position = distance_to_travel / length_per_iteration + local_position_per_iteration
-                change_vessel_positive_active_idx = np.where((first_prediction_position > 1))[0]
-                change_vessel_positive = active_particles[change_vessel_positive_active_idx]
-                same_vessel_active_idx = np.where(first_prediction_position <= 1)[0]
-                same_vessel = active_particles[same_vessel_active_idx]
-
-                # Particles that remain in the same vessel
-                self.particles_evolution[same_vessel, t, 1] = first_prediction_position[same_vessel_active_idx]
-                self.particles_evolution[same_vessel, t, 0] = initial_vessels_per_iteration[same_vessel_active_idx]
-
-                # Particles that switch vessels
-                remaining_time_positive = self.delta_t - (
-                (1 - local_position_per_iteration[change_vessel_positive_active_idx]) 
-                * length_per_iteration[change_vessel_positive_active_idx]
-                ) / velocities_per_iteration[change_vessel_positive_active_idx]
-
-                new_vessels, index_out_particles = self.select_vessels_positive(
-                    initial_vessels_per_iteration[change_vessel_positive_active_idx], 
-                    self.graph, 
-                    self.outflow_vertices, 
-                    self.flow_network.edge_list
-                )
-                bifurcation_count += len(new_vessels) - len(index_out_particles)
-                new_vessels = new_vessels.astype(int)
-                self.particles_evolution[change_vessel_positive, t, 0] = new_vessels
-                staying_in_vessel_idx = np.where(new_vessels == initial_vessels_per_iteration[change_vessel_positive_active_idx])[0]
-                self.particles_evolution[change_vessel_positive[staying_in_vessel_idx], t, 1] = 1.0
-                moving_particles_idx = np.where(new_vessels != initial_vessels_per_iteration[change_vessel_positive_active_idx])[0]
-                moving_particles = change_vessel_positive[moving_particles_idx]
-
-                new_velocities = abs(self.rbc_velocity[new_vessels[moving_particles_idx]])
-
-                second_prediction_position = new_velocities * remaining_time_positive[moving_particles_idx] / self.length[new_vessels[moving_particles_idx]]
-                self.particles_evolution[moving_particles, t, 1] = second_prediction_position
-
-                new_vessel_diameters = self.diameter[new_vessels[moving_particles_idx]]
-                self.particle_size[moving_particles] = self.rbc_volume / (np.pi * new_vessel_diameters**2 / 4)
-
-                if np.any(second_prediction_position > 1):
-                    print("A particles is not being propagated correctly: you should decrease the timestep")
-
-                # Manage particles that exit the network.
-                if index_out_particles:
-                    for idx in index_out_particles:
-                        outflow_vessel = int(self.particles_evolution[change_vessel_positive[idx], t - 1, 0])
-                        # self.flow_network.num_particles_in_vessel[outflow_vessel] -= 1
-                        self.out_particles.append(change_vessel_positive[idx])
-                        self.particles_evolution[change_vessel_positive[idx], t - 1:, :] = np.nan
-                        self.inactive_particles[change_vessel_positive[idx]] = True
-
-                # for i, particle1 in enumerate(change_vessel_positive):
-                #     if particle1 in index_out_particles:
-                #         continue  
-
-                #     vessel1 = new_vessels[i]  
-                #     position1 = self.particles_evolution[particle1, t, 1] * self.length[vessel1]
-                #     radius1 = self.particle_size[particle1] / 2
-
+            for vessel_idx in range(len(self.flow_network.edge_list)):
+                # Actualizar el hematocrito, número de partículas y volumen para cada vaso en este timestep
+                self.hematocrit_evolution[vessel_idx, t-1] = self.flow_network.ht[vessel_idx]
+                self.num_particles_evolution[vessel_idx, t-1] = self.flow_network.num_particles_in_vessel[vessel_idx]
+                self.volume_evolution[vessel_idx, t-1] = self.volume[vessel_idx]
                 
-                #     candidates = np.where(
-                #         (self.particles_evolution[:, t, 0] == vessel1) &
-                #         (~np.isin(np.arange(len(self.particles_evolution)), index_out_particles))
-                #     )[0]
+            # Determine active particles for this timestep
+            current_timestep_particles = self.particles_evolution[:self.N_particles_count, t-1, 0].astype(float)
+            active_particles = np.where(~np.isnan(current_timestep_particles))[0]
 
-                #     for particle2 in candidates:
-                #         if particle2 != particle1:  
-                #             position2 = self.particles_evolution[particle2, t, 1] * self.length[vessel1]
-                #             radius2 = self.particle_size[particle2] / 2
-                #             if abs(position1 - position2) < (radius1 + radius2):
-                #                 collision_count += 1
-                #                 break
-                # Initialize particles entering the network in the next timestep
+            # Calculate the total distance to travel for all particles
+            initial_vessels_per_iteration = self.particles_evolution[active_particles, t - 1, 0].astype(int)
+            particle_diameters = self.diameter[initial_vessels_per_iteration]
+            self.particle_size[active_particles] = self.rbc_volume / (np.pi * particle_diameters**2 / 4)
+            velocities_per_iteration = abs(self.rbc_velocity[initial_vessels_per_iteration])
+            length_per_iteration = self.length[initial_vessels_per_iteration]
+            distance_to_travel = velocities_per_iteration * self.delta_t
+
+            # Calculate the remaining distance in the current vessels
+            local_position_per_iteration = self.particles_evolution[active_particles, t - 1, 1]
+            first_prediction_position = distance_to_travel / length_per_iteration + local_position_per_iteration
+            change_vessel_positive_active_idx = np.where((first_prediction_position > 1))[0]
+            change_vessel_positive = active_particles[change_vessel_positive_active_idx]
+            same_vessel_active_idx = np.where(first_prediction_position <= 1)[0]
+            same_vessel = active_particles[same_vessel_active_idx]
+
+            # Particles that remain in the same vessel
+            self.particles_evolution[same_vessel, t, 1] = first_prediction_position[same_vessel_active_idx]
+            self.particles_evolution[same_vessel, t, 0] = initial_vessels_per_iteration[same_vessel_active_idx]
+
+            # Particles that switch vessels
+            remaining_time_positive = self.delta_t - (
+            (1 - local_position_per_iteration[change_vessel_positive_active_idx]) 
+            * length_per_iteration[change_vessel_positive_active_idx]
+            ) / velocities_per_iteration[change_vessel_positive_active_idx]
+
+            new_vessels, index_out_particles = self.select_vessels_positive(
+                initial_vessels_per_iteration[change_vessel_positive_active_idx], 
+                self.graph, 
+                self.outflow_vertices, 
+                self.flow_network.edge_list
+            )
+            bifurcation_count += len(new_vessels) - len(index_out_particles)
+            new_vessels = new_vessels.astype(int)
+
+            for vessel_idx, new_vessel in enumerate(new_vessels):
+                if new_vessel != -1:
+                    source_node = self.es[initial_vessels_per_iteration[change_vessel_positive_active_idx[vessel_idx]]][0]
+                    if self.node_classification[source_node] == 2:
+                        bifurcation_convergent += 1
+                    elif self.node_classification[source_node] == 3:
+                        bifurcation_divergent += 1
+                    elif self.node_classification[source_node] == 0:
+                        bifurcation_inflow += 1
+                    elif self.node_classification[source_node] == 1:
+                        bifurcation_prolongation += 1
+                    elif self.node_classification[source_node] == 4:
+                        bifurcation_outflow += 1
             
-                # vessels_inflowing = self.select_vessels_inflow(self.inflow_vertices, self.graph, self.flow_network.edge_list).astype(int)
-                # remaining_capacity = self.max_particles_vessel[self.inflow_vessels] - self.flow_network.num_particles_in_vessel[self.inflow_vessels]
-                remaining_capacity = self.max_particles_vessel[self.inflow_vessels] - self.flow_network.num_particles_in_vessel[self.inflow_vessels]
-                if t == 210:
-                    print("HOLA")
-                inflow_particles, number_inflowing_particles = self.update_ghost_particles(self.ghost_particles, self.inflow_vessels, remaining_capacity)
-                self.N_particles_count = int(self.N_particles_count + number_inflowing_particles)
-                self.expand_arrays_if_needed()
+            self.particles_evolution[change_vessel_positive, t, 0] = new_vessels
+            staying_in_vessel_idx = np.where(new_vessels == initial_vessels_per_iteration[change_vessel_positive_active_idx])[0]
+            self.particles_evolution[change_vessel_positive[staying_in_vessel_idx], t, 1] = 1.0
+            moving_particles_idx = np.where(new_vessels != initial_vessels_per_iteration[change_vessel_positive_active_idx])[0]
+            moving_particles = change_vessel_positive[moving_particles_idx]
 
-                if number_inflowing_particles > 0:
-                    vessels = inflow_particles[:,0]
-                    local_positions = inflow_particles[:,1]
-                    
-                    self.particles_evolution[int(self.N_particles_count - number_inflowing_particles): self.N_particles_count, t, 0] = vessels.astype(int)
-                    self.particles_evolution[int(self.N_particles_count - number_inflowing_particles): self.N_particles_count, t, 1] = local_positions
-                # for vessel_id in np.unique(inflow_particles[:, 0].astype(int)):  
-                #     count_in_vessel = np.sum(inflow_particles[:, 0] == vessel_id)  
-                #     self.flow_network.num_particles_in_vessel[vessel_id] += count_in_vessel
-                self.update_network()
-                print('Timesetp: ', t, 'Ht = :', self.flow_network.ht[0], '  Number of particles: ', self.flow_network.num_particles_in_vessel[0] )
-            print('Ya acabo el bucle')
-            print('Number of particles added:', self.total_added_particles)
-            print('Bifurcations:', bifurcation_count)
-            print('Collisions:', collision_count)
-            # self.save_particles_evolution_to_excel()
-            # self.save_vessel_data_to_excel()
+            new_velocities = abs(self.rbc_velocity[new_vessels[moving_particles_idx]])
+
+            # self.detect_velocity_sign_change(previous_rbc_velocity, self.rbc_velocity)
+            # previous_rbc_velocity = self.rbc_velocity.copy()
+
+            second_prediction_position = new_velocities * remaining_time_positive[moving_particles_idx] / self.length[new_vessels[moving_particles_idx]]
+            self.particles_evolution[moving_particles, t, 1] = second_prediction_position
+
+            new_vessel_diameters = self.diameter[new_vessels[moving_particles_idx]]
+            self.particle_size[moving_particles] = self.rbc_volume / (np.pi * new_vessel_diameters**2 / 4)
+
+            if np.any(second_prediction_position > 1):
+                print("A particles is not being propagated correctly: you should decrease the timestep")
+
+            # Manage particles that exit the network.
+            if index_out_particles:
+                for idx in index_out_particles:
+                    outflow_vessel = int(self.particles_evolution[change_vessel_positive[idx], t - 1, 0])
+                    # self.flow_network.num_particles_in_vessel[outflow_vessel] -= 1
+                    self.out_particles.append(change_vessel_positive[idx])
+                    self.particles_evolution[change_vessel_positive[idx], t :, :] = np.nan
+                    self.inactive_particles[change_vessel_positive[idx]] = True
+
+            # COLLISIONS ANALYSIS
+            for i, particle1 in enumerate(change_vessel_positive):
+                if particle1 in index_out_particles:
+                    continue  
+
+                vessel1 = new_vessels[i]  
+                position1 = self.particles_evolution[particle1, t, 1] * self.length[vessel1]
+                radius1 = self.particle_size[particle1] / 2
+
+            
+                candidates = np.where(
+                    (self.particles_evolution[:, t, 0] == vessel1) &
+                    (~np.isin(np.arange(len(self.particles_evolution)), index_out_particles))
+                )[0]
+
+                processed_particles = set(change_vessel_positive[:i])
+                candidates = [particle2 for particle2 in candidates if particle2 not in processed_particles]
+
+                for particle2 in candidates:
+                    if particle2 != particle1:  
+                        position2 = self.particles_evolution[particle2, t, 1] * self.length[vessel1]
+                        radius2 = self.particle_size[particle2] / 2
+                        if abs(position1 - position2) < (radius1 + radius2):
+                            collision_count += 1
+                            source_node = self.es[vessel1][0]
+                            if self.node_classification[source_node] == 2:
+                                convergent_collision_count += 1
+                                if self.particles_evolution[particle1, t-1, 0] == self.particles_evolution[particle2, t-1, 0]:
+                                    size_change_convergent += 1
+                            elif self.node_classification[source_node] == 3:
+                                divergent_collision_count += 1
+                                if self.particles_evolution[particle1, t-1, 1] == 1.0 or self.particles_evolution[particle2, t-1, 1] == 1.0:
+                                    divergent_collisions_stopped_particles += 1
+                            elif self.node_classification[source_node] == 0:
+                                inflow_collisions += 1
+                            elif self.node_classification[source_node] == 1:
+                                prolongation_collision += 1
+                            elif self.node_classification[source_node] == 4:
+                                outflow_collisions += 1
+                            break
+            remaining_capacity = self.max_particles_vessel[self.inflow_vessels] - self.flow_network.num_particles_in_vessel[self.inflow_vessels]
+            inflow_particles, number_inflowing_particles = self.update_ghost_particles(self.ghost_particles, self.inflow_vessels, remaining_capacity)
+            self.N_particles_count = int(self.N_particles_count + number_inflowing_particles)
+            self.expand_arrays_if_needed()
+
+            if number_inflowing_particles > 0:
+                vessels = inflow_particles[:,0]
+                local_positions = inflow_particles[:,1]
+                
+                self.particles_evolution[int(self.N_particles_count - number_inflowing_particles): self.N_particles_count, t, 0] = vessels.astype(int)
+                self.particles_evolution[int(self.N_particles_count - number_inflowing_particles): self.N_particles_count, t, 1] = local_positions
+            # for vessel_id in np.unique(inflow_particles[:, 0].astype(int)):  
+            #     count_in_vessel = np.sum(inflow_particles[:, 0] == vessel_id)  
+            #     self.flow_network.num_particles_in_vessel[vessel_id] += count_in_vessel
+            self.update_network()
+            print('Timesetp: ', t, 'Ht = :', self.flow_network.ht[0], '  Number of particles: ', self.flow_network.num_particles_in_vessel[0] )
+        print('Bifurcations:', bifurcation_count)
+        print('Collisions in convergent bifurcations:', convergent_collision_count)
+        print('Collisions in CONVERGENT bifurcations due to change of SIZE:', size_change_convergent)
+        print('Collisions in DIVERGENT bifurcations:', divergent_collision_count)
+        print('Collisions in DIVERGENT bifurcations due to blocked particles:', divergent_collisions_stopped_particles)
+        print('Collisions in inflow vessels:', inflow_collisions)
+        print('Collisions in outflow vessels:', outflow_collisions)
+        print('Collisions in vessel prolongations:', prolongation_collision)
+        print('Collisions:', collision_count)
+        print('Number of particles simulated:', self.N_particles_count)
+        print('Number of particles initialized:', self.N_particles)
+        print('Bifurcaciones totales:', bifurcation_count)
+        print('Bifurcaciones convergentes:', bifurcation_convergent)
+        print('Bifurcaciones divergentes:', bifurcation_divergent)
+        print('Bifurcaciones en prolongaciones:', bifurcation_prolongation)
+        print('Bifurcaciones en vasos de entrada:', bifurcation_inflow)
+        print('Bifurcaciones en vasos de salida:', bifurcation_outflow)
+
+        # self.save_particles_evolution_to_excel()
+        # self.save_vessel_data_to_excel()
 
     def select_vessels_positive(self, old_vessels, graph, outflow_vertices, es):
             """
@@ -362,7 +453,7 @@ class Particle_tracker(object):
             """
 
             last_nodes = es[old_vessels, 1]
-            new_vessels = np.zeros(len(old_vessels))
+            new_vessels = np.full(len(old_vessels), -1)
             index_out_particles = []
             support = 0
             
@@ -894,3 +985,76 @@ class Particle_tracker(object):
 
             else:
                 raise ValueError(f"Invalid use_tortuosity: {self.use_tortuosity}. It must be either 0 or 1.")
+            
+    def classify_nodes(self, graph):
+        # 0: Inflow node.
+        # 1: Normal connection point.
+        # 2: Convergent bifurcation.
+        # 3: Divergent bifurcation.
+        # 4: Outflow node.
+
+        # Inicializar el array de clasificaciones
+        node_classification = np.zeros(graph.vcount(), dtype=int)
+
+        # Clasificar directamente los inflow y outflow nodes
+        node_classification[self.inflow_vertices] = 0  # Inflow nodes
+        node_classification[self.outflow_vertices] = 4  # Outflow nodes
+
+        # Iterar por los nodos restantes
+        for node in range(graph.vcount()):
+            if node in self.inflow_vertices or node in self.outflow_vertices:
+                continue  # Saltar los nodos ya clasificados
+
+            # Obtener las aristas conectadas al nodo
+            connected_edges = graph.incident(node, mode="ALL")
+            inflow_edges = [e for e in connected_edges if self.es[e][1] == node]
+            outflow_edges = [e for e in connected_edges if self.es[e][0] == node]
+
+            num_connected = len(connected_edges)
+
+            if num_connected == 2:
+                node_classification[node] = 1  # Normal connection point
+
+            elif num_connected == 3:
+                # Bifurcación convergente o divergente
+                if len(inflow_edges) == 1 and len(outflow_edges) == 2:
+                    node_classification[node] = 3  # Divergent bifurcation
+                elif len(inflow_edges) == 2 and len(outflow_edges) == 1:
+                    node_classification[node] = 2  # Convergent bifurcation
+                else:
+                    node_classification[node] = -1
+                    
+
+
+            elif num_connected >= 4:
+                # Procesar bifurcaciones complejas
+                if len(inflow_edges) == 3 and len(outflow_edges) == 1:
+                    node_classification[node] = 2  # Convergent bifurcation
+                elif len(inflow_edges) == 1 and len(outflow_edges) == 3:
+                    node_classification[node] = 3  # Divergent bifurcation
+                elif len(inflow_edges) == 2 and len(outflow_edges) == 2:
+                    node_classification[node] = 3  # Divergent bifurcation
+                else:
+                    node_classification[node] = -1
+
+        return node_classification
+        
+    def detect_velocity_sign_change(self, previous_velocities, current_velocities):
+        """
+        Detect vessels where velocity changes direction (sign changes).
+
+        Parameters:
+        - previous_velocities: array of velocities from the previous timestep.
+        - current_velocities: array of velocities from the current timestep.
+
+        Prints:
+        - The indices of vessels where a sign change occurs.
+        - Whether these vessels are inflow or outflow vessels.
+        """
+        sign_change_indices = np.where(np.sign(previous_velocities) != np.sign(current_velocities))[0]
+
+        for idx in sign_change_indices:
+            vessel_type = "inflow" if idx in self.inflow_vessels else "outflow" if idx in self.outflow_vessels else "internal"
+            print(f"Vessel {idx} changed direction. Type: {vessel_type}")
+        
+        return sign_change_indices

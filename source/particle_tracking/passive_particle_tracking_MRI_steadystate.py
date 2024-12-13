@@ -71,7 +71,8 @@ class Particle_tracker(object):
         self.exiting_volume_per_vessel = self.delta_t * abs(self.flow_rate[self.outflow_vessels])
         self.exiting_volume_per_timestep = np.sum(self.exiting_volume_per_vessel)
         total_volume_network = np.sum(self.volume)
-        self.timesteps_until_steadystate = 1 * (total_volume_network // self.exiting_volume_per_timestep) + 1
+        self.timesteps_until_steadystate = 0.5 * (total_volume_network // self.exiting_volume_per_timestep) + 1
+        
         self.N_timesteps =  int(self.timesteps_until_steadystate)
 
         if self.use_tortuosity == 1:
@@ -695,7 +696,7 @@ class Particle_tracker(object):
             - velocity_z: Matrix with the z component of velocity for each particle at each timestep.
         """
         start_time = 0
-        end_time = 2000
+        end_time = 800
         n_timesteps_to_keep = end_time - start_time + 1
         # Initialize the velocity matrices for x, y, z with NaN
         self.velocity_x = np.full((self.N_particles_total, n_timesteps_to_keep), np.nan)
@@ -789,7 +790,7 @@ class Particle_tracker(object):
         self.nkind = graph_data.es['nkind']  # Assuming 'nkind' is stored as an attribute for each edge
 
         start_time = 0
-        end_time = 2000
+        end_time = 800
         n_timesteps_to_keep = end_time - start_time + 1
 
         # Initialize the matrix with NaN values
@@ -918,7 +919,7 @@ class Particle_tracker(object):
         self.N_timesteps =  self._PARAMETERS["N_timesteps"]
         self.N_particles = len(self.steady_state_particles["positions"])
         total_particles_added = self.calculate_total_particles_added()
-        self.delta_t = 0.0002
+        self.delta_t = 0.0005
 
         # Total number of particles
         self.N_particles_total = int(self.N_particles + total_particles_added)

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from source.flow_network import FlowNetwork
 from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
-from source.particle_tracking.rbc_tracking_new_inflow import Particle_tracker
+from source.particle_tracking.passive_particle_tracking_MRI_newinflow import Particle_tracker
 import source.setup.setup as setup
 
 # MappingProxyType is basically a const dict.
@@ -19,13 +19,12 @@ PARAMETERS = MappingProxyType(
         "read_network_option": 3,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph format (pickle file)
-        "write_network_option": 3,  # 1: do not write anything
+        "write_network_option": 1,  # 1: do not write anything
                                     # 2: write to igraph format (.pkl)
                                     # 3: write to vtp format (.vtp)
                                     # 4: write to two csv files (.csv)
-        "tube_haematocrit_option": 3,  # 1: No RBCs (ht=0)
+        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
                                        # 2: Constant haematocrit
-                                       # 3: Hematocrit computed based on number of particles in each vessel
         "rbc_impact_option": 3,  # 1: No RBCs (hd=0) - makes only sense if tube_haematocrit_option:1 or ht=0
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: Laws by Pries and Secomb (2005)
@@ -51,7 +50,7 @@ PARAMETERS = MappingProxyType(
         "nr_of_hexagon_y": 11,
         "hexa_edge_length": 62.e-6,
         "hexa_diameter": 4.e-6,
-        "hexa_boundary_vertices": [0,275],
+        "hexa_boundary_vertices": [0, 275],
         "hexa_boundary_values": [2, 1],
         "hexa_boundary_types": [1, 1],
 
@@ -81,40 +80,31 @@ PARAMETERS = MappingProxyType(
                                      #    that will determine the intial number of particles in each vessel
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "ht_initial": 0.0001,
-        "ht_boundary_condition":0.2, 
-        "rbc_volume": 4.9e-17,
-        "N_timesteps": 100,
-        "times_basic_delta_t":8,   # The basic timestep is computed as the minimum vessel length divided by
+        "N_timesteps": 800,
+        "times_basic_delta_t": 8,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
                                     #   delta_t = times_basic_delta_t * basic_timestep
 
         "interval_mode": 1, # 0: the same inflowing frequency in every inflowing vertex
                             # 1: inflowing frequency based on flow_rate of vessels connected to each vertex
-        "particles_frequency": 1, # Only required if "interval_mode" 0. Every "particles_freq" 
+        "particles_frequency": 10, # Only required if "interval_mode" 0. Every "particles_freq" 
                                   # timesteps a particle will enter through each inflow. Minimum possible value: 1. 
         "use_tortuosity": 1,  # 0: Tortuosity off, 1: Tortuosity on
-        "parallel": False  # Set to True for parallel execution, False for sequential
+        "parallel": False,  # Set to True for parallel execution, False for sequential
                           # NOTE: For running the parallel version the user should:
                           #          1- Have an MPI implementation installed on the system.
                           #          2- Have 'mpi4py' Python package installed in the used Python interpreter.
                           #          2- Execute in the terminal: 'mpiexec -np x python main.py'
                           #             Where -np is the number of processe selected. 
+        "initialization_constant": 0.18,
+        "rbc_volume": 4.9e-17,
+        "ht_initial": 0.0001,
+        "ht_boundary_condition":0.2
+
+                          
 
     }
 )
-
-# Create object to set up the simulation and initialise the simulation
-setup_blood_flow = setup.SetupSimulation()
-# Initialise the implementations based on the parameters specified
-imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver, imp_iterative, imp_balance = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
-
-# Build flownetwork object and pass the implementations of the different submodules, which were selected in
-#  the parameter file
-flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
-                        imp_solver, imp_velocity, imp_iterative, imp_balance, PARAMETERS)
-
 if PARAMETERS['parallel']:
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
@@ -141,8 +131,7 @@ if rank == 0:
     print("Read network: ...")
 
 flow_network.read_network()
-flow_network.num_particles_in_vessel = np.zeros(len(flow_network.edge_list), dtype=int)
-flow_network.volume = np.ones(len(flow_network.edge_list), dtype=int)
+
 if rank == 0:
     print("Read network: DONE")
 
@@ -169,7 +158,6 @@ if rank == 0:
     print("Check flow balance: ...")
 
 flow_network.check_flow_balance()
-flow_network.write_network()
 
 if rank == 0:
     print("Check flow balance: DONE")
@@ -193,38 +181,46 @@ if rank == 0:
     print("Simulation of particles into the network: ...")
 
 start_simulation = time.process_time()
+particles_evolution_steadystate = particle_tracker.evolve_particles()
+particle_tracker.save_steady_state()
+particle_tracker.initialize_from_steady_state()
 particles_evolution = particle_tracker.evolve_particles()
+
 simulation_time = time.process_time() - start_simulation
 
 if rank == 0:
     print(f"Simulation of particles into the network: DONE in {simulation_time:.4f} seconds")
 
-# # Transformation to global coordinates
-# if rank == 0:
-#     print("Transforming particles to global coordinates: ...")
-# start_transformation = time.process_time()
+# Transformation to global coordinates
+if rank == 0:
+    print("Transforming particles to global coordinates: ...")
+start_transformation = time.process_time()
 
-# if PARAMETERS['parallel']:
-#     comm.Barrier()
-#     particles_evolution_global = particle_tracker.transform_to_global_coordinates()
-#     comm.Barrier()
-# else:
-#     particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+if PARAMETERS['parallel']:
+    comm.Barrier()
+    particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+    comm.Barrier()
+else:
+    particles_evolution_global = particle_tracker.transform_to_global_coordinates()
 
-# if rank == 0:
-#     transformation_time = time.process_time() - start_transformation
-#     print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
+if rank == 0:
+    transformation_time = time.process_time() - start_transformation
+    print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
 
-#     # Define output directory for the VTK files
-#     output_directory = "C:/Users/UGE/Documents/Manuel/microBlooM/data/network/output"
+    # Define output directory for the VTK files
+    output_directory = "C:/Users/UGE/Documents/Manuel/microBlooM/data/network/output"
 
-#     # Create VTK files per timestep
-#     print("Creating VTK files for particles per timestep: ...")
-#     start_vtk_creation = time.process_time()
-#     particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
-#     vtk_creation_time = time.process_time() - start_vtk_creation
-#     print(f"VTK files created in directory: {output_directory} in {vtk_creation_time:.4f} seconds")
+    # Create VTK files per timestep
+    print("Creating VTK files for particles per timestep: ...")
+    start_vtk_creation = time.process_time()
+    particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
+    vtk_creation_time = time.process_time() - start_vtk_creation
+    print(f"VTK files created in {vtk_creation_time:.4f} seconds. Directory: {output_directory} in {vtk_creation_time:.4f} seconds")
 
-#     # Total time for particle processing
-#     total_particle_process_time = time.process_time() - start_time_total
-#     print(f"\nTotal time for particle processing: {total_particle_process_time:.4f} seconds")
+    # Total time for particle processing
+    total_particle_process_time = time.process_time() - start_time_total
+    print(f"\nTotal time for particle processing: {total_particle_process_time:.4f} seconds")
+
+if rank == 0:
+    particle_tracker.save_particles_evolution_to_csv()
+

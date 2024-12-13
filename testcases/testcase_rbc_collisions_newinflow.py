@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from source.flow_network import FlowNetwork
 from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
-from source.particle_tracking.rbc_tracking_new_inflow import Particle_tracker
+from source.particle_tracking.rbc_collisions_new_inflow import Particle_tracker
 import source.setup.setup as setup
 
 # MappingProxyType is basically a const dict.
@@ -65,7 +65,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "C:/Users/UGE/Documents/Manuel/microBlooM/testcases/MVN1_corrected_SI.pkl",
+        "pkl_path_igraph": "C:/Users/UGE/Documents/Manuel/microBlooM/testcases/MVN2_corrected_SI.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
@@ -81,11 +81,11 @@ PARAMETERS = MappingProxyType(
                                      #    that will determine the intial number of particles in each vessel
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "ht_initial": 0.0001,
-        "ht_boundary_condition":0.2, 
+        "ht_initial": 0.10,
+        "ht_boundary_condition":0.3, 
         "rbc_volume": 4.9e-17,
-        "N_timesteps": 100,
-        "times_basic_delta_t":8,   # The basic timestep is computed as the minimum vessel length divided by
+        "N_timesteps": 200,
+        "times_basic_delta_t":6,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
                                     #   delta_t = times_basic_delta_t * basic_timestep
 

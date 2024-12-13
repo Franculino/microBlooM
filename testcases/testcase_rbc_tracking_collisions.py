@@ -65,7 +65,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "C:/Users/UGE/Documents/Manuel/microBlooM//testcases/piece_corrected_SI.pkl",
+        "pkl_path_igraph": "C:/Users/UGE/Documents/Manuel/microBlooM//testcases/MVN1_corrected_SI.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
@@ -81,9 +81,9 @@ PARAMETERS = MappingProxyType(
                                      #    that will determine the intial number of particles in each vessel
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "ht_initial": 0.12, 
+        "ht_initial": 0.7, 
         "rbc_volume": 4.9e-17,
-        "N_timesteps": 500,
+        "N_timesteps": 50,
         "times_basic_delta_t":1,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
                                     #   delta_t = times_basic_delta_t * basic_timestep
@@ -198,32 +198,32 @@ simulation_time = time.process_time() - start_simulation
 if rank == 0:
     print(f"Simulation of particles into the network: DONE in {simulation_time:.4f} seconds")
 
-# Transformation to global coordinates
-if rank == 0:
-    print("Transforming particles to global coordinates: ...")
-start_transformation = time.process_time()
+# # Transformation to global coordinates
+# if rank == 0:
+#     print("Transforming particles to global coordinates: ...")
+# start_transformation = time.process_time()
 
-if PARAMETERS['parallel']:
-    comm.Barrier()
-    particles_evolution_global = particle_tracker.transform_to_global_coordinates()
-    comm.Barrier()
-else:
-    particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+# if PARAMETERS['parallel']:
+#     comm.Barrier()
+#     particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+#     comm.Barrier()
+# else:
+#     particles_evolution_global = particle_tracker.transform_to_global_coordinates()
 
-if rank == 0:
-    transformation_time = time.process_time() - start_transformation
-    print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
+# if rank == 0:
+#     transformation_time = time.process_time() - start_transformation
+#     print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
 
-    # Define output directory for the VTK files
-    output_directory = "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/data/network/output"
+#     # Define output directory for the VTK files
+#     output_directory = "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/data/network/output"
 
-    # Create VTK files per timestep
-    print("Creating VTK files for particles per timestep: ...")
-    start_vtk_creation = time.process_time()
-    particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
-    vtk_creation_time = time.process_time() - start_vtk_creation
-    print(f"VTK files created in directory: {output_directory} in {vtk_creation_time:.4f} seconds")
+#     # Create VTK files per timestep
+#     print("Creating VTK files for particles per timestep: ...")
+#     start_vtk_creation = time.process_time()
+#     particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
+#     vtk_creation_time = time.process_time() - start_vtk_creation
+#     print(f"VTK files created in directory: {output_directory} in {vtk_creation_time:.4f} seconds")
 
-    # Total time for particle processing
-    total_particle_process_time = time.process_time() - start_time_total
-    print(f"\nTotal time for particle processing: {total_particle_process_time:.4f} seconds")
+#     # Total time for particle processing
+#     total_particle_process_time = time.process_time() - start_time_total
+#     print(f"\nTotal time for particle processing: {total_particle_process_time:.4f} seconds")

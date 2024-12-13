@@ -56,6 +56,7 @@ class Particle_tracker(object):
 
         self.indices_rbc_negativa = np.where(self.rbc_velocity < 0)[0]
         self.es[self.indices_rbc_negativa] = self.es[self.indices_rbc_negativa][:, ::-1]
+        self.node_classification = self.classify_nodes(self.graph)
 
         num_vessels = len(self.flow_network.edge_list)
         self.hematocrit_evolution = np.zeros((num_vessels, self.N_timesteps))  # Shape: (vessels, timesteps)
@@ -231,9 +232,6 @@ class Particle_tracker(object):
             self.flow_network.num_particles_in_vessel[vessel] += 1
         self.update_network()
 
-
-
-
     def initialize_particles_evolution(self):
         """
         Initialize the particles' evolution over time using the defined time steps, intervals, and conditions.
@@ -264,8 +262,6 @@ class Particle_tracker(object):
             self.flow_network.num_particles_in_vessel[vessel] += 1
         self.update_network()
         
-
-
     def predict_particles(self, N_particles, N_timesteps, intervals):
         """
         Predict the number of particles entering the network at each timestep based on intervals.
@@ -304,7 +300,14 @@ class Particle_tracker(object):
     def evolve_particles(self):
         """Evolve particles across each timestep. Computes the movement of every particles in the net"""
         collision_count = 0
+        convergent_collision_count = 0
+        divergent_collision_count = 0
+        prolongation_collision = 0
+        size_change_convergent = 0
+        inflow_collisions = 0
+        outflow_collisions = 0
         bifurcation_count = 0
+        divergent_collisions_stopped_particles = 0
         self.particle_size = np.zeros(self.particles_evolution.shape[0])
 
         # print('Timestep: ', self.delta_t)
@@ -361,14 +364,6 @@ class Particle_tracker(object):
             self.particles_evolution[change_vessel_positive[staying_in_vessel_idx], t, 1] = 1.0
             moving_particles_idx = np.where(new_vessels != initial_vessels_per_iteration[change_vessel_positive_active_idx])[0]
             moving_particles = change_vessel_positive[moving_particles_idx]
-            # THIS PART IS REMOVED FROM HERE AND INTRODUCED IN select_vessels_positive
-            # old_vessels = self.particles_evolution[change_vessel_positive, t-1, 0].astype(int)  
-            # for old_vessel, new_vessel in zip(old_vessels, new_vessels):
-            #     self.flow_network.num_particles_in_vessel[old_vessel] -= 1 
-            #     if new_vessel != 0:
-            #         self.flow_network.num_particles_in_vessel[new_vessel] += 1
-            
-            # self.update_network()
 
             new_velocities = abs(self.rbc_velocity[new_vessels[moving_particles_idx]])
 
@@ -389,7 +384,8 @@ class Particle_tracker(object):
                     self.out_particles.append(change_vessel_positive[idx])
                     self.particles_evolution[change_vessel_positive[idx], t - 1:, :] = np.nan
                     self.inactive_particles[change_vessel_positive[idx]] = True
-
+           
+            # Collisions analysis
             for i, particle1 in enumerate(change_vessel_positive):
                 if particle1 in index_out_particles:
                     continue  
@@ -404,12 +400,30 @@ class Particle_tracker(object):
                     (~np.isin(np.arange(len(self.particles_evolution)), index_out_particles))
                 )[0]
 
+                processed_particles = set(change_vessel_positive[:i])
+                candidates = [particle2 for particle2 in candidates if particle2 not in processed_particles]
+
                 for particle2 in candidates:
                     if particle2 != particle1:  
                         position2 = self.particles_evolution[particle2, t, 1] * self.length[vessel1]
                         radius2 = self.particle_size[particle2] / 2
                         if abs(position1 - position2) < (radius1 + radius2):
                             collision_count += 1
+                            source_node = self.es[vessel1][0]
+                            if self.node_classification[source_node] == 2:
+                                convergent_collision_count += 1
+                                if self.particles_evolution[particle1, t-1, 0] == self.particles_evolution[particle2, t-1, 0]:
+                                    size_change_convergent += 1
+                            elif self.node_classification[source_node] == 3:
+                                divergent_collision_count += 1
+                                if self.particles_evolution[particle1, t-1, 1] == 1.0 or self.particles_evolution[particle2, t-1, 1] == 1.0:
+                                    divergent_collisions_stopped_particles += 1
+                            elif self.node_classification[source_node] == 0:
+                                inflow_collisions += 1
+                            elif self.node_classification[source_node] == 1:
+                                prolongation_collision += 1
+                            elif self.node_classification[source_node] == 4:
+                                outflow_collisions += 1
                             break
 
             # Initialize particles entering the network in the next timestep
@@ -435,6 +449,13 @@ class Particle_tracker(object):
             self.update_network()
             print('Timesetp: ', t, 'Ht = :', self.flow_network.ht[0], '  Number of particles: ', self.flow_network.num_particles_in_vessel[0] )
         print('Bifurcations:', bifurcation_count)
+        print('Collisions in convergent bifurcations:', convergent_collision_count)
+        print('Collisions in CONVERGENT bifurcations due to change of SIZE:', size_change_convergent)
+        print('Collisions in DIVERGENT bifurcations:', divergent_collision_count)
+        print('Collisions in DIVERGENT bifurcations due to blocked particles:', divergent_collisions_stopped_particles)
+        print('Collisions in inflow vessels:', inflow_collisions)
+        print('Collisions in outflow vessels:', outflow_collisions)
+        print('Collisions in vessel prolongations:', prolongation_collision)
         print('Collisions:', collision_count)
         # self.save_particles_evolution_to_excel()
         # self.save_vessel_data_to_excel()
@@ -961,3 +982,57 @@ class Particle_tracker(object):
         vessel_data_df.to_excel(file_name, sheet_name="Vessel Data")
 
         print(f"Data successfully saved to {file_name}")
+
+    def classify_nodes(self, graph):
+        # 0: Inflow node.
+        # 1: Normal connection point.
+        # 2: Convergent bifurcation.
+        # 3: Divergent bifurcation.
+        # 4: Outflow node.
+
+        # Inicializar el array de clasificaciones
+        node_classification = np.zeros(graph.vcount(), dtype=int)
+
+        # Clasificar directamente los inflow y outflow nodes
+        node_classification[self.inflow_vertices] = 0  # Inflow nodes
+        node_classification[self.outflow_vertices] = 4  # Outflow nodes
+
+        # Iterar por los nodos restantes
+        for node in range(graph.vcount()):
+            if node in self.inflow_vertices or node in self.outflow_vertices:
+                continue  # Saltar los nodos ya clasificados
+
+            # Obtener las aristas conectadas al nodo
+            connected_edges = graph.incident(node, mode="ALL")
+            inflow_edges = [e for e in connected_edges if self.es[e][1] == node]
+            outflow_edges = [e for e in connected_edges if self.es[e][0] == node]
+
+            num_connected = len(connected_edges)
+
+            if num_connected == 2:
+                node_classification[node] = 1  # Normal connection point
+
+            elif num_connected == 3:
+                # Bifurcación convergente o divergente
+                if len(inflow_edges) == 1 and len(outflow_edges) == 2:
+                    node_classification[node] = 3  # Divergent bifurcation
+                elif len(inflow_edges) == 2 and len(outflow_edges) == 1:
+                    node_classification[node] = 2  # Convergent bifurcation
+                else:
+                    node_classification[node] = -1
+                    
+
+
+            elif num_connected >= 4:
+                # Procesar bifurcaciones complejas
+                if len(inflow_edges) == 3 and len(outflow_edges) == 1:
+                    node_classification[node] = 2  # Convergent bifurcation
+                elif len(inflow_edges) == 1 and len(outflow_edges) == 3:
+                    node_classification[node] = 3  # Divergent bifurcation
+                elif len(inflow_edges) == 2 and len(outflow_edges) == 2:
+                    node_classification[node] = 3  # Divergent bifurcation
+                else:
+                    node_classification[node] = -1
+
+        return node_classification
+        
