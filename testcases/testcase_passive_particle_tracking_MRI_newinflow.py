@@ -96,7 +96,7 @@ PARAMETERS = MappingProxyType(
                           #          2- Have 'mpi4py' Python package installed in the used Python interpreter.
                           #          2- Execute in the terminal: 'mpiexec -np x python main.py'
                           #             Where -np is the number of processe selected. 
-        "initialization_constant": 0.18,
+        "initialization_constant": 0.0001,
         "rbc_volume": 4.9e-17,
         "ht_initial": 0.0001,
         "ht_boundary_condition":0.2
@@ -185,6 +185,7 @@ particles_evolution_steadystate = particle_tracker.evolve_particles()
 particle_tracker.save_steady_state()
 particle_tracker.initialize_from_steady_state()
 particles_evolution = particle_tracker.evolve_particles()
+mentioned_subgraph, unmentioned_subgraph = particle_tracker.create_vessel_subgraphs_from_particles()
 
 simulation_time = time.process_time() - start_simulation
 
@@ -192,35 +193,35 @@ if rank == 0:
     print(f"Simulation of particles into the network: DONE in {simulation_time:.4f} seconds")
 
 # Transformation to global coordinates
-if rank == 0:
-    print("Transforming particles to global coordinates: ...")
-start_transformation = time.process_time()
+# if rank == 0:
+#     print("Transforming particles to global coordinates: ...")
+# start_transformation = time.process_time()
 
-if PARAMETERS['parallel']:
-    comm.Barrier()
-    particles_evolution_global = particle_tracker.transform_to_global_coordinates()
-    comm.Barrier()
-else:
-    particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+# if PARAMETERS['parallel']:
+#     comm.Barrier()
+#     particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+#     comm.Barrier()
+# else:
+#     particles_evolution_global = particle_tracker.transform_to_global_coordinates()
 
-if rank == 0:
-    transformation_time = time.process_time() - start_transformation
-    print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
+# if rank == 0:
+#     transformation_time = time.process_time() - start_transformation
+#     print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
 
-    # Define output directory for the VTK files
-    output_directory = "C:/Users/UGE/Documents/Manuel/microBlooM/data/network/output"
+#     # Define output directory for the VTK files
+#     output_directory = "C:/Users/UGE/Documents/Manuel/microBlooM/data/network/output"
 
-    # Create VTK files per timestep
-    print("Creating VTK files for particles per timestep: ...")
-    start_vtk_creation = time.process_time()
-    particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
-    vtk_creation_time = time.process_time() - start_vtk_creation
-    print(f"VTK files created in {vtk_creation_time:.4f} seconds. Directory: {output_directory} in {vtk_creation_time:.4f} seconds")
+#     # Create VTK files per timestep
+#     print("Creating VTK files for particles per timestep: ...")
+#     start_vtk_creation = time.process_time()
+#     particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
+#     vtk_creation_time = time.process_time() - start_vtk_creation
+#     print(f"VTK files created in {vtk_creation_time:.4f} seconds. Directory: {output_directory} in {vtk_creation_time:.4f} seconds")
 
-    # Total time for particle processing
-    total_particle_process_time = time.process_time() - start_time_total
-    print(f"\nTotal time for particle processing: {total_particle_process_time:.4f} seconds")
+#     # Total time for particle processing
+#     total_particle_process_time = time.process_time() - start_time_total
+#     print(f"\nTotal time for particle processing: {total_particle_process_time:.4f} seconds")
 
-if rank == 0:
-    particle_tracker.save_particles_evolution_to_csv()
+# if rank == 0:
+#     particle_tracker.save_particles_evolution_to_csv()
 

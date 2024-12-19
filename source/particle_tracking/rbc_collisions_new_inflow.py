@@ -7,6 +7,7 @@ import igraph as ig
 import matplotlib.pyplot as plt
 import os
 import vtk
+import csv
 import igraph
 
 from source.flow_network import FlowNetwork
@@ -263,6 +264,7 @@ class Particle_tracker(object):
         bifurcation_inflow = 0
         bifurcation_outflow = 0
         divergent_collisions_stopped_particles = 0
+        collisions_per_node = np.zeros(len(self.node_classification), dtype=int)
         self.particle_size = np.zeros(self.particles_evolution.shape[0])
         previous_rbc_velocity = self.rbc_velocity.copy()
         # print('Timestep: ', self.delta_t)
@@ -316,6 +318,7 @@ class Particle_tracker(object):
             bifurcation_count += len(new_vessels) - len(index_out_particles)
             new_vessels = new_vessels.astype(int)
 
+            # BIFURCATION ANALYSIS
             for vessel_idx, new_vessel in enumerate(new_vessels):
                 if new_vessel != -1:
                     source_node = self.es[initial_vessels_per_iteration[change_vessel_positive_active_idx[vessel_idx]]][0]
@@ -384,16 +387,20 @@ class Particle_tracker(object):
                         if abs(position1 - position2) < (radius1 + radius2):
                             collision_count += 1
                             source_node = self.es[vessel1][0]
+                            collisions_per_node[source_node] += 1
                             if self.node_classification[source_node] == 2:
                                 convergent_collision_count += 1
                                 if self.particles_evolution[particle1, t-1, 0] == self.particles_evolution[particle2, t-1, 0]:
                                     size_change_convergent += 1
                             elif self.node_classification[source_node] == 3:
+                                if source_node == 353:
+                                    print('HOLA')
                                 divergent_collision_count += 1
                                 if self.particles_evolution[particle1, t-1, 1] == 1.0 or self.particles_evolution[particle2, t-1, 1] == 1.0:
                                     divergent_collisions_stopped_particles += 1
                             elif self.node_classification[source_node] == 0:
                                 inflow_collisions += 1
+                                print("Collision in inflow vessel:", self.particles_evolution[particle1,t,0])
                             elif self.node_classification[source_node] == 1:
                                 prolongation_collision += 1
                             elif self.node_classification[source_node] == 4:
@@ -415,23 +422,29 @@ class Particle_tracker(object):
             #     self.flow_network.num_particles_in_vessel[vessel_id] += count_in_vessel
             self.update_network()
             print('Timesetp: ', t, 'Ht = :', self.flow_network.ht[0], '  Number of particles: ', self.flow_network.num_particles_in_vessel[0] )
-        print('Bifurcations:', bifurcation_count)
-        print('Collisions in convergent bifurcations:', convergent_collision_count)
-        print('Collisions in CONVERGENT bifurcations due to change of SIZE:', size_change_convergent)
-        print('Collisions in DIVERGENT bifurcations:', divergent_collision_count)
-        print('Collisions in DIVERGENT bifurcations due to blocked particles:', divergent_collisions_stopped_particles)
-        print('Collisions in inflow vessels:', inflow_collisions)
-        print('Collisions in outflow vessels:', outflow_collisions)
-        print('Collisions in vessel prolongations:', prolongation_collision)
-        print('Collisions:', collision_count)
-        print('Number of particles simulated:', self.N_particles_count)
-        print('Number of particles initialized:', self.N_particles)
-        print('Bifurcaciones totales:', bifurcation_count)
-        print('Bifurcaciones convergentes:', bifurcation_convergent)
-        print('Bifurcaciones divergentes:', bifurcation_divergent)
-        print('Bifurcaciones en prolongaciones:', bifurcation_prolongation)
-        print('Bifurcaciones en vasos de entrada:', bifurcation_inflow)
-        print('Bifurcaciones en vasos de salida:', bifurcation_outflow)
+        # print('Bifurcations:', bifurcation_count)
+        # print('Collisions in convergent bifurcations:', convergent_collision_count)
+        # print('Collisions in CONVERGENT bifurcations due to change of SIZE:', size_change_convergent)
+        # print('Collisions in DIVERGENT bifurcations:', divergent_collision_count)
+        # print('Collisions in DIVERGENT bifurcations due to blocked particles:', divergent_collisions_stopped_particles)
+        # print('Collisions in inflow vessels:', inflow_collisions)
+        # print('Collisions in outflow vessels:', outflow_collisions)
+        # print('Collisions in vessel prolongations:', prolongation_collision)
+        # print('Collisions:', collision_count)
+        # print('Number of particles simulated:', self.N_particles_count)
+        # print('Number of particles initialized:', self.N_particles)
+        # print('Bifurcaciones totales:', bifurcation_count)
+        # print('Bifurcaciones convergentes:', bifurcation_convergent)
+        # print('Bifurcaciones divergentes:', bifurcation_divergent)
+        # print('Bifurcaciones en prolongaciones:', bifurcation_prolongation)
+        # print('Bifurcaciones en vasos de entrada:', bifurcation_inflow)
+        # print('Bifurcaciones en vasos de salida:', bifurcation_outflow)
+
+        with open("collisions_per_node2_05.csv", "w", newline="") as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(["Node_Index", "Collisions"])
+            for node_idx, collisions in enumerate(collisions_per_node):
+                csvwriter.writerow([node_idx, collisions])
 
         # self.save_particles_evolution_to_excel()
         # self.save_vessel_data_to_excel()

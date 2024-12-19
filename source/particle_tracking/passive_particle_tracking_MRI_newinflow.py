@@ -9,6 +9,7 @@ import os
 import vtk
 import igraph
 
+
 from source.flow_network import FlowNetwork
 from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
@@ -67,7 +68,7 @@ class Particle_tracker(object):
         self.exiting_volume_per_vessel = self.delta_t * abs(self.flow_rate[self.outflow_vessels])
         self.exiting_volume_per_timestep = np.sum(self.exiting_volume_per_vessel)
         total_volume_network = np.sum(self.volume)
-        self.timesteps_until_steadystate = 1.4 * (total_volume_network // self.exiting_volume_per_timestep) + 1
+        self.timesteps_until_steadystate = 4 * (total_volume_network // self.exiting_volume_per_timestep) + 1
         print("timesteps until steady state:", self.timesteps_until_steadystate)
         self.N_timesteps =  int(self.timesteps_until_steadystate)
         if self.use_tortuosity == 1:
@@ -199,7 +200,7 @@ class Particle_tracker(object):
         """Expand the array if the next timestep the size won't be enough"""
         if self.N_particles_count >= self.N_particles_total:
             # Aumentar el número total de partículas en 3000
-            self.N_particles_total += 5000
+            self.N_particles_total += 50000
             
             # Expansión de particles_evolution
             new_particles_evolution = np.zeros((self.N_particles_total, self.N_timesteps + 1, 2), dtype=object)
@@ -226,7 +227,7 @@ class Particle_tracker(object):
         # print('Timestep: ', self.delta_t)
 
         for t in range(1, self.N_timesteps + 1):
-            self.delta_t = self.times_basic_delta_t * abs(self.length).min()/(abs(self.rbc_velocity).max())
+            # self.delta_t = self.times_basic_delta_t * abs(self.length).min()/(abs(self.rbc_velocity).max())
             print('Delta_t = ', self.delta_t)
 
             # for vessel_idx in range(len(self.flow_network.edge_list)):
@@ -816,3 +817,56 @@ class Particle_tracker(object):
         df.to_csv(file_name, index=False)
 
         print(f"El archivo '{file_name}' se ha guardado correctamente.")
+
+    def create_vessel_subgraphs_from_particles(self):
+        """
+        Generates subgraphs of mentioned and unmentioned vessels based on particle evolution.
+        
+        This method uses the particle evolution (`particles_evolution`) and the microvascular network
+        (`graph`) to identify mentioned and unmentioned vessels, and creates subgraphs for both groups.
+        
+        Returns:
+            mentioned_subgraph (igraph.Graph): Subgraph of mentioned vessels.
+            unmentioned_subgraph (igraph.Graph): Subgraph of unmentioned vessels.
+        """
+        num_vessels = len(self.graph.es)  # Total number of vessels (edges) in the network
+
+        # Initialize a vector to mark mentioned vessels
+        mentioned_vector = np.zeros(num_vessels, dtype=int)
+
+        # Iterate through all timesteps in the particle evolution data
+        for timestep in range(self.particles_evolution.shape[1]):
+            # Ensure vessels_at_timestep is treated as a float array for NaN checking
+            vessels_at_timestep = self.particles_evolution[:, timestep, 0].astype(float)  
+            vessels_at_timestep = vessels_at_timestep[~np.isnan(vessels_at_timestep)].astype(int)  # Filter out NaNs
+            mentioned_vector[vessels_at_timestep] = 1  # Mark the mentioned vessels with a 1
+
+        # Identify mentioned and unmentioned vessels
+        mentioned_vessels = np.where(mentioned_vector == 1)[0]
+        unmentioned_vessels = np.where(mentioned_vector == 0)[0]
+        import pickle
+        with open('C:/Users/UGE/Documents/Manuel/networks/MVN1_corrected_SI.pkl', 'rb') as file:
+            microvascular_network = pickle.load(file)
+
+        # Create subgraphs
+        mentioned_subgraph = microvascular_network.subgraph_edges(mentioned_vessels.tolist())
+        unmentioned_subgraph = microvascular_network.subgraph_edges(unmentioned_vessels.tolist())
+
+        num_mentioned = len(mentioned_vessels)
+        num_unmentioned = len(unmentioned_vessels)
+        total_vessels = num_vessels
+
+        percentage_mentioned = (num_mentioned / total_vessels) * 100
+        percentage_unmentioned = (num_unmentioned / total_vessels) * 100
+
+        print(f"Number of mentioned vessels: {num_mentioned} ({percentage_mentioned:.2f}%)")
+        print(f"Number of unmentioned vessels: {num_unmentioned} ({percentage_unmentioned:.2f}%)")
+        
+        
+        with open('C:/Users/UGE/Documents/Manuel/microBlooM/data/network/output/mentioned_vessels_subgraph.pkl', 'wb') as file:
+            pickle.dump(mentioned_subgraph, file)
+
+        with open('C:/Users/UGE/Documents/Manuel/microBlooM/data/network/output/unmentioned_vessels_subgraph.pkl', 'wb') as file:
+            pickle.dump(unmentioned_subgraph, file)
+
+        return mentioned_subgraph, unmentioned_subgraph
