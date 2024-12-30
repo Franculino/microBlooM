@@ -162,10 +162,16 @@ class Particle_tracker(object):
             
             if num_particles_in_vessel > 0:
                 initial_vessels.extend([vessel_id] * num_particles_in_vessel)
-                # Generar posiciones aleatorias entre 0.01 y 0.99
-                coords = np.random.uniform(0.01, 0.99, size=num_particles_in_vessel)
+                diameter = self.diameter[vessel_id]
+                min_distance = 1.1 * (self.rbc_volume / (np.pi * (diameter / 2)**2))
+                possible_positions = np.arange(0.01, 0.99, min_distance / self.length[vessel_id])
+                if len(possible_positions) < num_particles_in_vessel:
+                    raise ValueError(
+                        f"Not enough space in vessel {vessel_id} for {num_particles_in_vessel} particles "
+                        f"with minimum distance {min_distance}. Reduce the particle density or increase the vessel length."
+                    )
+                coords = sorted(np.random.choice(possible_positions, num_particles_in_vessel, replace=False))
                 initial_local_coords.extend(coords)
-
         self.particles_evolution = np.zeros((self.N_particles_total, self.N_timesteps + 1, 2), dtype=object)
         self.initial_position = np.array([[int(tube), coord] for tube, coord in zip(initial_vessels, initial_local_coords)])
         self.particles_evolution[:self.N_particles, 0, :] = self.initial_position
@@ -249,7 +255,7 @@ class Particle_tracker(object):
             print("The arrays have been updated: ", self.N_particles_count, self.N_particles_total, self.particle_size)
 
     def evolve_particles(self):
-        """Evolve particles across each timestep. Computes the movement of every particles in the net"""
+        """Evolve particles across each timestep. Computes the movement of every particles in the network"""
         collision_count = 0
         convergent_collision_count = 0
         divergent_collision_count = 0
@@ -264,7 +270,9 @@ class Particle_tracker(object):
         bifurcation_inflow = 0
         bifurcation_outflow = 0
         divergent_collisions_stopped_particles = 0
+        convergent_collisions_stopped_particles = 0
         collisions_per_node = np.zeros(len(self.node_classification), dtype=int)
+        collisions_per_vessel = np.zeros(len(self.es), dtype=int)
         self.particle_size = np.zeros(self.particles_evolution.shape[0])
         previous_rbc_velocity = self.rbc_velocity.copy()
         # print('Timestep: ', self.delta_t)
@@ -379,22 +387,25 @@ class Particle_tracker(object):
 
                 processed_particles = set(change_vessel_positive[:i])
                 candidates = [particle2 for particle2 in candidates if particle2 not in processed_particles]
-
+                epsilon = 1e-9
                 for particle2 in candidates:
                     if particle2 != particle1:  
                         position2 = self.particles_evolution[particle2, t, 1] * self.length[vessel1]
                         radius2 = self.particle_size[particle2] / 2
-                        if abs(position1 - position2) < (radius1 + radius2):
+                        if abs(position1 - position2) < (radius1 + radius2) + epsilon:
+                            source_node = self.es[vessel1][0]
                             collision_count += 1
                             source_node = self.es[vessel1][0]
                             collisions_per_node[source_node] += 1
+                            collisions_per_vessel[vessel1] += 1
                             if self.node_classification[source_node] == 2:
                                 convergent_collision_count += 1
                                 if self.particles_evolution[particle1, t-1, 0] == self.particles_evolution[particle2, t-1, 0]:
-                                    size_change_convergent += 1
+                                    if self.particles_evolution[particle1, t-1, 1] == 1.0 or self.particles_evolution[particle2, t-1, 1] == 1.0:
+                                        convergent_collisions_stopped_particles += 1
+                                    else:
+                                        size_change_convergent += 1
                             elif self.node_classification[source_node] == 3:
-                                if source_node == 353:
-                                    print('HOLA')
                                 divergent_collision_count += 1
                                 if self.particles_evolution[particle1, t-1, 1] == 1.0 or self.particles_evolution[particle2, t-1, 1] == 1.0:
                                     divergent_collisions_stopped_particles += 1
@@ -422,28 +433,34 @@ class Particle_tracker(object):
             #     self.flow_network.num_particles_in_vessel[vessel_id] += count_in_vessel
             self.update_network()
             print('Timesetp: ', t, 'Ht = :', self.flow_network.ht[0], '  Number of particles: ', self.flow_network.num_particles_in_vessel[0] )
-        # print('Bifurcations:', bifurcation_count)
-        # print('Collisions in convergent bifurcations:', convergent_collision_count)
-        # print('Collisions in CONVERGENT bifurcations due to change of SIZE:', size_change_convergent)
-        # print('Collisions in DIVERGENT bifurcations:', divergent_collision_count)
-        # print('Collisions in DIVERGENT bifurcations due to blocked particles:', divergent_collisions_stopped_particles)
-        # print('Collisions in inflow vessels:', inflow_collisions)
-        # print('Collisions in outflow vessels:', outflow_collisions)
-        # print('Collisions in vessel prolongations:', prolongation_collision)
-        # print('Collisions:', collision_count)
-        # print('Number of particles simulated:', self.N_particles_count)
-        # print('Number of particles initialized:', self.N_particles)
-        # print('Bifurcaciones totales:', bifurcation_count)
-        # print('Bifurcaciones convergentes:', bifurcation_convergent)
-        # print('Bifurcaciones divergentes:', bifurcation_divergent)
-        # print('Bifurcaciones en prolongaciones:', bifurcation_prolongation)
-        # print('Bifurcaciones en vasos de entrada:', bifurcation_inflow)
-        # print('Bifurcaciones en vasos de salida:', bifurcation_outflow)
+        print('Bifurcations:', bifurcation_count)
+        print('Collisions in convergent bifurcations:', convergent_collision_count)
+        print('Collisions in CONVERGENT bifurcations due to change of SIZE:', size_change_convergent)
+        print('Collisions in CONVERGENT bifurcations due to blocked particles:', convergent_collisions_stopped_particles)
+        print('Collisions in DIVERGENT bifurcations:', divergent_collision_count)
+        print('Collisions in DIVERGENT bifurcations due to blocked particles:', divergent_collisions_stopped_particles)
+        print('Collisions in inflow vessels:', inflow_collisions)
+        print('Collisions in outflow vessels:', outflow_collisions)
+        print('Collisions in vessel prolongations:', prolongation_collision)
+        print('Collisions:', collision_count)
+        print('Number of particles simulated:', self.N_particles_count)
+        print('Number of particles initialized:', self.N_particles)
+        print('Total bifurcations:', bifurcation_count)
+        print('Convergent bifurcations', bifurcation_convergent)
+        print('Divergent bifurcations:', bifurcation_divergent)
+        print('Bifurcations in prolongations:', bifurcation_prolongation)
+        print('Inflow bifurcations:', bifurcation_inflow)
+        print('Outflow bifurcations:', bifurcation_outflow)
 
-        with open("collisions_per_node2_05.csv", "w", newline="") as csvfile:
+        with open("collisions_per_node_2_03_NEW.csv", "w", newline="") as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(["Node_Index", "Collisions"])
             for node_idx, collisions in enumerate(collisions_per_node):
+                csvwriter.writerow([node_idx, collisions])
+        with open("collisions_per_vessel_2_03_NEW", "w", newline="") as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(["Vessel_Index", "Collisions"])
+            for node_idx, collisions in enumerate(collisions_per_vessel):
                 csvwriter.writerow([node_idx, collisions])
 
         # self.save_particles_evolution_to_excel()
@@ -653,13 +670,24 @@ class Particle_tracker(object):
             
             # Calculate number of particles required
             num_particles = int((ghost_volume * self.ht_boundary_condition) // self.rbc_volume)
+            min_distance = 1.1 * (self.rbc_volume / (np.pi * (diameter / 2)**2))
+            
+            # Generate all valid positions within the ghost vessel
+            # Positions are spaced by min_distance, normalized to [0, 1] (relative positions)
+            possible_positions = np.arange(0, 1, min_distance / ghost_length)
 
-            # Generate random particle positions in normalized coordinates [0, 1]
-            positions = np.sort(np.random.rand(num_particles))
+            # Ensure that the number of possible positions is greater than or equal to required particles
+            if len(possible_positions) < num_particles:
+                raise ValueError(
+                    f"Not enough space in the ghost vessel for {num_particles} particles with minimum distance {min_distance}. "
+                    f"Reduce the particle density or increase the ghost vessel length."
+                )
 
+        
+            selected_positions = sorted(np.random.choice(possible_positions, num_particles, replace=False))
             # Store the positions in the dictionary
             ghost_particles[vessel_id] = {
-                "positions": positions.tolist(),
+                "positions":selected_positions,
                 "ghost_length": ghost_length,
                 "ghost_volume": ghost_volume,
                 "number_particles": num_particles,
@@ -710,21 +738,31 @@ class Particle_tracker(object):
                 # Reset the current position since the particles have traversed the entire ghost vessel length
                 ghost_data["current_index"] = 0  # Start position at the beginning
                 current_position = 0  # Reset current position for the next timestep
-                if vessel_id == 1011:
-                    print("hola")
+                
                 # Recalculate ghost vessel properties based on updated RBC velocity
                 new_ghost_length = k * abs(bulk_velocity) * self.delta_t  # Compute the new length of the ghost vessel
                 new_ghost_volume = np.pi * (diameter / 2)**2 * new_ghost_length  # Calculate the volume of the ghost vessel cylinder
                 new_num_particles = int((new_ghost_volume * self.ht_boundary_condition) // self.rbc_volume)  # Determine the required number of particles
+                min_distance = 1.1 * (self.rbc_volume / (np.pi * (diameter / 2)**2))
 
+                possible_positions = np.arange(0, 1, min_distance / new_ghost_length)
+
+                # Ensure that the number of possible positions is greater than or equal to required particles
+                if len(possible_positions) < new_num_particles:
+                    raise ValueError(
+                        f"Not enough space in the ghost vessel for {new_num_particles} particles with minimum distance {min_distance}. "
+                        f"Reduce the particle density or increase the ghost vessel length."
+                    )
+
+                # Randomly select the required number of particles from possible positions
+                selected_positions = sorted(np.random.choice(possible_positions, new_num_particles, replace=False))
                 # Update the ghost vessel's properties in the dictionary
                 ghost_data["ghost_length"] = new_ghost_length  # Assign the new length
                 ghost_data["number_particles"] = new_num_particles  # Assign the recalculated number of particles
                 ghost_data["ghost_volume"] = new_ghost_volume  # Assign the recalculated number of particles
-                ghost_data["positions"] = np.sort(np.random.rand(new_num_particles))  # Generate new random particle positions
+                ghost_data["positions"] = selected_positions  # Generate new random particle positions
                 positions = ghost_data["positions"]
                 ghost_length = ghost_data["ghost_length"]
-                
             ghost_data["current_index"] += distance_to_fill  # Update position
 
             # Now, we need to determine which particles fall within the range of the distance filled
