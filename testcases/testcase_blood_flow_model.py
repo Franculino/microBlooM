@@ -19,10 +19,10 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 3,  # 1: generate hexagonal graph
+        "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph format (pickle file)
-        "write_network_option": 2,  # 1: do not write anything
+        "write_network_option": 3,  # 1: do not write anything
                                     # 2: write to igraph format (.pkl)
                                     # 3: write to vtp format (.vtp)
                                     # 4: write to two csv files (.csv)
