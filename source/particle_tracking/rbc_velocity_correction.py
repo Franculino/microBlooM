@@ -321,7 +321,7 @@ class Particle_tracker(object):
                         self.out_particles.append(particle_idx)
                         self.particles_evolution[particle_idx, t:, :] = np.nan
                         self.inactive_particles[particle_idx] = True
-                    else:
+                    elif new_vessel != old_vessel:
                         self.flow_network.num_particles_in_vessel[new_vessel] += 1
                         vel_new     = self.rbc_velocity[new_vessel]
                         length_new  = self.length[new_vessel]
@@ -332,6 +332,10 @@ class Particle_tracker(object):
 
                         self.particles_evolution[particle_idx, t, 0] = new_vessel
                         self.particles_evolution[particle_idx, t, 1] = alpha_final
+                    else:
+                        # No space for the particle in the possible vessels
+                        self.particles_evolution[particle_idx, t, 0] = old_vessel
+                        self.particles_evolution[particle_idx, t, 1] = 1.0
 
             crossing_left = active_particles[left_mask]
             if len(crossing_left) > 0:
@@ -356,7 +360,7 @@ class Particle_tracker(object):
                         self.out_particles.append(particle_idx)
                         self.particles_evolution[particle_idx, t:, :] = np.nan
                         self.inactive_particles[particle_idx] = True
-                    else:
+                    elif new_vessel != old_vessel:
                         self.flow_network.num_particles_in_vessel[new_vessel] += 1
 
                         # Avanzar en el nuevo vaso con leftover
@@ -368,6 +372,11 @@ class Particle_tracker(object):
 
                         self.particles_evolution[particle_idx, t, 0] = new_vessel
                         self.particles_evolution[particle_idx, t, 1] = alpha_final
+                    else:
+                        # No space for the particle in the possible vessels
+                        self.particles_evolution[particle_idx, t, 0] = old_vessel
+                        self.particles_evolution[particle_idx, t, 1] = 0.0
+                    
             
             remaining_capacity = self.max_particles_vessel[self.inflow_vessels] - self.flow_network.num_particles_in_vessel[self.inflow_vessels]
             inflow_particles, number_inflowing_particles = self.update_ghost_particles(self.ghost_particles, self.inflow_vessels, remaining_capacity)
@@ -383,9 +392,9 @@ class Particle_tracker(object):
             previous_rbc_velocity = self.rbc_velocity.copy()
             self.update_network()
             sign_change_indices = self.detect_velocity_sign_change(previous_rbc_velocity, self.rbc_velocity)
-            if len(sign_change_indices) > 0:
-                for idx in sign_change_indices:
-                    self.es[idx] = self.es[idx][::-1] 
+            # if len(sign_change_indices) > 0:
+            #     for idx in sign_change_indices:
+            #         self.es[idx] = self.es[idx][::-1] 
             print('Timesetp: ', t, 'Ht = :', self.flow_network.ht[0], '  Number of particles: ', self.flow_network.num_particles_in_vessel[0] )
         
         total_changes = np.sum(self.vessels_direction_changes)
@@ -447,10 +456,10 @@ class Particle_tracker(object):
 
     def rbc_bifurcations(self, old_vessel, valid_edges):
 
-            if valid_edges.size == 1:
+            if len(valid_edges) == 1:
                     new_vessel = valid_edges[0]
 
-            elif valid_edges.size == 2:
+            elif len(valid_edges) == 2:
                 total_flow_rate = sum(abs(self.flow_rate[e]) for e in valid_edges)
                 FQ_B = [abs(self.flow_rate[e]) / total_flow_rate for e in valid_edges]
                 FQ_B = np.array(FQ_B)
@@ -488,7 +497,7 @@ class Particle_tracker(object):
                 selected_edge = random.choices(valid_edges, weights=FQ_E, k=1)[0]
                 new_vessel = selected_edge
 
-            elif valid_edges.size > 2:
+            elif len(valid_edges) > 2:
                 
                 total_flow_rate = sum(abs(self.flow_rate[e]) for e in valid_edges)
                 probabilities = [abs(self.flow_rate[e]) / total_flow_rate for e in valid_edges]
@@ -648,10 +657,10 @@ class Particle_tracker(object):
             # Total length of the ghost vessel
             ghost_length = ghost_data["ghost_length"]
 
-            # If the total length filled exceeds the ghost vessel length, wrap around or reset
+            # If the total length filled exceeds the ghost vessel length, reset
             if (current_position + distance_to_fill) / ghost_length > 1:
                 # Reset the current position since the particles have traversed the entire ghost vessel length
-                ghost_data["current_index"] = 0  # Start position at the beginning
+                ghost_data["current_index"] = 0.0  # Start position at the beginning
                 current_position = 0  # Reset current position for the next timestep
                 
                 # Recalculate ghost vessel properties based on updated RBC velocity
@@ -698,26 +707,39 @@ class Particle_tracker(object):
                 # Update the queue with the excess particles
                 ghost_data["queue"] = excess_particles
 
-                # Place the excess particles at the max position for the next timestep
-                new_positions = np.concatenate([
-                    ghost_data["positions"],
-                    np.full(excess_particles, end_position)
-                ])
-                ghost_data["positions"] = np.sort(new_positions)
+                min_distance = 1.1 * (self.rbc_volume / (np.pi * (diameter / 2)**2))
+                min_distance_norm = min_distance / ghost_length
 
+                # Place the excess particles near the edge for the next timestep
+                new_queue_positions = []
+                for i in range(excess_particles):
+                    pos_candidate = end_position - (i+1)*min_distance_norm
+                    if pos_candidate < 0.0:
+                        break
+                    new_queue_positions.append(pos_candidate)
+                new_positions = np.concatenate([ghost_data["positions"], new_queue_positions])
+                ghost_data["positions"] = np.sort(new_positions)
             else:
                 # If all particles can fit, reset the queue and accept all particles
                 accepted_particles = particles_in_range
                 ghost_data["queue"] = 0
 
             # Append the accepted particles to inflow_particles
-            for pos in accepted_particles:
-                local_position = (-pos + end_position) * ghost_length / self.length[vessel_id]  # Calculate local position
-                inflow_particles.append([vessel_id, local_position])
+            for pos_ghost in accepted_particles:
+                alpha_magnitude = (end_position - pos_ghost) * (ghost_length / self.length[vessel_id])
+
+                if bulk_velocity >= 0.0:
+                    # Velocidad > 0 => particle goes from 0 to 1
+                    alpha_local = alpha_magnitude
+                else:
+                    # Vel < 0 => particles goes from 1 to 0
+                    alpha_local = 1.0 - alpha_magnitude
+                alpha_local = max(0.0, min(1.0, alpha_local))
+                inflow_particles.append([vessel_id, alpha_local])
 
             self.flow_network.num_particles_in_vessel[vessel_id] += len(accepted_particles)
-
             timestep_particles_count += len(accepted_particles)
+
         self.total_added_particles += timestep_particles_count
         print(timestep_particles_count)
         print(self.total_added_particles)
