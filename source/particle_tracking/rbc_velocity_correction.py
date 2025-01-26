@@ -109,42 +109,6 @@ class Particle_tracker(object):
         self.ghost_particles = self.initialization_ghost_vessels()
         self.total_added_particles = 0
 
-
-
-    def initialize_particles_with_hematocrit1(self):
-
-            self.initial_particles_per_vessel = np.zeros(len(self.es), dtype = int)
-            for vessel_id in range(len(self.es)):
-                self.initial_particles_per_vessel[vessel_id] = int((self.volume[vessel_id] * self.ht_initial)  // self.rbc_volume)
-            
-            self.N_particles = sum(self.initial_particles_per_vessel)
-            # Total number of initialized particles
-            self.N_particles_total = int(self.N_particles + 300)
-            self.N_particles_count = int(self.N_particles)
-            print('Total number of initialized particles:', self.N_particles_total)
-
-            initial_vessels = []
-            initial_local_coords = []
-            for vessel_id in range(len(self.initial_particles_per_vessel)):
-                num_particles_in_vessel = self.initial_particles_per_vessel[vessel_id]
-                
-                if num_particles_in_vessel > 0:
-                    initial_vessels.extend([vessel_id] * num_particles_in_vessel)
-                    if num_particles_in_vessel == 1:
-                        coords = np.array([0.5]) 
-                    else:
-                        coords = 0.05 + (np.arange(1, num_particles_in_vessel + 1) / (num_particles_in_vessel + 1)) * 0.9
-                    initial_local_coords.extend(coords)
-
-            self.particles_evolution = np.zeros((self.N_particles_total, self.N_timesteps + 1, 2), dtype=object)
-            self.initial_position = np.array([[int(tube), coord] for tube, coord in zip(initial_vessels, initial_local_coords)])
-            self.particles_evolution[:self.N_particles, 0, :] = self.initial_position
-            self.particles_evolution[self.N_particles:, :, :] = np.nan
-            self.inactive_particles = np.zeros(self.N_particles_total, dtype=bool)
-            for vessel in initial_vessels:
-                self.flow_network.num_particles_in_vessel[vessel] += 1
-            self.update_network()
-
     def initialize_particles_with_hematocrit2(self):
         self.initial_particles_per_vessel = np.zeros(len(self.es), dtype=int)
         for vessel_id in range(len(self.es)):
@@ -313,16 +277,16 @@ class Particle_tracker(object):
                     node       = node_1[i]
                     leftover   = leftover_time[i]
 
-                    self.flow_network.num_particles_in_vessel[old_vessel] -= 1
-
                     new_vessel = self.select_next_vessel(old_vessel, node)
                     if new_vessel is None:
                         # Sale de la red: marcamos NaN y la añadimos a out_particles
                         self.out_particles.append(particle_idx)
                         self.particles_evolution[particle_idx, t:, :] = np.nan
                         self.inactive_particles[particle_idx] = True
+                        self.flow_network.num_particles_in_vessel[old_vessel] -= 1
                     elif new_vessel != old_vessel:
                         self.flow_network.num_particles_in_vessel[new_vessel] += 1
+                        self.flow_network.num_particles_in_vessel[old_vessel] -= 1
                         vel_new     = self.rbc_velocity[new_vessel]
                         length_new  = self.length[new_vessel]
                         
@@ -352,16 +316,15 @@ class Particle_tracker(object):
                     old_vessel = old_vessels_left[i]
                     node       = node_0[i]
                     leftover   = leftover_time[i]
-
-                    self.flow_network.num_particles_in_vessel[old_vessel] -= 1
-
                     new_vessel = self.select_next_vessel(old_vessel, node)
                     if new_vessel is None:
                         self.out_particles.append(particle_idx)
                         self.particles_evolution[particle_idx, t:, :] = np.nan
                         self.inactive_particles[particle_idx] = True
+                        self.flow_network.num_particles_in_vessel[old_vessel] -= 1
                     elif new_vessel != old_vessel:
                         self.flow_network.num_particles_in_vessel[new_vessel] += 1
+                        self.flow_network.num_particles_in_vessel[old_vessel] -= 1
 
                         # Avanzar en el nuevo vaso con leftover
                         vel_new     = self.rbc_velocity[new_vessel]
@@ -823,10 +786,6 @@ class Particle_tracker(object):
                         vessel_lengths = np.array(self.lengths[vessel_id])
                         vessel_total_length = self.length[vessel_id]
 
-                        if vessel_id in self.indices_rbc_negativa:
-                            vessel_points = vessel_points[::-1]
-                            vessel_lengths = vessel_lengths[::-1]
-
                         normalized_lengths = np.cumsum(vessel_lengths) / vessel_total_length
                         normalized_lengths = np.insert(normalized_lengths, 0, 0)
 
@@ -908,10 +867,6 @@ class Particle_tracker(object):
                     vessel_points = np.array(self.points[vessel_id])
                     vessel_lengths = np.array(self.lengths[vessel_id])
                     vessel_total_length = self.length[vessel_id]
-
-                    if vessel_id in self.indices_rbc_negativa:
-                        vessel_points = vessel_points[::-1]
-                        vessel_lengths = vessel_lengths[::-1]
 
                     normalized_lengths = np.cumsum(vessel_lengths) / vessel_total_length
                     normalized_lengths = np.insert(normalized_lengths, 0, 0)
