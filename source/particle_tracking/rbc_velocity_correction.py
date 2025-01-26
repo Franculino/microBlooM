@@ -50,12 +50,10 @@ class Particle_tracker(object):
         self.times_basic_delta_t = self._PARAMETERS['times_basic_delta_t']
         self.delta_t = self.times_basic_delta_t * abs(self.length).min()/(abs(self.rbc_velocity).max())
         self.N_timesteps =  self._PARAMETERS["N_timesteps"]
-        self.inflow_vertices, self.outflow_vertices = self.detect_inflow_outflow_vertices()
-        self.inflow_vertices = np.array(self.inflow_vertices)
         self.out_particles = []
         self.particles_frequency = PARAMETERS["particles_frequency"]
 
-        self.node_classification = self.classify_nodes(self.graph)
+        
 
         num_vessels = len(self.flow_network.edge_list)
         self.hematocrit_evolution = np.zeros((num_vessels, self.N_timesteps))  # Shape: (vessels, timesteps)
@@ -94,7 +92,21 @@ class Particle_tracker(object):
 
         # Velocity sign change in vessels
         self.vessels_direction_changes = np.zeros(len(self.rbc_velocity), dtype=int)
-
+        # self.boundary_vertices = [
+        #             v.index for v in self.graph.vs 
+        #             if self._PARAMETERS['ig_boundary_type'] != 0
+        #         ]
+        self.boundary_vertices = self.flow_network.boundary_vs
+        self.boundary_vessels = set()
+        for bv in self.boundary_vertices:
+                    for edge_id in self.graph.incident(bv, mode="ALL"):
+                        self.boundary_vessels.add(edge_id)
+        self.boundary_vessels = list(self.boundary_vessels)
+        self.inflow_vertices, self.outflow_vertices = self.detect_inflow_outflow_vertices()
+        self.inflow_vertices = np.array(self.inflow_vertices)
+        self.node_classification = self.classify_nodes(self.graph)
+        self.inflow_vessels, self.outflow_vessels= self.detect_possible_inflow_outflow_vessels() 
+       
         if self.initial_particles_mode == 1:
             self.initialize_particles_with_hematocrit2()
         elif self.initial_particles_mode == 0:
@@ -103,9 +115,8 @@ class Particle_tracker(object):
             self.initial_particles_coords = np.zeros((self.N_particles, 3))
             self.initial_local_coord = np.full(self.N_particles, 0.5)
             self.initialize_particles_evolution() 
-
-        self.inflow_vessels = self.detect_possible_inflow_vessels()
-        self.outflow_vessels = self.detect_possible_outflow_vessels()
+        
+        
         self.ghost_particles = self.initialization_ghost_vessels()
         self.total_added_particles = 0
 
@@ -146,46 +157,30 @@ class Particle_tracker(object):
         for vessel in initial_vessels:
             self.flow_network.num_particles_in_vessel[vessel] += 1
 
+        previous_rbc_velocity = self.rbc_velocity.copy()
         self.update_network()
-        print("Initial conditions")
+        prev_boundary_vel = self.get_boundary_velocities(previous_rbc_velocity)
+        curr_boundary_vel = self.get_boundary_velocities(self.rbc_velocity)
+        changed_vessels_boundary = self.detect_boundary_velocity_sign_change(prev_boundary_vel,
+                                                                            curr_boundary_vel)
+        self.update_boundary_classification_after_sign_change(changed_vessels_boundary)
      
     def detect_inflow_outflow_vertices(self):
-            """
-            Detect inflow and outflow vertices based on boundaryType and pressure values.
-            """
-            inflow_vertices = []
-            outflow_vertices = []
-            
-            # Get the vertices that are on the boundary using the 'boundaryType' attribute
-            boundary_vertices = [v.index for v in self.graph.vs if self._PARAMETERS['ig_boundary_type'] != 0]
 
-            for bv in boundary_vertices:
-                # Find all edges connected to the boundary vertex (bv)
-                edges_connected = self.graph.incident(bv)
+        inflow_vertices = []
+        outflow_vertices = []
 
-                for edge_id in edges_connected:
-                    edge = self.graph.es[edge_id]
-                    vertices = [edge.source, edge.target]
+        for bv in self.boundary_vertices:
+            edges_connected = self.graph.incident(bv, mode="ALL")
+            for edge_id in edges_connected:
+                source, target = self.es[edge_id]
+                other = target if source == bv else source
+                if self.pressure[bv] > self.pressure[other]:
+                    inflow_vertices.append(bv)
+                else:
+                    outflow_vertices.append(bv)
 
-                    # Check if one of the vertices is the boundary vertex
-                    if bv in vertices:
-                        other_vertex = vertices[0] if vertices[1] == bv else vertices[1]
-
-                        # Compare the pressures to determine if it's inflow or outflow
-                        if self.pressure[bv] > self.pressure[other_vertex]:
-                            inflow_vertices.append(bv)
-                        else:
-                            outflow_vertices.append(bv)
-
-            # Clean up vertices that are in both lists (inflow and outflow)
-            inflow_vertices_set = set(inflow_vertices)
-            outflow_vertices_set = set(outflow_vertices)
-            vertices_in_both = inflow_vertices_set.intersection(outflow_vertices_set)
-
-            inflow_vertices_clean = inflow_vertices_set - vertices_in_both
-            outflow_vertices_clean = outflow_vertices_set - vertices_in_both
-
-            return list(sorted(inflow_vertices_clean)), list(sorted(outflow_vertices_clean))
+        return inflow_vertices, outflow_vertices
 
     def get_volumes(self):
 
@@ -340,7 +335,6 @@ class Particle_tracker(object):
                         self.particles_evolution[particle_idx, t, 0] = old_vessel
                         self.particles_evolution[particle_idx, t, 1] = 0.0
                     
-            
             remaining_capacity = self.max_particles_vessel[self.inflow_vessels] - self.flow_network.num_particles_in_vessel[self.inflow_vessels]
             inflow_particles, number_inflowing_particles = self.update_ghost_particles(self.ghost_particles, self.inflow_vessels, remaining_capacity)
             self.N_particles_count = int(self.N_particles_count + number_inflowing_particles)
@@ -355,6 +349,11 @@ class Particle_tracker(object):
             previous_rbc_velocity = self.rbc_velocity.copy()
             self.update_network()
             sign_change_indices = self.detect_velocity_sign_change(previous_rbc_velocity, self.rbc_velocity)
+            prev_boundary_vel = self.get_boundary_velocities(previous_rbc_velocity)
+            curr_boundary_vel = self.get_boundary_velocities(self.rbc_velocity)
+            changed_vessels_boundary = self.detect_boundary_velocity_sign_change(prev_boundary_vel,
+                                                                             curr_boundary_vel)
+            self.update_boundary_classification_after_sign_change(changed_vessels_boundary)
             # if len(sign_change_indices) > 0:
             #     for idx in sign_change_indices:
             #         self.es[idx] = self.es[idx][::-1] 
@@ -491,51 +490,24 @@ class Particle_tracker(object):
                 elif valor < 0:
                     print(f"El valor de ht en la posición {i} es negativo: {valor}")
 
-    def detect_possible_inflow_vessels(self):
-        """
-        Detect inflow vessels connected to inflow vertices based on pressures.
-        
-        Returns:
-        - inflow_vessels: list of vessel indices that are inflow vessels.
-        """
+    def detect_possible_inflow_outflow_vessels(self):
         inflow_vessels = []
-
-        for inflow_vertex in self.inflow_vertices:
-            # Obtener las aristas conectadas al nodo inflow
-            connected_edges = self.graph.incident(inflow_vertex, mode="ALL")
-
-            for edge_index in connected_edges:
-                source, target = self.es[edge_index] 
-                
-                if inflow_vertex == source and self.pressure[source] > self.pressure[target]:
-                    inflow_vessels.append(edge_index)
-                elif inflow_vertex == target and self.pressure[target] > self.pressure[source]:
-                    inflow_vessels.append(edge_index)
-
-        return inflow_vessels
-
-    def detect_possible_outflow_vessels(self):
-        """
-        Detect outflow vessels connected to outflow vertices based on pressures.
-        
-        Returns:
-        - outflow_vessels: list of vessel indices that are outflow vessels.
-        """
         outflow_vessels = []
 
-        for outflow_vertex in self.outflow_vertices:
-            # Obtener las aristas conectadas al nodo outflow
-            connected_edges = self.graph.incident(outflow_vertex, mode="ALL")
+        for edge_id in self.boundary_vessels:
+            s, t = self.es[edge_id]
+            if s in self.boundary_vertices:
+                if self.pressure[s] > self.pressure[t]:
+                    inflow_vessels.append(edge_id)
+                else:
+                    outflow_vessels.append(edge_id)
+            if t in self.boundary_vertices:
+                if self.pressure[t] > self.pressure[s]:
+                    inflow_vessels.append(edge_id)
+                else:
+                    outflow_vessels.append(edge_id)
 
-            for edge_index in connected_edges:
-                source, target = self.es[edge_index]  # Nodos del borde
-                # Determinar si el vaso es outflow: presión del nodo outflow < presión del otro nodo
-                if outflow_vertex == source and self.pressure[source] < self.pressure[target]:
-                    outflow_vessels.append(edge_index)
-                elif outflow_vertex == target and self.pressure[target] < self.pressure[source]:
-                    outflow_vessels.append(edge_index)
-
-        return outflow_vessels
+        return inflow_vessels, outflow_vessels
     
     def initialization_ghost_vessels(self):
         """
@@ -546,7 +518,7 @@ class Particle_tracker(object):
         """
         ghost_particles = {}  # To store particle positions for each inflow vessel
         k = 300 # help to define length of ghost vessels
-        for vessel_id in self.inflow_vessels:
+        for vessel_id in self.boundary_vessels:
             # Get properties of the inflow vessel
             diameter = self.diameter[vessel_id]
             bulk_velocity = self.bulk_velocity[vessel_id]
@@ -992,24 +964,93 @@ class Particle_tracker(object):
 
         return node_classification
         
-    def detect_velocity_sign_change(self, previous_velocities, current_velocities):
-        """
-        Detect vessels where velocity changes direction (sign changes).
+    def classify_boundary_node(self, bv):
+        inflow_list = []
+        outflow_list = []
+        edges_connected = self.graph.incident(bv, mode="ALL")
+        for edge_id in edges_connected:
+            s, t = self.es[edge_id]
+            other = t if s == bv else s
+            
+            if self.pressure[bv] > self.pressure[other]:
+                inflow_list.append(bv)
+            else:
+                outflow_list.append(bv)
+        return inflow_list, outflow_list
+    
+    def classify_boundary_vessel(self, edge_idx):
+        inflow_list = []
+        outflow_list = []
+        s, t = self.es[edge_idx]
+        if s in self.boundary_vertices:
+            if self.pressure[s] > self.pressure[t]:
+                inflow_list.append(edge_idx)
+            else:
+                outflow_list.append(edge_idx)
+        if t in self.boundary_vertices:
+            if self.pressure[t] > self.pressure[s]:
+                inflow_list.append(edge_idx)
+            else:
+                outflow_list.append(edge_idx)
 
-        Parameters:
-        - previous_velocities: array of velocities from the previous timestep.
-        - current_velocities: array of velocities from the current timestep.
+        return inflow_list, outflow_list
+    
+    def update_boundary_classification_after_sign_change(self, changed_vessels_boundary):
 
-        Prints:
-        - The indices of vessels where a sign change occurs.
-        - Whether these vessels are inflow or outflow vessels.
-        """
-        sign_change_indices = np.where(np.sign(previous_velocities) != np.sign(current_velocities))[0]
+        if len(changed_vessels_boundary) == 0:
+            return
+        print("cambio de boundaries")
+        inflow_vessels_set = set(self.inflow_vessels)
+        outflow_vessels_set = set(self.outflow_vessels)
+        inflow_vertices_set = set(self.inflow_vertices)
+        outflow_vertices_set = set(self.outflow_vertices)
 
-        self.vessels_direction_changes[sign_change_indices] = 1
+        for edge_idx in changed_vessels_boundary:
+           
+            inflow_vessels_set.discard(edge_idx)
+            outflow_vessels_set.discard(edge_idx)
 
-        # for idx in sign_change_indices:
-        #     # vessel_type = "inflow" if idx in self.inflow_vessels else "outflow" if idx in self.outflow_vessels else "internal"
-        #     print(f"Vessel {idx} changed direction.") # Type: {vessel_type}")
+            new_inflow_list, new_outflow_list = self.classify_boundary_vessel(edge_idx)
+            for iv in new_inflow_list:
+                inflow_vessels_set.add(iv)    
+            for ov in new_outflow_list:
+                outflow_vessels_set.add(ov)
+
+            s, t = self.es[edge_idx]
+            boundary_nodes = []
+            if s in self.boundary_vertices:
+                boundary_nodes.append(s)
+            if t in self.boundary_vertices:
+                boundary_nodes.append(t)
+
+            for bv in boundary_nodes:
+                inflow_vertices_set.discard(bv)
+                outflow_vertices_set.discard(bv)
+                new_inflow_verts, new_outflow_verts = self.classify_boundary_node(bv)
+                for inv in new_inflow_verts:
+                    inflow_vertices_set.add(inv)  
+                for ovv in new_outflow_verts:
+                    outflow_vertices_set.add(ovv)
+
+        self.inflow_vessels = list(inflow_vessels_set)
+        self.outflow_vessels = list(outflow_vessels_set)
+        self.inflow_vertices = list(inflow_vertices_set)
+        self.outflow_vertices = list(outflow_vertices_set)
+
+        self.inflow_vessels.sort()
+        self.outflow_vessels.sort()
+        self.inflow_vertices.sort()
+        self.outflow_vertices.sort()
         
+    def get_boundary_velocities(self, velocities_full):
+        return velocities_full[self.boundary_vessels]
+
+    def detect_boundary_velocity_sign_change(self, prev_vel_boundary, curr_vel_boundary):
+        sign_change_local = np.where(np.sign(prev_vel_boundary) != np.sign(curr_vel_boundary))[0]
+        sign_change_global = [self.boundary_vessels[i] for i in sign_change_local]
+        return sign_change_global
+    
+    def detect_velocity_sign_change(self, previous_velocities, current_velocities):
+        sign_change_indices = np.where(np.sign(previous_velocities) != np.sign(current_velocities))[0]
+        self.vessels_direction_changes[sign_change_indices] = 1
         return sign_change_indices
