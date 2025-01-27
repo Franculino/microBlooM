@@ -53,8 +53,6 @@ class Particle_tracker(object):
         self.out_particles = []
         self.particles_frequency = PARAMETERS["particles_frequency"]
 
-        
-
         num_vessels = len(self.flow_network.edge_list)
         self.hematocrit_evolution = np.zeros((num_vessels, self.N_timesteps))  # Shape: (vessels, timesteps)
         self.num_particles_evolution = np.zeros((num_vessels, self.N_timesteps))  # Shape: (vessels, timesteps)
@@ -288,6 +286,8 @@ class Particle_tracker(object):
                         alpha_start = 0.0  if vel_new >= 0 else 1.0
                         alpha_step  = (vel_new * leftover) / length_new
                         alpha_final = alpha_start + alpha_step
+                        if (alpha_final> 1.0) or (alpha_final< 0.0):
+                            print("WARNING: A particle is not being propagated correctly: you should decrease the timestep (deecrease times_basic_delta_t)")
 
                         self.particles_evolution[particle_idx, t, 0] = new_vessel
                         self.particles_evolution[particle_idx, t, 1] = alpha_final
@@ -327,6 +327,8 @@ class Particle_tracker(object):
                         alpha_start = 0.0 if vel_new >= 0 else 1.0
                         alpha_step  = (vel_new * leftover) / length_new
                         alpha_final = alpha_start + alpha_step
+                        if (alpha_final> 1.0) or (alpha_final< 0.0):
+                            print("WARNING: A particle is not being propagated correctly: you should decrease the timestep (deecrease times_basic_delta_t)")
 
                         self.particles_evolution[particle_idx, t, 0] = new_vessel
                         self.particles_evolution[particle_idx, t, 1] = alpha_final
@@ -354,10 +356,7 @@ class Particle_tracker(object):
             changed_vessels_boundary = self.detect_boundary_velocity_sign_change(prev_boundary_vel,
                                                                              curr_boundary_vel)
             self.update_boundary_classification_after_sign_change(changed_vessels_boundary)
-            # if len(sign_change_indices) > 0:
-            #     for idx in sign_change_indices:
-            #         self.es[idx] = self.es[idx][::-1] 
-            print('Timesetp: ', t, 'Ht = :', self.flow_network.ht[0], '  Number of particles: ', self.flow_network.num_particles_in_vessel[0] )
+            print('Timesetp: ', t)
         
         total_changes = np.sum(self.vessels_direction_changes)
         percentage_changed = (total_changes / len(self.vessels_direction_changes)) * 100
@@ -999,7 +998,7 @@ class Particle_tracker(object):
 
         if len(changed_vessels_boundary) == 0:
             return
-        print("cambio de boundaries")
+        print("These boundary vessels changed direction of flow:", changed_vessels_boundary)
         inflow_vessels_set = set(self.inflow_vessels)
         outflow_vessels_set = set(self.outflow_vessels)
         inflow_vertices_set = set(self.inflow_vertices)

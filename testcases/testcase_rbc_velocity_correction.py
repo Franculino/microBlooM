@@ -19,7 +19,7 @@ PARAMETERS = MappingProxyType(
         "read_network_option": 3,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph format (pickle file)
-        "write_network_option": 3,  # 1: do not write anything
+        "write_network_option": 4,  # 1: do not write anything
                                     # 2: write to igraph format (.pkl)
                                     # 3: write to vtp format (.vtp)
                                     # 4: write to two csv files (.csv)
@@ -81,11 +81,11 @@ PARAMETERS = MappingProxyType(
                                      #    that will determine the intial number of particles in each vessel
         "initial_number_particles": 8,
         "initial_vessels": [0,1,9,85,38,42, 70, 32], # same dimension as "initial_number_particles"
-        "ht_initial": 0.00010,
+        "ht_initial": 0.002,
         "ht_boundary_condition":0.2, 
         "rbc_volume": 4.9e-17,
-        "N_timesteps": 200,
-        "times_basic_delta_t":5,   # The basic timestep is computed as the minimum vessel length divided by
+        "N_timesteps": 20,
+        "times_basic_delta_t":6,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
                                     #   delta_t = times_basic_delta_t * basic_timestep
 
@@ -167,64 +167,54 @@ if rank == 0:
 # Check flow balance
 if rank == 0: 
     print("Check flow balance: ...")
-
 flow_network.check_flow_balance()
-flow_network.write_network()
 
 if rank == 0:
     print("Check flow balance: DONE")
-
-# Track the time for the particle-related steps
-start_time_total = time.process_time()  # Start time for particle tracking process
 
 # Initialization of particles
 if rank == 0:
     print("Initialization of particles into the network: ...")
 
-start_initialization = time.process_time()
 particle_tracker = Particle_tracker(PARAMETERS, flow_network)
-initialization_time = time.process_time() - start_initialization
 
 if rank == 0:
-    print(f"Initialization of particles into the network: DONE in {initialization_time:.4f} seconds")
+    print(f"Initialization of particles into the network: DONE ")
 
 # Simulation of particles
 if rank == 0:
     print("Simulation of particles into the network: ...")
 
-start_simulation = time.process_time()
 particles_evolution = particle_tracker.evolve_particles()
-simulation_time = time.process_time() - start_simulation
 
 if rank == 0:
-    print(f"Simulation of particles into the network: DONE in {simulation_time:.4f} seconds")
+    print(f"Simulation of particles into the network: DONE ")
+    print("Write network: ...")
+    flow_network.write_network()
+    print("Write network: DONE")
 
-# # Transformation to global coordinates
-# if rank == 0:
-#     print("Transforming particles to global coordinates: ...")
-# start_transformation = time.process_time()
+# Transformation to global coordinates
+if rank == 0:
+    print("Transforming particles to global coordinates: ...")
+start_transformation = time.process_time()
 
-# if PARAMETERS['parallel']:
-#     comm.Barrier()
-#     particles_evolution_global = particle_tracker.transform_to_global_coordinates()
-#     comm.Barrier()
-# else:
-#     particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+if PARAMETERS['parallel']:
+    comm.Barrier()
+    particles_evolution_global = particle_tracker.transform_to_global_coordinates()
+    comm.Barrier()
+else:
+    particles_evolution_global = particle_tracker.transform_to_global_coordinates()
 
-# if rank == 0:
-#     transformation_time = time.process_time() - start_transformation
-#     print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
+if rank == 0:
+    transformation_time = time.process_time() - start_transformation
+    print(f"Transformation to global coordinates: DONE in {transformation_time:.4f} seconds")
+    # Define output directory for the VTK files
+    output_directory = "C:/Users/manuf/OneDrive - Delft University of Technology/Documenten/2_DELFT/Internship/microBlooM/data/network/output"
+    
+    # Create VTK files per timestep
+    print("Creating VTK files for particles per timestep: ...")
+    start_vtk_creation = time.process_time()
+    particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
+    vtk_creation_time = time.process_time() - start_vtk_creation
+    print(f"VTK files created in directory: {output_directory} in {vtk_creation_time:.4f} seconds")
 
-#     # Define output directory for the VTK files
-#     output_directory = "C:/Users/manuf/OneDrive - Delft University of Technology/Documenten/2_DELFT/Internship/microBlooM/data/network/output"
-
-#     # Create VTK files per timestep
-#     print("Creating VTK files for particles per timestep: ...")
-#     start_vtk_creation = time.process_time()
-#     particle_tracker.create_vtk_particles_per_timestep(particles_evolution_global, output_directory)
-#     vtk_creation_time = time.process_time() - start_vtk_creation
-#     print(f"VTK files created in directory: {output_directory} in {vtk_creation_time:.4f} seconds")
-
-#     # Total time for particle processing
-#     total_particle_process_time = time.process_time() - start_time_total
-#     print(f"\nTotal time for particle processing: {total_particle_process_time:.4f} seconds")
