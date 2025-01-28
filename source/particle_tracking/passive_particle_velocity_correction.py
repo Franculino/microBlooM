@@ -21,6 +21,8 @@ class Particle_tracker(object):
     def __init__(self, PARAMETERS: MappingProxyType, flow_network: FlowNetwork):
         self.flow_network = flow_network
         self._PARAMETERS = PARAMETERS
+        # Retrieve the user-chosen output directory
+        self.output_dir = self._PARAMETERS.get("output_directory", "data/network/outputs")
 
         self.es = flow_network.edge_list
         self.vs_coords = flow_network.xyz
@@ -52,7 +54,6 @@ class Particle_tracker(object):
         self.delta_t = self.times_basic_delta_t * abs(self.length).min()/(abs(self.rbc_velocity).max())
         self.N_timesteps =  self._PARAMETERS["N_timesteps"]
         self.out_particles = []
-        self.particles_frequency = PARAMETERS["particles_frequency"]
 
         num_vessels = len(self.flow_network.edge_list)
         self.hematocrit_evolution = np.zeros((num_vessels, self.N_timesteps))  # Shape: (vessels, timesteps)
@@ -87,14 +88,9 @@ class Particle_tracker(object):
         self.ht_initial = PARAMETERS["ht_initial"]
         self.ht_boundary_condition = PARAMETERS["ht_boundary_condition"]
         self.rbc_volume = PARAMETERS["rbc_volume"]
-        self.initial_particles_mode = PARAMETERS["initial_particles_mode"]
 
         # Velocity sign change in vessels
         self.vessels_direction_changes = np.zeros(len(self.rbc_velocity), dtype=int)
-        # self.boundary_vertices = [
-        #             v.index for v in self.graph.vs 
-        #             if self._PARAMETERS['ig_boundary_type'] != 0
-        #         ]
         self.boundary_vertices = self.flow_network.boundary_vs
         self.boundary_vessels = set()
         for bv in self.boundary_vertices:
@@ -107,25 +103,19 @@ class Particle_tracker(object):
         self.inflow_vessels, self.outflow_vessels= self.detect_possible_inflow_outflow_vessels()
 
         # Computation of steady state
-        self.total_exited_volume = 0
-        self.exiting_volume_per_vessel = self.delta_t * abs(self.flow_rate[self.outflow_vessels])
-        self.exiting_volume_per_timestep = np.sum(self.exiting_volume_per_vessel)
-        total_volume_network = np.sum(self.volume)
-        times_Tc_forsteadystate = PARAMETERS["times_Tc_forsteadystate"]
-        self.delta_t_after_steady_state = PARAMETERS['delta_t_after_steady_state']
-        self.timesteps_until_steadystate = times_Tc_forsteadystate * (total_volume_network // self.exiting_volume_per_timestep) + 1
-        print("timesteps until steady state:", self.timesteps_until_steadystate)
-        self.N_timesteps =  int(self.timesteps_until_steadystate)
+        if self._PARAMETERS["preinitialize_with_iterations"] == 1:
+            self.total_exited_volume = 0
+            self.exiting_volume_per_vessel = self.delta_t * abs(self.flow_rate[self.outflow_vessels])
+            self.exiting_volume_per_timestep = np.sum(self.exiting_volume_per_vessel)
+            total_volume_network = np.sum(self.volume)
+            times_Tc_forsteadystate = PARAMETERS["times_Tc_forsteadystate"]
+            self.delta_t_after_steady_state = PARAMETERS['delta_t_after_steady_state']
+            self.timesteps_until_steadystate = times_Tc_forsteadystate * (total_volume_network // self.exiting_volume_per_timestep) + 1
+            print("timesteps until steady state:", self.timesteps_until_steadystate)
+            self.N_timesteps =  int(self.timesteps_until_steadystate)
 
-        if self.initial_particles_mode == 1:
-            self.initialize_particles_with_hematocrit()
-        elif self.initial_particles_mode == 0:
-            self.N_particles = self._PARAMETERS["initial_number_particles"]
-            self.initial_particle_tube = self._PARAMETERS["initial_vessels"]
-            self.initial_particles_coords = np.zeros((self.N_particles, 3))
-            self.initial_local_coord = np.full(self.N_particles, 0.5)
-            self.initialize_particles_evolution() 
-
+        self.initialize_particles_with_hematocrit()
+        
         self.ghost_particles = self.initialization_ghost_vessels()
         self.total_added_particles = 0
 
@@ -528,12 +518,11 @@ class Particle_tracker(object):
         print(self.total_added_particles)
         return np.array(inflow_particles), timestep_particles_count
 
-    def create_vtk_particles_per_timestep(self,particles_evolution_global, output_dir):
-        num_particles, num_timesteps, _ = particles_evolution_global.shape
-        
-        # Create the output directory if it doesn't exist
+    def create_vtk_particles_per_timestep(self):
+        output_dir = os.path.join(self.output_dir, "vtk_particles")
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
+        num_particles, num_timesteps, _ = self.particles_evolution_global.shape
         
         # Create an index file for multiple timesteps
         index_file = os.path.join(output_dir, 'particles_timestep_index.vtk')
@@ -548,8 +537,8 @@ class Particle_tracker(object):
 
         for t in range(num_timesteps):
             # Collect all valid particle positions for the current timestep in a NumPy array
-            valid_mask = ~np.isnan(particles_evolution_global[:, t, 0])
-            valid_positions = particles_evolution_global[valid_mask, t, :]
+            valid_mask = ~np.isnan(self.particles_evolution_global[:, t, 0])
+            valid_positions = self.particles_evolution_global[valid_mask, t, :]
             
             if valid_positions.size == 0:
                 continue  # Skip if no valid positions for the timestep
@@ -596,7 +585,7 @@ class Particle_tracker(object):
             end_particle = (rank + 1) * particles_per_process if rank != size - 1 else self.N_particles_total
             local_particles_count = end_particle - start_particle
 
-            particles_evolution_global_local = np.full((local_particles_count, self.N_timesteps + 1, 3), np.nan)
+            self.particles_evolution_global_local = np.full((local_particles_count, self.N_timesteps + 1, 3), np.nan)
             
             if self.use_tortuosity == 1:
                 if rank == 0:
@@ -653,33 +642,33 @@ class Particle_tracker(object):
                         direction_vector = end_coords - start_coords
                         particle_global_position = start_coords + local_coord * direction_vector
 
-                    particles_evolution_global_local[local_idx, t] = particle_global_position
+                    self.particles_evolution_global_local[local_idx, t] = particle_global_position
 
-            particles_evolution_global = None
+            self.particles_evolution_global = None
             if rank == 0:
-                particles_evolution_global = np.zeros((self.N_particles_total, self.N_timesteps + 1, 3))
+                self.particles_evolution_global = np.zeros((self.N_particles_total, self.N_timesteps + 1, 3))
 
             sendcounts = np.array([particles_per_process] * size)
             sendcounts[-1] = self.N_particles_total - (size - 1) * particles_per_process
             displacements = np.array([i * particles_per_process for i in range(size)])
 
             comm.Gatherv(
-                particles_evolution_global_local, 
-                [particles_evolution_global, 
+                self.particles_evolution_global_local, 
+                [self.particles_evolution_global, 
                 sendcounts * (self.N_timesteps + 1) * 3, 
                 displacements * (self.N_timesteps + 1) * 3, 
                 MPI.DOUBLE], 
                 root=0
             )
             if rank == 0:
-                return particles_evolution_global
+                return self.particles_evolution_global
             else:
                 return None  
         else:
             
             # SEQUENTIAL IMPLEMENTATION 
 
-            particles_evolution_global = np.full((self.N_particles_total, self.N_timesteps + 1, 3), np.nan)
+            self.particles_evolution_global = np.full((self.N_particles_total, self.N_timesteps + 1, 3), np.nan)
             self.vessel_data = {}
 
             if self.use_tortuosity == 1:
@@ -721,9 +710,9 @@ class Particle_tracker(object):
                         interpolation_factor = (local_coord - local_start) / (local_end - local_start)
                         particle_global_position = point_start + interpolation_factor * (point_end - point_start)
 
-                        particles_evolution_global[p, t] = particle_global_position
+                        self.particles_evolution_global[p, t] = particle_global_position
                 # self.save_particles_evolution_global_to_excel(particles_evolution_global)   
-                return particles_evolution_global
+                return self.particles_evolution_global
 
             elif self.use_tortuosity == 0:
                 for p in range(self.N_particles_total):
@@ -743,8 +732,8 @@ class Particle_tracker(object):
                         direction_vector = end_coords - start_coords
                         particle_global_position = start_coords + local_coord * direction_vector
 
-                        particles_evolution_global[p, t] = particle_global_position
-                return particles_evolution_global
+                        self.particles_evolution_global[p, t] = particle_global_position
+                return self.particles_evolution_global
 
             else:
                 raise ValueError(f"Invalid use_tortuosity: {self.use_tortuosity}. It must be either 0 or 1.")
@@ -800,7 +789,7 @@ class Particle_tracker(object):
         data = []
 
         # Recorrer cada partícula y combinar (vessel, position) en una misma celda para cada timestep
-        for i in range(N_particles_total):
+        for i in range(self.N_particles_count):
             particle_data = []
             for t in range(N_timesteps_plus_1):
                 vessel = self.particles_evolution[i, t, 0]  # valor del vaso sanguíneo
@@ -813,36 +802,49 @@ class Particle_tracker(object):
         df = pd.DataFrame(data, columns=columns)
 
         # Guardar el DataFrame en un archivo CSV
-        file_name = "data/network/particles_evolution_local.csv"
+        file_name = os.path.join(self.output_dir, "particles_evolution_local.csv")
         df.to_csv(file_name, index=False)
 
-        print(f"El archivo '{file_name}' se ha guardado correctamente.")
+        print(f"File '{file_name}' has been saved correctly.")
 
-    def save_matrices_to_csv(self):
+    def save_velocity_components_to_csv(self):
         """
-        Save the velocity and nkind matrices to CSV files with proper number formatting and semicolon separator.
+        Save velocity_x, velocity_y, velocity_z to CSV files with appropriate formatting.
         """
-        # Guardar las matrices de velocidad
-        pd.DataFrame(self.velocity_x).to_csv('velocity_x_MVN2_ss_newinflow2.csv', index=False, header=False, sep=',', float_format='%.10f')
-        pd.DataFrame(self.velocity_y).to_csv('velocity_y_MVN2_ss_newinflow2.csv', index=False, header=False, sep=',', float_format='%.10f')
-        pd.DataFrame(self.velocity_z).to_csv('velocity_z_MVN2_ss_newinflow2.csv', index=False, header=False, sep=',', float_format='%.10f')
-        
-        # Guardar la matriz nkind
-        pd.DataFrame(self.nkind_matrix).to_csv('nkind_matrix_MVN2_ss_newinflow2.csv', index=False, header=False, sep=',', float_format='%.0f')
-        pd.DataFrame(self.particles_evolution[:,:,0]).to_csv('particle_evolution_matrix_MVN2_ss_newinflow2.csv', index=False, header=False, sep=',', float_format='%.0f')
+        file_x = os.path.join(self.output_dir, "velocity_x.csv")
+        file_y = os.path.join(self.output_dir, "velocity_y.csv")
+        file_z = os.path.join(self.output_dir, "velocity_z.csv")
 
-        print("Matrices saved to CSV files with proper formatting.")
+        pd.DataFrame(self.velocity_x).to_csv(file_x, index=False, header=False, sep=',', float_format='%.10f')
+        pd.DataFrame(self.velocity_y).to_csv(file_y, index=False, header=False, sep=',', float_format='%.10f')
+        pd.DataFrame(self.velocity_z).to_csv(file_z, index=False, header=False, sep=',', float_format='%.10f')
+
+    def save_nkind_matrix_to_csv(self):
+        """
+        Save nkind_matrix to CSV with integer formatting.
+        """
+        file_nkind = os.path.join(self.output_dir, "nkind_matrix.csv")
+        pd.DataFrame(self.nkind_matrix).to_csv(file_nkind, index=False, header=False, sep=',', float_format='%.0f')
+
+    def save_vessels_evolution_to_csv(self):
+        file_vessel = os.path.join(self.output_dir, "vessels_evolution.csv")
+        df = pd.DataFrame(self.particles_evolution[:self.N_particles_count, :, 0])
+        df.to_csv(file_vessel, index=False, header=False, sep=',', float_format='%.0f')
 
     def save_global_coordinates_to_csv(self):
         """
         Save the global coordinates matrices (x, y, z) to CSV files with proper number formatting and semicolon separator.
         """
-        # Guardar las matrices de coordenadas globales con formato apropiado y separador ';'
-        pd.DataFrame(self.particles_evolution_global[:, :, 0]).to_csv('global_x_MVN2_ss_newinflow2.csv', index=False, header=False, sep=',', float_format='%.10f')
-        pd.DataFrame(self.particles_evolution_global[:, :, 1]).to_csv('global_y_MVN2_ss_newinflow2.csv', index=False, header=False, sep=',', float_format='%.10f')
-        pd.DataFrame(self.particles_evolution_global[:, :, 2]).to_csv('global_z_MVN2_ss_newinflow2.csv', index=False, header=False, sep=',', float_format='%.10f')
+        file_x = os.path.join(self.output_dir, "global_x_coordinate.csv")
+        file_y = os.path.join(self.output_dir, "global_y_coordinate.csv")
+        file_z = os.path.join(self.output_dir, "global_z_coordinate.csv")
 
-        print("Global coordinates saved to CSV files with proper formatting.")
+        pd.DataFrame(self.particles_evolution_global[:self.N_particles_count, :, 0]) \
+            .to_csv(file_x, index=False, header=False, sep=',', float_format='%.10f')
+        pd.DataFrame(self.particles_evolution_global[:self.N_particles_count, :, 1]) \
+            .to_csv(file_y, index=False, header=False, sep=',', float_format='%.10f')
+        pd.DataFrame(self.particles_evolution_global[:self.N_particles_count, :, 2]) \
+            .to_csv(file_z, index=False, header=False, sep=',', float_format='%.10f')
     
     def compute_nkind_matrix(self):
         """
@@ -853,7 +855,7 @@ class Particle_tracker(object):
             - nkind_matrix: A matrix where each entry stores the 'nkind' value for the vessel in which the particle is located.
         """
         # Load the .pkl file that contains the 'nkind' attribute for each edge
-        with open(self.pkl_path, 'rb') as file:
+        with open(self._PARAMETERS["pkl_path_igraph"], 'rb') as file:
             graph_data = pickle.load(file)
 
         # Extract the 'nkind' attribute from the edges
@@ -864,13 +866,13 @@ class Particle_tracker(object):
         n_timesteps_to_keep = end_time - start_time + 1
 
         # Initialize the matrix with NaN values
-        self.nkind_matrix = np.full((self.N_particles_total, n_timesteps_to_keep), -1, dtype=np.int32)
+        self.nkind_matrix = np.full((self.N_particles_count, n_timesteps_to_keep), -1, dtype=np.int32)
 
         # Fill the matrix based on the particles' positions in 'particles_evolution'
-        for p in range(self.N_particles_total):
+        for p in range(self.N_particles_count):
 
-            if p % 100 == 0:
-                print(f"Processing particle {p} of {self.N_particles_total}...")
+            if p % 1000 == 0:
+                print(f"Processing nkind: particle {p} of {self.N_particles_count}...")
 
             for t in range(n_timesteps_to_keep): 
                 actual_timestep = start_time + t 
@@ -907,18 +909,14 @@ class Particle_tracker(object):
         end_time = self._PARAMETERS["N_timesteps"]
         n_timesteps_to_keep = end_time - start_time + 1
         # Initialize the velocity matrices for x, y, z with NaN
-        self.velocity_x = np.full((self.N_particles_total, n_timesteps_to_keep), np.nan)
-        self.velocity_y = np.full((self.N_particles_total, n_timesteps_to_keep), np.nan)
-        self.velocity_z = np.full((self.N_particles_total, n_timesteps_to_keep), np.nan)
+        self.velocity_x = np.full((self.N_particles_count, n_timesteps_to_keep), np.nan)
+        self.velocity_y = np.full((self.N_particles_count, n_timesteps_to_keep), np.nan)
+        self.velocity_z = np.full((self.N_particles_count, n_timesteps_to_keep), np.nan)
 
         for vessel_id in range(len(self.es)):
             vessel_points = np.array(self.points[vessel_id])
             vessel_lengths = np.array(self.lengths[vessel_id])
             vessel_total_length = self.length[vessel_id]
-
-            if vessel_id in self.indices_rbc_negativa:
-                vessel_points = vessel_points[::-1]
-                vessel_lengths = vessel_lengths[::-1]
 
             normalized_lengths = np.cumsum(vessel_lengths) / vessel_total_length
             normalized_lengths = np.insert(normalized_lengths, 0, 0)
@@ -929,9 +927,9 @@ class Particle_tracker(object):
             }
 
         # List to store the normalized direction vectors of each vessel, multiplied by the RBC velocity
-        for p in range(self.N_particles_total):
-            if p % 100 == 0:
-                print(f"Processing particle {p} of {self.N_particles_total}...")
+        for p in range(self.N_particles_count):
+            if p % 1000 == 0:
+                print(f"Processing velocity of particle {p} of {self.N_particles_count}...")
             
             for t in range(n_timesteps_to_keep):
                 actual_timestep = start_time + t 
@@ -980,6 +978,50 @@ class Particle_tracker(object):
         
         print("Computation of vlocities is complete.")
         return self.velocity_x, self.velocity_y, self.velocity_z
+  
+    def generate_outputs(self):
+        """
+        Generate optional output files depending on user-defined flags 
+        in self._PARAMETERS. Each flag is 0 or 1.
+        """
+        
+        # 1) Save particles_evolution to CSV (local vessel/alpha)
+        if self._PARAMETERS.get("output_particles_evolution", 0) == 1:
+            self.save_particles_evolution_to_csv()
+
+        if self._PARAMETERS.get("output_vessel_evolution", 0) == 1:
+            self.save_vessels_evolution_to_csv()
+        
+
+        # 2) Velocity components
+        if self._PARAMETERS.get("output_velocity_components", 0) == 1:
+            print("Computing velocity components (x, y, z)...")
+            self.velocity_x, self.velocity_y, self.velocity_z = self.compute_velocity_components()
+            print("Saving velocity components to CSV...")
+            self.save_velocity_components_to_csv()
+            print("Velocity components saved.")
+
+        # 3) nkind matrix
+        if self._PARAMETERS.get("output_nkind_matrix", 0) == 1:
+            print("Computing nkind_matrix...")
+            self.nkind_matrix = self.compute_nkind_matrix()
+            print("Saving nkind matrix to CSV...")
+            self.save_nkind_matrix_to_csv()
+            print("nkind matrix saved.")
+
+        # 4) Global coordinates
+        
+        if self._PARAMETERS.get("save_global_coords", 0) == 1:
+            print("Saving global coordinates to CSV...")
+            self.save_global_coordinates_to_csv()
+            print("Global coordinates saved.")
+
+        # 5) Paraview files
+        if self._PARAMETERS.get("output_vtp_files", 0) == 1:
+            print("Creating VTK files for Paraview...")
+            self.create_vtk_particles_per_timestep()
+            print("VTK files created at", self.output_dir)
+
     
     def classify_nodes(self, graph):
         # 0: Inflow node.
