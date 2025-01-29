@@ -20,6 +20,8 @@ class Particle_tracker(object):
     def __init__(self, PARAMETERS: MappingProxyType, flow_network: FlowNetwork):
         self.flow_network = flow_network
         self._PARAMETERS = PARAMETERS
+        # Retrieve the user-chosen output directory
+        self.output_dir = self._PARAMETERS.get("output_directory", "data/network/outputs")
 
         self.es = flow_network.edge_list
         self.vs_coords = flow_network.xyz
@@ -51,7 +53,6 @@ class Particle_tracker(object):
         self.delta_t = self.times_basic_delta_t * abs(self.length).min()/(abs(self.rbc_velocity).max())
         self.N_timesteps =  self._PARAMETERS["N_timesteps"]
         self.out_particles = []
-        self.particles_frequency = PARAMETERS["particles_frequency"]
 
         num_vessels = len(self.flow_network.edge_list)
         self.hematocrit_evolution = np.zeros((num_vessels, self.N_timesteps))  # Shape: (vessels, timesteps)
@@ -86,14 +87,10 @@ class Particle_tracker(object):
         self.ht_initial = PARAMETERS["ht_initial"]
         self.ht_boundary_condition = PARAMETERS["ht_boundary_condition"]
         self.rbc_volume = PARAMETERS["rbc_volume"]
-        self.initial_particles_mode = PARAMETERS["initial_particles_mode"]
 
         # Velocity sign change in vessels
         self.vessels_direction_changes = np.zeros(len(self.rbc_velocity), dtype=int)
-        # self.boundary_vertices = [
-        #             v.index for v in self.graph.vs 
-        #             if self._PARAMETERS['ig_boundary_type'] != 0
-        #         ]
+       
         self.boundary_vertices = self.flow_network.boundary_vs
         self.boundary_vessels = set()
         for bv in self.boundary_vertices:
@@ -105,15 +102,7 @@ class Particle_tracker(object):
         self.node_classification = self.classify_nodes(self.graph)
         self.inflow_vessels, self.outflow_vessels= self.detect_possible_inflow_outflow_vessels() 
        
-        if self.initial_particles_mode == 1:
-            self.initialize_particles_with_hematocrit2()
-        elif self.initial_particles_mode == 0:
-            self.N_particles = self._PARAMETERS["initial_number_particles"]
-            self.initial_particle_tube = self._PARAMETERS["initial_vessels"]
-            self.initial_particles_coords = np.zeros((self.N_particles, 3))
-            self.initial_local_coord = np.full(self.N_particles, 0.5)
-            self.initialize_particles_evolution() 
-        
+        self.initialize_particles_with_hematocrit2() 
         
         self.ghost_particles = self.initialization_ghost_vessels()
         self.total_added_particles = 0
@@ -362,8 +351,6 @@ class Particle_tracker(object):
         print(f"Total vessels that changed direction during the simulation: {total_changes}/{len(self.vessels_direction_changes)}")
         print(f"Percentage of vessels that changed direction: {percentage_changed:.4f}%")
         
-        # self.save_particles_evolution_to_excel()
-        # self.save_vessel_data_to_excel()
     
     def select_next_vessel(self, old_vessel, crossed_node):
         """
