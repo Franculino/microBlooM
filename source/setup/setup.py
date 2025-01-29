@@ -155,7 +155,7 @@ class SetupSimulation(Setup):
             case 3:  # Define the reference state of the tube law, linearised. p_ext=0, d_ref computed based on Sherwin et al. (2003).
                 imp_tube_law_ref_state = initialise_tube_law.TubeLawPassiveReferenceConstantExternalPressureSherwin(PARAMETERS)
             case 4:  # Define the reference state of the tube law, linearised. p_ext=0, d_ref computed based on Payne et al. (2023).
-                imp_tube_law_ref_state = initialise_tube_law.TubeLawPassiveReferenceConstantExternalPressureSherwin(PARAMETERS)
+                imp_tube_law_ref_state = initialise_tube_law.TubeLawPassiveReferenceConstantExternalPressurePayne(PARAMETERS)
             case 5:  # Define the reference state of the tube law, linearised. p_ext=0, d_ref computed based on Urquiza et al. (2006).
                 imp_tube_law_ref_state = initialise_tube_law.TubeLawPassiveReferenceConstantExternalPressureUrquiza(PARAMETERS)
             case 6:  # Define the reference state of the tube law, linearised. p_ext=0, d_ref computed based on Rammos et al. (1998).

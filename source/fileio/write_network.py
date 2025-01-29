@@ -231,7 +231,8 @@ class WriteNetworkVtp(WriteNetwork):
         if flownetwork.pressure is not None:
             graph.vs["pressure"] = flownetwork.pressure
 
-        graph.es["shear_stress_baseline"] = flownetwork.shear_stress_baseline
+        if flownetwork.shear_stress_baseline is not None:
+            graph.es["shear_stress_baseline"] = flownetwork.shear_stress_baseline
 
 
         # Make a copy of the graph so that modifications are possible, without
@@ -378,6 +379,15 @@ class WriteNetworkCsv(WriteNetwork):
         if flownetwork.sens_shear is not None:
             df_edge_data["sens_shear"] = flownetwork.sens_shear
 
+        if flownetwork.sens_G is not None:
+            df_edge_data["sens_G"] = flownetwork.sens_G
+
+        if flownetwork.sens_DC is not None:
+            df_edge_data["sens_DC"] = flownetwork.sens_DC
+
+        if flownetwork.is_auto_vessel is not None:
+            df_edge_data["is_auto_vessel"] = flownetwork.is_auto_vessel
+
         # Write all the vertex based attributes and results
         df_vertex_data = pd.DataFrame()
         df_vertex_data["x"] = flownetwork.xyz[:, 0]
@@ -387,5 +397,9 @@ class WriteNetworkCsv(WriteNetwork):
         if flownetwork.pressure is not None:
             df_vertex_data["pressure"] = flownetwork.pressure
 
-        df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_edge_data_"+str(flownetwork.percent)+".csv", index=False)
-        df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_vertex_data_"+str(flownetwork.percent)+".csv", index=False)
+        if flownetwork.sensitivity_analysis:
+            df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_edge_data_"+str(flownetwork.percent)+"_"+str(flownetwork.row_save)+".csv", index=False)
+            df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_vertex_data_"+str(flownetwork.percent)+"_"+str(flownetwork.row_save)+".csv", index=False)
+        else:
+            df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_edge_data_"+str(flownetwork.percent)+".csv", index=False)
+            df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"]+"_vertex_data_"+str(flownetwork.percent)+".csv", index=False)

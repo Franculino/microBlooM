@@ -62,6 +62,19 @@ class SolutionMonitoring(object):
         target_values_flow_rate = edge_constraint_value[is_target_type_1]
         target_values_rbc_velocity = edge_constraint_value[is_target_type_2]
 
+        # criterion: threshold for reasonably good convergence
+        # Is current absolute difference between tuned and target values less than {threshold} of corresponding
+        # target measurement?
+        current_values = np.append(current_flow_rate, current_rbc_velocity)
+        target_values = np.append(target_values_flow_rate, target_values_rbc_velocity)
+        abs_difference = np.absolute(current_values - target_values)
+        criterion = abs_difference <= np.absolute(self._PARAMETERS["threshold_abs_difference_current_target_meas"] * target_values)
+
+        print('Is the current absolute difference between tuned and target values less or equal to {} of corresponding '
+              'target measurement: True - {}/{} and False - {}/{}'.format(self._PARAMETERS["threshold_abs_difference_current_target_meas"],
+                                                                          np.sum(criterion), np.size(criterion),
+                                                                          np.size(criterion) - np.sum(criterion), np.size(criterion)))
+
         # Export a csv file for the current values with target value - precision measurements
         data_target = {}
         if np.size(current_flow_rate) > 0:
@@ -181,6 +194,7 @@ class SolutionMonitoring(object):
         data_es["n2"] = self.flownetwork.edge_list[:, 1]
         data_es["es_id"] = np.arange(self.flownetwork.nr_of_es)
         data_es["alpha"] = self.inversemodel.alpha
+        data_es["alpha_prime"] = self.inversemodel.alpha_prime
         data_es[labels[0]] = parameter_baseline_value
         data_es[labels[1]] = tuned_parameter
         data_es["length"] = self.flownetwork.length

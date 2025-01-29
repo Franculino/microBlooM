@@ -29,6 +29,18 @@ class FlowNetwork(object):
         self.sens_direct = None  #### REMOVE
         self.sens_shear = None  #### REMOVE
 
+        # Sensitivity
+        self.row_save = None  #### REMOVE
+        self.sensitivity_Ss = None #### REMOVE
+        self.sensitivity_St = None #### REMOVE
+        self.sensitivity_G = None  #### REMOVE
+        self.sensitivity_DC = None  #### REMOVE
+        self.sensitivity_analysis = None  #### REMOVE
+        self.is_auto_vessel = None  #### REMOVE
+        self.diameter_baseline = None  #### REMOVE
+        self.sens_DC = None  #### REMOVE
+        self.sens_G = None  #### REMOVE
+
         # Network attributes
         self.nr_of_vs = None
         self.nr_of_es = None

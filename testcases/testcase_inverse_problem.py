@@ -45,6 +45,12 @@ PARAMETERS = MappingProxyType(
                              # 2: PyAMG solver
                              # 3-...: other solvers (CG, AMG, ...)
 
+        "read_vascular_properties_option": 1,       # 1: Do not read anything
+                                                    # 2: Read vascular properties from csv file
+        "tube_law_ref_state_option": 1,     # 1: No update of diameters due to vessel distensibility
+                                            # 2: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = p_base,
+                                                # d_ref = d_base
+
         # Blood properties
         "ht_constant": 0.3,
         "mu_plasma": 0.0012,
@@ -59,13 +65,15 @@ PARAMETERS = MappingProxyType(
         "hexa_boundary_types": [1, 1],  # 1: pressure, 2: flow rate
 
         # Import network from csv options - Only required for "read_network_option": 2
-        "csv_path_vertex_data": "data/network/b6_B_pre_061/node_data.csv",
-        "csv_path_edge_data": "data/network/b6_B_pre_061/edge_data.csv",
-        "csv_path_boundary_data": "data/network/b6_B_pre_061/boundary_node_data.csv",
-        "csv_diameter": "D", "csv_length": "L",
+        # "csv_path_vertex_data": "data/network/c57bl6_2_lower_DA_dens/node_data.csv",
+        "csv_path_vertex_data": "output/solution_monitoring_csv/c57bl6_2_lower_DA_dens/test_001/data_vs_40.csv",
+        # "csv_path_edge_data": "data/network/c57bl6_2_lower_DA_dens/edge_data.csv",
+        "csv_path_edge_data": "output/solution_monitoring_csv/c57bl6_2_lower_DA_dens/test_001/data_es_40.csv",
+        "csv_path_boundary_data": "data/network/c57bl6_2_lower_DA_dens/boundary_node_data.csv",
+        "csv_diameter": "diameter", "csv_length": "length",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
-        "csv_coord_x": "x", "csv_coord_y": "y", "csv_coord_z": "z",
-        "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
+        "csv_coord_x": "coord_x", "csv_coord_y": "coord_y", "csv_coord_z": "coord_z",
+        "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p",
 
         # Import network from igraph option - Only required for "read_network_option": 3
         "pkl_path_igraph": "data/network/b6_B_pre_061/b6_B_initial.pkl",
@@ -75,7 +83,7 @@ PARAMETERS = MappingProxyType(
 
         # Write options
         "write_override_initial_graph": False,
-        "write_path_igraph": "data/network/b6_B_pre_061_simulated.pkl", # only required for "write_network_option" 2
+        "write_path_igraph": "data/network/c57bl6_2_lower_DA_dens/c57bl6_2_lower_DA_dens_after_inverse_model.pkl",  # only required for "write_network_option" 2
 
         ##########################
         # Inverse problem options
@@ -90,18 +98,20 @@ PARAMETERS = MappingProxyType(
                                     # 2: PyAMG solver
                                     # 3-...: other solvers
 
+        "threshold_abs_difference_current_target_meas": 0.2,
+
         # Target edges
-        "csv_path_edge_target_data": "data/inverse_model/edge_target.csv",
+        "csv_path_edge_target_data": "data/inverse_model/c57bl6_2_lower_DA_dens/edge_target.csv",
         # Parameter edges
-        "csv_path_edge_parameterspace": "data/inverse_model/edge_parameters.csv",
+        "csv_path_edge_parameterspace": "data/inverse_model/c57bl6_2_lower_DA_dens/edge_parameters.csv",
         # Gradient descent options:
-        "gamma": .5,
+        "gamma": 5,
         "phi": .5,
-        "max_nr_of_iterations": 50,
+        "max_nr_of_iterations": 150,
         # Output
-        "csv_path_solution_monitoring": "output/solution_monitoring_csv/",
-        "png_path_solution_monitoring": "output/solution_monitoring_plots/",
-        "pkl_path_solution_monitoring": "output/solution_monitoring_pkl/"
+        "csv_path_solution_monitoring": "output/solution_monitoring_csv/c57bl6_2_lower_DA_dens/test_003/",
+        "png_path_solution_monitoring": "output/solution_monitoring_plots/c57bl6_2_lower_DA_dens/test_003/",
+        "pkl_path_solution_monitoring": "output/solution_monitoring_pkl/c57bl6_2_lower_DA_dens/test_003/"
     }
 )
 
@@ -109,7 +119,7 @@ setup_simulation = setup.SetupSimulation()
 
 # Initialise objects related to simulate blood flow without RBC tracking.
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver = setup_simulation.setup_bloodflow_model(PARAMETERS)
+    imp_solver, imp_read_vascular_properties, imp_tube_law_ref_state = setup_simulation.setup_bloodflow_model(PARAMETERS)
 
 # Initialise objects related to the inverse model.
 imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter, imp_adjoint_solver, \
@@ -117,7 +127,7 @@ imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter, imp_adjoint_sol
 
 # Initialise flownetwork and inverse model objects
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
-                           imp_solver, imp_velocity, PARAMETERS)
+                           imp_solver, imp_velocity, imp_read_vascular_properties, imp_tube_law_ref_state, PARAMETERS)
 inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter,
                              imp_adjoint_solver, imp_alpha_mapping, PARAMETERS)
 flow_balance = FlowBalance(flow_network)
@@ -146,7 +156,7 @@ print("initial f_H =", "%.2e" % inverse_model.f_h)
 
 nr_of_iterations = int(PARAMETERS["max_nr_of_iterations"])
 print("Solve the inverse problem and update the diameters: ...")
-for i in range(1,nr_of_iterations+1):
+for i in range(41,nr_of_iterations+1):
     inverse_model.current_iteration = int(i)
     inverse_model.update_state()
     flow_network.update_transmissibility()
@@ -154,8 +164,11 @@ for i in range(1,nr_of_iterations+1):
     flow_balance.check_flow_balance()
     inverse_model.update_cost()
 
-    if i % 10 == 0:
+    if i % 5 == 0:
         print(str(i)+" / " + str(nr_of_iterations) + " iterations done (f_H =", "%.2e" % inverse_model.f_h+")")
+        print('Is cost function smaller than 0.001: ', inverse_model.f_h < 0.001)
+
+    if i % 10 == 0:
         print("Plot graphs and export data: ...")
         solution_monitoring.get_arrays_for_plots()
         solution_monitoring.plot_cost_fuction_vs_iterations()

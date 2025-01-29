@@ -41,6 +41,23 @@ PARAMETERS = MappingProxyType(
                              # 2: PyAMG solver
                              # 3-...: other solvers
 
+        # Elastic vessel - vascular properties (tube law)
+        "pressure_external": 0.,                    # Constant external pressure
+        "read_vascular_properties_option": 1,       # 1: Do not read anything
+                                                    # 2: Read vascular properties from csv file
+        "tube_law_ref_state_option": 1,             # 1: No update of diameters due to vessel distensibility
+                                                    # 2: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = p_base,
+                                                        # d_ref = d_base
+                                                    # 3: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                        # d_ref computed based on Sherwin et al. (2003)
+                                                    # 4: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                        # d_ref computed based on Payne et al. (2023)
+                                                    # 5: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                        # d_ref computed based on Urquiza et al. (2006)
+                                                    # 6: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                        # d_ref computed based on Rammos et al. (1998)
+        "csv_path_vascular_properties": "not_needed",
+
         # Blood properties
         "ht_constant": 0.3,  # only required if RBC impact is considered
         "mu_plasma": 0.0012,
@@ -79,12 +96,13 @@ PARAMETERS = MappingProxyType(
 setup_blood_flow = setup.SetupSimulation()
 # Initialise the implementations based on the parameters specified
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
+    imp_solver, imp_read_vascular_properties, imp_tube_law_ref_state = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
-                           imp_solver, imp_velocity, PARAMETERS)
+                           imp_solver, imp_velocity, imp_read_vascular_properties, imp_tube_law_ref_state, PARAMETERS)
+
 flow_balance = FlowBalance(flow_network)
 
 # Import or generate the network

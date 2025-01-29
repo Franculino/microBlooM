@@ -70,6 +70,10 @@ class DistensibilityLawUpdatePassiveSherwin(DistensibilityLawUpdate):
         # Update diameters
         flownetwork.diameter = diameter_new
 
+        if True in (diameter_new[eids_dist] < .5 * flownetwork.diameter_baseline[eids_dist]) \
+                or True in (diameter_new[eids_dist] > 2.5 * flownetwork.diameter_baseline[eids_dist]):
+            sys.exit("Warring: Distensibility - Suspicious current diameters (compared to baseline diameter) detected.")
+
 
 class DistensibilityLawUpdatePassiveUrquiza(DistensibilityLawUpdate):
 

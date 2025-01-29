@@ -85,13 +85,13 @@ class TubeLawPassiveReferenceConstantExternalPressureSherwin(TubeLawInitialision
         flownetwork.diameter_ref = diameter_ref
 
         # Based on Payne et al. 2023 --> Eq. A.4
-        radius_baseline = flownetwork.diameter * 0.5
-        r_ref = (flownetwork.e_modulus * flownetwork.wall_thickness * radius_baseline) / \
-                ((1. - np.square(flownetwork.nu)) * pressure_difference_edge * radius_baseline + (
-                            flownetwork.e_modulus * flownetwork.wall_thickness))
-
-        diameter_ref = r_ref * 2.
-        flownetwork.diameter_ref = diameter_ref
+        # radius_baseline = flownetwork.diameter * 0.5
+        # r_ref = (flownetwork.e_modulus * flownetwork.wall_thickness * radius_baseline) / \
+        #         ((1. - np.square(flownetwork.nu)) * pressure_difference_edge * radius_baseline + (
+        #                     flownetwork.e_modulus * flownetwork.wall_thickness))
+        #
+        # diameter_ref = r_ref * 2.
+        # flownetwork.diameter_ref = diameter_ref
 
 
 class TubeLawPassiveReferenceConstantExternalPressurePayne(TubeLawInitialision):

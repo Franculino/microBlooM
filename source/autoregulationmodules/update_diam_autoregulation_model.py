@@ -342,13 +342,17 @@ class AutoregulationModelOurApproach(AutoregulationModelUpdate):
             shear_stress_Pa = ((32. * np.abs(flownetwork.flow_rate) * self._PARAMETERS["mu_plasma"] * flownetwork.mu_rel) /
                                (np.pi * np.power(flownetwork.diameter, 3.)))[eids_auto]
             # According literature, there is a shear stress threshold for producing NO
-            sens_shear = np.ones(autoregulation.nr_of_edge_autoregulation, dtype=float) * self._PARAMETERS["sensitivity_shear_stress"]
+            sens_shear = np.copy(autoregulation.sens_shear_from_csv)
             sens_shear[shear_stress_Pa <= 0.1] = 0.
             autoregulation.sens_shear_previous = sens_shear
 
-        autoregulation.sens_shear = autoregulation.sens_shear_previous
+        autoregulation.sens_shear = np.copy(autoregulation.sens_shear_previous)
 
-        autoregulation.sens_direct = np.ones(autoregulation.nr_of_edge_autoregulation, dtype=float) * self._PARAMETERS["sensitivity_direct_stress"]
+        if flownetwork.sensitivity_analysis:
+            autoregulation.sens_direct = np.copy(autoregulation.sens_direct_from_csv) * flownetwork.sensitivity_Ss
+            autoregulation.sens_shear = autoregulation.sens_shear * flownetwork.sensitivity_St
+        else:
+            autoregulation.sens_direct = np.copy(autoregulation.sens_direct_from_csv)
 
         relative_stiffness = 1. + autoregulation.sens_direct * ((direct_stress / direct_stress_baseline) - 1.) - \
                              autoregulation.sens_shear * ((shear_stress / shear_stress_baseline) - 1.)
@@ -366,14 +370,23 @@ class AutoregulationModelOurApproach(AutoregulationModelUpdate):
         # symmetrical about its baseline value
         # Constant parameters
         max_compliance = 10  # maximum changes in compliance
-        min_compliance = 0.9  # minimum changes in compliance
+        min_compliance = 0.8  # minimum changes in compliance
         slope = 0.1  # central slope steepness
         # Relative compliance based on the non-linear sigmoidal function
         relative_compliance = np.ones(np.size(relative_stiffness))
-        relative_compliance[relative_stiffness<1.] = 1. + max_compliance * np.tanh(1./slope * 1./max_compliance * (inverse_stiffness[relative_stiffness<1.] - 1.))
-        relative_compliance[relative_stiffness>=1.] = 1. + min_compliance * np.tanh(1./slope * 1./min_compliance * (inverse_stiffness[relative_stiffness>=1.] - 1.))
+
+        if flownetwork.sensitivity_analysis:
+            sens_DC = flownetwork.sensitivity_DC
+            sens_G = flownetwork.sensitivity_G
+            relative_compliance[relative_stiffness<1.] = 1. + (max_compliance * sens_DC) * np.tanh(1./(slope * sens_G) * 1./(max_compliance * sens_DC) * (inverse_stiffness[relative_stiffness<1.] - 1.))
+            relative_compliance[relative_stiffness>=1.] = 1. + (min_compliance * sens_DC) * np.tanh(1./(slope * sens_G) * 1./(min_compliance * sens_DC) * (inverse_stiffness[relative_stiffness>=1.] - 1.))
+        else:
+            relative_compliance[relative_stiffness<1.] = 1. + (max_compliance) * np.tanh(1./(slope) * 1./(max_compliance) * (inverse_stiffness[relative_stiffness<1.] - 1.))
+            relative_compliance[relative_stiffness>=1.] = 1. + (min_compliance) * np.tanh(1./(slope) * 1./(min_compliance) * (inverse_stiffness[relative_stiffness>=1.] - 1.))
 
         if not np.size(relative_compliance[relative_compliance < 0.]) == 0:
+            print(relative_compliance[relative_compliance < 0.])
+            print(relative_stiffness[relative_compliance < 0.])
             sys.exit("Negative relative compliance")
 
         autoregulation.rel_compliance = relative_compliance
@@ -393,5 +406,30 @@ class AutoregulationModelOurApproach(AutoregulationModelUpdate):
 
         flownetwork.diameter = diameter_new
 
-        if True in (diameter_new < .5 * autoregulation.diameter_baseline) or True in (diameter_new > 2.5 * autoregulation.diameter_baseline):
-            sys.exit("Error: Suspicious current diameters (compared to baseline diameter) detected.")
+        if True in (diameter_new[eids_auto] < .5 * autoregulation.diameter_baseline[eids_auto]) \
+                or True in (diameter_new[eids_auto] > 2.5 * autoregulation.diameter_baseline[eids_auto]):
+            sys.exit("Warring: Autoregulation - Suspicious current diameters (compared to baseline diameter) detected.")
+
+
+"""
+    # Wall shear stress, τ=(32*q*μ)/(π*d^3) in Pa
+    shear_stress_Pa = ((32. * np.abs(flownetwork.flow_rate) * self._PARAMETERS["mu_plasma"] * flownetwork.mu_rel) /
+                       (np.pi * np.power(flownetwork.diameter, 3.)))[autoregulation.original_eids_auto]
+    # According literature, there is a shear stress threshold for producing NO
+    sens_shear = np.ones(np.size(autoregulation.original_eids_auto), dtype=float) * self._PARAMETERS["sensitivity_shear_stress"]
+    is_below_shear_threshold = shear_stress_Pa <= 0.1
+    sens_shear[is_below_shear_threshold] = 0.
+
+    below_above_shear_threshold_current = np.ones(np.size(autoregulation.original_eids_auto))
+    below_above_shear_threshold_current[is_below_shear_threshold] = -1
+    change_cur = autoregulation.below_above_shear_threshold_previous * below_above_shear_threshold_current
+    autoregulation.nr_change_total_shear[change_cur == -1] += 1
+    autoregulation.below_above_shear_threshold_previous = below_above_shear_threshold_current
+    is_in_auto_range = np.in1d(autoregulation.original_eids_auto, eids_auto)
+    is_in_auto_range_and_changes_larger_20 = is_in_auto_range & (autoregulation.nr_change_total_shear > (np.ones(np.size(autoregulation.original_eids_auto)) * 20))
+    if True in is_in_auto_range_and_changes_larger_20:
+        is_below_shear_threshold[is_in_auto_range_and_changes_larger_20] = False
+        sens_shear[is_below_shear_threshold] = 0.
+        print("Reach more than 20 changes of below and above the shear stress threshold for " + str(np.sum(is_in_auto_range_and_changes_larger_20)) + " vessels")
+
+"""

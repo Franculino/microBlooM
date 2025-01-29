@@ -38,13 +38,33 @@ PARAMETERS = MappingProxyType(
                                        # 2: Constant haematocrit
                                        # 3: todo: RBC tracking
                                        # 4-...: todo: steady state RBC laws
-        "rbc_impact_option": 2,  # 1: No RBCs (hd=0)
+        "rbc_impact_option": 3,  # 1: No RBCs (hd=0)
                                  # 2: Laws by Pries, Neuhaus, Gaehtgens (1992)
                                  # 3: Laws by Pries and Secomb (2005)
                                  # 4-...: todo: Other laws. in vivo?
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
                              # 3-...: other solvers
+
+        # Elastic vessel - vascular properties (tube law)
+        "pressure_external": 0.,        # Constant external pressure
+
+        "read_vascular_properties_option": 2,   # 1: Do not read anything
+                                                # 2: Read vascular properties from csv file
+
+        "tube_law_ref_state_option": 4,         # 1: No update of diameters due to vessel distensibility
+                                                # 2: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = p_base,
+                                                    # d_ref = d_base
+                                                # 3: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                    # d_ref computed based on Sherwin et al. (2003)
+                                                # 4: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                    # d_ref computed based on Payne et al. (2023)
+                                                # 5: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                    # d_ref computed based on Urquiza et al. (2006)
+                                                # 6: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
+                                                    # d_ref computed based on Rammos et al. (1998)
+
+        "csv_path_vascular_properties": "testcase_stroke/data/parameters/BalbC_C_mod_b_pre_001/stroke_distensibility/BalbC_C_mod_b_pre_001_all_parameters_Emodulus_correction_stroke.csv",
 
         # Blood properties
         "ht_constant": 0.3,  # only required if RBC impact is considered
@@ -71,14 +91,14 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "p",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "data/network/B6_B_01/b6_B_pre_stroke.pkl",
-        "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
+        "pkl_path_igraph": "testcase_stroke/data/networks/BalbC_C_mod_b_pre_001/BalbC_C_mod_b_pre_001.pkl",
+        "ig_diameter": "diameter_pre", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
 
         # Write options
         "write_override_initial_graph": False,  # todo: currently does not do anything
-        "write_path_igraph": "data/network/b6_B_pre_061/results",  # only required for "write_network_option" 2, 3, 4
+        "write_path_igraph": "testcase_stroke/output/BalbC_C_mod_b_pre_001/stroke_results",  # only required for "write_network_option" 2, 3, 4
 
         ##########################
         # Stroke options
@@ -89,8 +109,7 @@ PARAMETERS = MappingProxyType(
                                                     # 3: Induce stroke in a network reading diameters at stroke state from a csv file
 
         # Parameters for inducing stroke - only required for "induce_stroke_cases" 3
-        "csv_path_diameters_stroke_state": "testcase_sensibility_distensibility/Ref_Pressure/case_high_ref_pressure/"
-                                           "B6_B_01/data/diameter_at_stroke_state.csv",
+        "csv_path_diameters_stroke_state": "testcase_stroke/data/networks/BalbC_C_mod_b_pre_001/diameter_at_stroke_state.csv",
 
         "diameters_stroke_state": "diameter_at_stroke",  # name of the label in the csv file
 
@@ -102,24 +121,14 @@ PARAMETERS = MappingProxyType(
         "read_dist_parameters_option": 2,       # 1: Do not read anything
                                                 # 2: Read from csv file
 
-        "dist_ref_state_option": 3,             # 1: No update of diameters due to vessel distensibility
-                                                # 2: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = p_base,
-                                                    # d_ref = d_base
-                                                # 3: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
-                                                    # d_ref computed based on Sherwin et al. (2003)
-                                                # 4: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
-                                                    # d_ref computed based on Urquiza et al. (2006)
-                                                # 5: Passive diam changes, tube law. 1/D_ref ≈ 1/D. p_ext = const,
-                                                    # d_ref computed based on Rammos et al. (1998)
-
         "dist_pres_area_relation_option": 2,    # 1: No update of diameters due to vessel distensibility
                                                 # 2: Relation based on Sherwin et al. (2003) - non linear p-A relation
                                                 # 3: Relation based on Urquiza et al. (2006) - non linear p-A relation
                                                 # 4: Relation based on Rammos et al. (1998) - linear p-A relation
 
         # Distensibility edge properties
-        "csv_path_distensibility": "data/distensibility/distensibility_parameters.csv",
-        "pressure_external": 0.  # Constant external pressure as reference pressure (only for distensibility_model 2)
+        "csv_path_distensibility": "testcase_stroke/data/parameters/BalbC_C_mod_b_pre_001/stroke_distensibility/BalbC_C_mod_b_pre_001_dist_parameters_Emodulus_correction_stroke.csv",
+
     }
 )
 
@@ -127,26 +136,26 @@ PARAMETERS = MappingProxyType(
 setup_blood_flow = setup.SetupSimulation()
 # Initialise the implementations based on the parameters specified
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
+    imp_solver, imp_read_vascular_properties, imp_tube_law_ref_state = setup_blood_flow.setup_bloodflow_model(
+    PARAMETERS)
 
-imp_read_dist_parameters, imp_dist_ref_state, imp_dist_pres_area_relation = \
-    setup_blood_flow.setup_distensibility_model(PARAMETERS)
+imp_read_dist_parameters, imp_dist_pres_area_relation = setup_blood_flow.setup_distensibility_model(PARAMETERS)
 
 imp_sim_ischaemic_stroke = setup_blood_flow.setup_ischaemic_stroke_model(PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
-                           imp_solver, imp_velocity, PARAMETERS)
+                           imp_solver, imp_velocity, imp_read_vascular_properties, imp_tube_law_ref_state, PARAMETERS)
 
 flow_balance = FlowBalance(flow_network)
 
-distensibility = Distensibility(flow_network, imp_dist_ref_state, imp_read_dist_parameters,
-                                imp_dist_pres_area_relation)
+distensibility = Distensibility(flow_network, imp_read_dist_parameters, imp_dist_pres_area_relation)
 
 ischaemic_stroke_model = IschaemicStrokeModel(flow_network, distensibility, imp_sim_ischaemic_stroke, PARAMETERS)
 
 # Import or generate the network - Import data for the pre-stroke state
+print("BalbC_C_mod_b_pre_001")
 print("Read network: ...")
 flow_network.read_network()
 print("Read network: DONE")
@@ -163,6 +172,13 @@ print("Check flow balance: ...")
 flow_balance.check_flow_balance()
 print("Check flow balance: DONE")
 
+print("Initialise tube law for elastic vessels based on baseline results: ...")
+flow_network.initialise_tube_law()
+print("Initialise tube law for elastic vessels based on baseline results: Done")
+
+# Save diameters at baseline.
+flow_network.diameter_baseline = np.copy(flow_network.diameter)
+
 # Initialise distensibility model based on baseline (pre-stroke) diameters and pressures
 print("Initialise distensibility model based on baseline results: ...")
 distensibility.initialise_distensibility()
@@ -172,11 +188,11 @@ print("Initialise distensibility model based on baseline results: DONE")
 print("Simulate ischaemic stroke based on diameter changes: ...")
 ischaemic_stroke_model.simulate_ischaemic_stroke()
 flow_network.diameter = ischaemic_stroke_model.diameters_stroke
-print("Simulate ischaemic stroke based on diameter changes: ...")
+print("Simulate ischaemic stroke based on diameter changes: DONE")
 
 # Update diameters and iterate (has to be improved)
 print("Update the diameters based on Distensibility Law: ...")
-tol = 1.e-10
+tol = 1.e-06
 diameters_current = flow_network.diameter  # Previous diameters to monitor convergence of diameters
 for i in range(100):
     flow_network.update_transmissibility()
@@ -184,8 +200,8 @@ for i in range(100):
     flow_balance.check_flow_balance()
     distensibility.update_vessel_diameters_dist()
     print("Distensibility update: it=" + str(i + 1) + ", residual = " + "{:.2e}".format(
-        np.max(np.abs(flow_network.diameter - diameters_current))) + " um (tol = " + "{:.2e}".format(tol)+")")
-    if np.max(np.abs(flow_network.diameter - diameters_current)) < tol:
+        np.max(np.abs(flow_network.diameter - diameters_current) /diameters_current)) + " um (tol = " + "{:.2e}".format(tol)+")")
+    if np.max(np.abs(flow_network.diameter - diameters_current) / diameters_current) < tol:
         print("Distensibility update: DONE")
         break
     else:

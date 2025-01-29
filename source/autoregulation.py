@@ -20,6 +20,8 @@ class Autoregulation(object):
         self.sens_direct = None  # sensitivity for the direct stress, Sσ
         self.sens_shear = None  # sensitivity for the shear stress, Sτ
         self.sens_shear_previous = None
+        self.sens_direct_from_csv = None  # sensitivity for the direct stress, Sσ, from csv file
+        self.sens_shear_from_csv = None  # sensitivity for the shear stress, Sτ, from csv file
 
         self.rel_stiffness = None  # relative stiffness
         self.rel_compliance = None  # relative compliance
