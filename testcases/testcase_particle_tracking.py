@@ -22,7 +22,7 @@ PARAMETERS = MappingProxyType(
                                     # 2: write to igraph format (.pkl)
                                     # 3: write to vtp format (.vtp)
                                     # 4: write to two csv files (.csv)
-        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
+        "tube_haematocrit_option": 3,  # 1: No RBCs (ht=0)
                                        # 2: Constant haematocrit
                                        # 3: Hematocrit computed based on number of particles in each vessel
         "rbc_impact_option": 3,  # 1: No RBCs (hd=0) - makes only sense if tube_haematocrit_option:1 or ht=0
@@ -76,14 +76,15 @@ PARAMETERS = MappingProxyType(
 
         # OPTIONS for Particle tracking:
 
-        "particles_type": 0, # 0 = passive particles (don't affect the flowfiled), 1 = RBCs
+        "particles_type": 1, # 0 = passive particles (don't affect the flowfiled), 1 = RBCs
                              # IMPORTANT!!!: for RBC usage set "tube_haematocrit_option" = 3
         "N_timesteps": 400, # Number of timesteps the simulations has to be run
         "rbc_volume": 4.9e-17, # Volume of the particles you are introducing. In the case of passive particle 
                                # is also needed for initialization. Common value for mice: 4.9e-17 m^3.
         "ht_initial": 0.0001, # Initial hematocrit in the network. Controls amount of particles introduced 
                            # in the network before running the simulation. Also used in passive particle case
-                           # for initialization.
+                           # for initialization. This value has to be grater than zero !!! At least one particle has to be initialized
+                           # in the netowrk.
         "ht_boundary_condition":0.1, # Controls amount of particles introduced in the network at every timestep. 
                                      # Simulates an external microvasculature connected to the inflow nodes with
                                      # average constant hematocrit equal to ht_boundary_condition.

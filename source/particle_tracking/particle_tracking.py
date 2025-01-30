@@ -2,7 +2,6 @@ import sys
 import numpy as np
 import pandas as pd
 import random
-import itertools
 import igraph as ig
 import matplotlib.pyplot as plt
 import os
@@ -125,6 +124,21 @@ class Particle_tracker(object):
     
     def detect_inflow_outflow_vertices(self):
 
+        """
+        Identifies inflow and outflow vertices in the vascular network.
+
+        This function analyzes all boundary vertices to classify them as either inflow or outflow nodes.
+        It does so by comparing the pressure at the boundary vertex with its connected nodes.
+
+        - **Inflow Vertices**: Boundary vertices where the pressure is higher than their adjacent nodes.
+        - **Outflow Vertices**: Boundary vertices where the pressure is lower than their adjacent nodes.
+
+        Returns:
+        --------
+        - `inflow_vertices` (list): List of vertex indices acting as inflow points.
+        - `outflow_vertices` (list): List of vertex indices acting as outflow points.
+        """
+
         inflow_vertices = []
         outflow_vertices = []
 
@@ -150,6 +164,20 @@ class Particle_tracker(object):
             return volume
     
     def detect_possible_inflow_outflow_vessels(self):
+        """
+        Identifies vessels that act as inflow or outflow pathways at the network boundaries.
+
+        This function iterates through all boundary vessels and determines whether they should be classified as inflow or outflow,
+        based on the pressure difference between the nodes they connect.
+
+        - **Inflow Vessels**: Vessels where the starting node has higher pressure than the destination node.
+        - **Outflow Vessels**: Vessels where the starting node has lower pressure than the destination node.
+
+        Returns:
+        --------
+        - `inflow_vessels` (list): List of vessel indices classified as inflow.
+        - `outflow_vessels` (list): List of vessel indices classified as outflow.
+        """
         inflow_vessels = []
         outflow_vessels = []
 
@@ -179,44 +207,84 @@ class Particle_tracker(object):
                 self._initialize_particles_rbc()
 
     def _initialize_particles_passive(self):
+        """
+         Initializes passive particles in the network.
 
-            self.initial_particles_per_vessel = np.zeros(len(self.es), dtype = int)
-            for vessel_id in range(len(self.es)):
-                self.initial_particles_per_vessel[vessel_id] = int((self.volume[vessel_id] * self.ht_initial)  // self.rbc_volume)
+            Passive particles do not affect the flow field and are distributed based 
+            on the initial hematocrit (`ht_initial`). The number of particles per 
+            vessel is computed from the vessel volume and the volume of a single 
+            particle.
+
+            Parameters:
+            -----------
+            None (Uses class attributes: `self.volume`, `self.ht_initial`, `self.rbc_volume`).
+
+            Outputs:
+            --------
+            - `self.N_particles_total`: Total allocated particles.
+            - `self.N_particles_count`: Counter of particles introduced in the simulation.
+            - `self.particles_evolution`: Tracks particle movement over time.
+            - `self.inactive_particles`: Array indicating inactive particles.
+            - Updates `self.flow_network.num_particles_in_vessel` to track particles in vessels.
+        """
+
+        self.initial_particles_per_vessel = np.zeros(len(self.es), dtype = int)
+        for vessel_id in range(len(self.es)):
+            self.initial_particles_per_vessel[vessel_id] = int((self.volume[vessel_id] * self.ht_initial)  // self.rbc_volume)
+        
+        self.N_particles = sum(self.initial_particles_per_vessel)
+        # Total number of initialized particles
+        self.N_particles_total = int(self.N_particles + 1000)
+        self.N_particles_count = int(self.N_particles)
+        print('Total number of initialized particles:', self.N_particles_count)
+
+        initial_vessels = []
+        initial_local_coords = []
+        for vessel_id in range(len(self.initial_particles_per_vessel)):
+            num_particles_in_vessel = self.initial_particles_per_vessel[vessel_id]
             
-            self.N_particles = sum(self.initial_particles_per_vessel)
-            # Total number of initialized particles
-            self.N_particles_total = int(self.N_particles + 1000)
-            self.N_particles_count = int(self.N_particles)
-            print('Total number of initialized particles:', self.N_particles_count)
+            if num_particles_in_vessel > 0:
+                initial_vessels.extend([vessel_id] * num_particles_in_vessel)
+                diameter = self.diameter[vessel_id]
+                min_distance = 1.1 * (self.rbc_volume / (np.pi * (diameter / 2)**2))
+                possible_positions = np.arange(0.01, 0.99, min_distance / self.length[vessel_id])
+                if len(possible_positions) < num_particles_in_vessel:
+                    raise ValueError(
+                        f"Not enough space in vessel {vessel_id} for {num_particles_in_vessel} particles "
+                        f"with minimum distance {min_distance}. Reduce the particle density or increase the vessel length."
+                    )
+                coords = sorted(np.random.choice(possible_positions, num_particles_in_vessel, replace=False))
+                initial_local_coords.extend(coords)
 
-            initial_vessels = []
-            initial_local_coords = []
-            for vessel_id in range(len(self.initial_particles_per_vessel)):
-                num_particles_in_vessel = self.initial_particles_per_vessel[vessel_id]
-                
-                if num_particles_in_vessel > 0:
-                    initial_vessels.extend([vessel_id] * num_particles_in_vessel)
-                    diameter = self.diameter[vessel_id]
-                    min_distance = 1.1 * (self.rbc_volume / (np.pi * (diameter / 2)**2))
-                    possible_positions = np.arange(0.01, 0.99, min_distance / self.length[vessel_id])
-                    if len(possible_positions) < num_particles_in_vessel:
-                        raise ValueError(
-                            f"Not enough space in vessel {vessel_id} for {num_particles_in_vessel} particles "
-                            f"with minimum distance {min_distance}. Reduce the particle density or increase the vessel length."
-                        )
-                    coords = sorted(np.random.choice(possible_positions, num_particles_in_vessel, replace=False))
-                    initial_local_coords.extend(coords)
-
-            self.particles_evolution = np.zeros((self.N_particles_total, self.N_timesteps + 1, 2), dtype=object)
-            self.initial_position = np.array([[int(tube), coord] for tube, coord in zip(initial_vessels, initial_local_coords)])
-            self.particles_evolution[:self.N_particles, 0, :] = self.initial_position
-            self.particles_evolution[self.N_particles:, :, :] = np.nan
-            self.inactive_particles = np.zeros(self.N_particles_total, dtype=bool)
-            for vessel in initial_vessels:
-                self.flow_network.num_particles_in_vessel[vessel] += 1
+        self.particles_evolution = np.zeros((self.N_particles_total, self.N_timesteps + 1, 2), dtype=object)
+        self.initial_position = np.array([[int(tube), coord] for tube, coord in zip(initial_vessels, initial_local_coords)])
+        self.particles_evolution[:self.N_particles, 0, :] = self.initial_position
+        self.particles_evolution[self.N_particles:, :, :] = np.nan
+        self.inactive_particles = np.zeros(self.N_particles_total, dtype=bool)
+        for vessel in initial_vessels:
+            self.flow_network.num_particles_in_vessel[vessel] += 1
 
     def _initialize_particles_rbc(self):
+        """
+            Initializes RBCs in the network.
+
+            Red blood cells (RBCs) affect the flow field and their distribution is 
+            initialized similarly to passive particles, but with an additional step 
+            where the flow field is updated based on their presence.
+
+            Parameters:
+            -----------
+            None (Uses class attributes: `self.volume`, `self.ht_initial`, `self.rbc_volume`).
+
+            Outputs:
+            --------
+            - `self.N_particles_total`: Total allocated RBCs including buffer.
+            - `self.N_particles_count`: Active RBCs in the simulation.
+            - `self.particles_evolution`: Tracks RBC movement over time.
+            - `self.inactive_particles`: Array indicating inactive RBCs.
+            - Updates `self.flow_network.num_particles_in_vessel` to track RBCs in vessels.
+            - Calls `self.update_network()` to update the flow field.
+        """
         self.initial_particles_per_vessel = np.zeros(len(self.es), dtype=int)
         for vessel_id in range(len(self.es)):
             self.initial_particles_per_vessel[vessel_id] = int((self.volume[vessel_id] * self.ht_initial) // self.rbc_volume)
@@ -283,7 +351,7 @@ class Particle_tracker(object):
             min_distance = 1.1 * (self.rbc_volume / (np.pi * (diameter / 2)**2))
             
             # Generate all valid positions within the ghost vessel
-            # Positions are spaced by min_distance, normalized to [0, 1] (relative positions)
+            # Positions are spaced by min_distance to avoid overlapping, normalized to [0, 1] (relative positions)
             possible_positions = np.arange(0, 1, min_distance / ghost_length)
 
             # Ensure that the number of possible positions is greater than or equal to required particles
@@ -301,7 +369,7 @@ class Particle_tracker(object):
                 "ghost_length": ghost_length,
                 "ghost_volume": ghost_volume,
                 "number_particles": num_particles,
-                "current_index": 0,
+                "current_index": 0, # normalized position inside the ghost vessel
                 "queue": 0,
             }
 
@@ -345,6 +413,28 @@ class Particle_tracker(object):
                 self._evolve_particles_rbc()
     
     def _evolve_particles_passive(self):
+
+        """
+         Simulates the movement of passive particles through the vascular network over time.
+
+        Passive particles follow the velocity field without influencing the flow. Their 
+        positions are updated based on their local displacement within each vessel. 
+        Particles that reach vessel endpoints are either transferred to connected vessels 
+        or removed if they exit the network.
+
+        Parameters:
+        -----------
+        None (Relies on class attributes: `self.particles_evolution`, `self.rbc_velocity`, 
+        `self.length`, `self.delta_t`, `self.flow_network`).
+
+        Outputs:
+        --------
+        - Updates `self.particles_evolution` to track particle positions at each timestep.
+        - Removes particles that exit the network (`self.out_particles`).
+        - Updates the status of inactive particles (`self.inactive_particles`).
+        - Calls `self.update_ghost_particles()` to introduce new particles from inflow nodes.
+        - Expands particle storage if needed via `self.expand_arrays_if_needed()`.
+        """
 
         self.particle_size = np.zeros(self.particles_evolution.shape[0])  # opcional si quieres usar diámetros
         
@@ -461,7 +551,26 @@ class Particle_tracker(object):
                 self.particles_evolution[idx_start:idx_end, t, 1] = inflow_particles[:, 1]
 
     def _evolve_particles_rbc(self):
-        """Evolve particles across each timestep. Computes the movement of every particles in the network"""
+        """
+        Simulates the movement of red blood cells (RBCs) and dynamically updates the flow field.
+
+        RBCs influence the vascular system by modifying hematocrit and viscosity, 
+        which in turn alters velocity and pressure gradients. The function tracks 
+        RBC motion, updates vessel occupancy, and adapts flow conditions accordingly.
+
+        Parameters:
+        -----------
+        None (Uses class attributes: `self.particles_evolution`, `self.rbc_velocity`, 
+        `self.length`, `self.delta_t`, `self.flow_network`, `self.ht`).
+
+        Outputs:
+        --------
+        - Updates `self.particles_evolution` to track RBC movement at each timestep.
+        - Adjusts vessel occupancy in `self.flow_network.num_particles_in_vessel`.
+        - Calls `self.update_network()` to recompute blood flow properties based on RBC distribution.
+        - Detects flow direction changes using `self.detect_velocity_sign_change()`.
+        - Reclassifies boundary vessels if necessary via `self.update_boundary_classification_after_sign_change()`.
+        """
         self.particle_size = np.zeros(self.particles_evolution.shape[0])
         previous_rbc_velocity = self.rbc_velocity.copy()
         # print('Timestep: ', self.delta_t)
@@ -500,7 +609,8 @@ class Particle_tracker(object):
             same_vessel_particles = active_particles[inside_mask]
             self.particles_evolution[same_vessel_particles, t, 0] = initial_vessels[inside_mask]
             self.particles_evolution[same_vessel_particles, t, 1] = alpha_new[inside_mask]
-
+            
+            # 2) Particles changing vessel exiting from 1
             crossing_right = active_particles[right_mask]
             if len(crossing_right) > 0:
                 old_vessels_right = initial_vessels[right_mask]
@@ -518,7 +628,7 @@ class Particle_tracker(object):
 
                     new_vessel = self.select_next_vessel_rbc(old_vessel, node)
                     if new_vessel is None:
-                        # Sale de la red: marcamos NaN y la añadimos a out_particles
+                        # Goes out of the network: we label it as NaN and add to out_particles
                         self.out_particles.append(particle_idx)
                         self.particles_evolution[particle_idx, t:, :] = np.nan
                         self.inactive_particles[particle_idx] = True
@@ -538,10 +648,10 @@ class Particle_tracker(object):
                         self.particles_evolution[particle_idx, t, 0] = new_vessel
                         self.particles_evolution[particle_idx, t, 1] = alpha_final
                     else:
-                        # No space for the particle in the possible vessels
+                        # No space for the particle in the possible vessels. Particle remains stuck.
                         self.particles_evolution[particle_idx, t, 0] = old_vessel
                         self.particles_evolution[particle_idx, t, 1] = 1.0
-
+            # 2) Particles changing vessel exiting from 0
             crossing_left = active_particles[left_mask]
             if len(crossing_left) > 0:
                 old_vessels_left = initial_vessels[left_mask]
@@ -567,7 +677,6 @@ class Particle_tracker(object):
                         self.flow_network.num_particles_in_vessel[new_vessel] += 1
                         self.flow_network.num_particles_in_vessel[old_vessel] -= 1
 
-                        # Avanzar en el nuevo vaso con leftover
                         vel_new     = self.rbc_velocity[new_vessel]
                         length_new  = self.length[new_vessel]
                         alpha_start = 0.0 if vel_new >= 0 else 1.0
@@ -582,7 +691,7 @@ class Particle_tracker(object):
                         # No space for the particle in the possible vessels
                         self.particles_evolution[particle_idx, t, 0] = old_vessel
                         self.particles_evolution[particle_idx, t, 1] = 0.0
-                    
+            # Introduction of new particles
             remaining_capacity = self.max_particles_vessel[self.inflow_vessels] - self.flow_network.num_particles_in_vessel[self.inflow_vessels]
             inflow_particles, number_inflowing_particles = self.update_ghost_particles(self.ghost_particles, self.inflow_vessels, remaining_capacity)
             self.N_particles_count = int(self.N_particles_count + number_inflowing_particles)
@@ -594,6 +703,7 @@ class Particle_tracker(object):
                 self.particles_evolution[idx_start:idx_end, t, 0] = inflow_particles[:, 0]
                 self.particles_evolution[idx_start:idx_end, t, 1] = inflow_particles[:, 1]
 
+            # Update the network and the inflow/outflow vessels
             previous_rbc_velocity = self.rbc_velocity.copy()
             self.update_network()
             sign_change_indices = self.detect_velocity_sign_change(previous_rbc_velocity, self.rbc_velocity)
@@ -606,10 +716,29 @@ class Particle_tracker(object):
         
         total_changes = np.sum(self.vessels_direction_changes)
         percentage_changed = (total_changes / len(self.vessels_direction_changes)) * 100
-        print(f"Total vessels that changed direction during the simulation: {total_changes}/{len(self.vessels_direction_changes)}")
-        print(f"Percentage of vessels that changed direction: {percentage_changed:.4f}%")
+        # print(f"Total vessels that changed direction during the simulation: {total_changes}/{len(self.vessels_direction_changes)}")
+        # print(f"Percentage of vessels that changed direction: {percentage_changed:.4f}%")
 
     def select_next_vessel_passive(self, old_vessel, crossed_node):
+        """
+        Determines the next vessel for a passive particle after crossing a node.
+
+        This function ensures that particles follow the natural flow direction 
+        determined by the pressure gradient. If multiple vessels are available, 
+        a probabilistic bifurcation strategy is used to select the next vessel.
+
+        Parameters:
+        -----------
+        - old_vessel (int): The vessel ID the particle is coming from.
+        - crossed_node (int): The node the particle has reached.
+
+        Outputs:
+        --------
+        - Returns the next vessel ID if a valid path exists.
+        - Returns `None` if the particle exits the network (outflow node).
+        - If multiple valid vessels exist, calls `self.passive_bifurcations()` 
+        to probabilistically determine the next vessel.
+        """
 
         if crossed_node in self.outflow_vertices:
             return None
@@ -635,7 +764,22 @@ class Particle_tracker(object):
         return self.passive_bifurcations(old_vessel, valid_edges)
         
     def passive_bifurcations(self, old_vessel, valid_edges):
+        """
+        Selects the next vessel for a passive particle at a bifurcation point.
 
+        The selection is based on the flow rates of the valid vessels. Particles 
+        are more likely to enter vessels with higher flow rates, simulating 
+        realistic passive transport behavior.
+
+        Parameters:
+        -----------
+        - old_vessel (int): The vessel the particle is coming from.
+        - valid_edges (list of int): List of potential vessels the particle can enter.
+
+        Outputs:
+        --------
+        - Returns the selected vessel ID based on flow rate probabilities.
+        """
         flow_rates = [abs(self.flow_rate[e]) for e in valid_edges]
         total_flow = sum(flow_rates)
         
@@ -645,12 +789,23 @@ class Particle_tracker(object):
     
     def select_next_vessel_rbc(self, old_vessel, crossed_node):
         """
-        Determines the next vessel the particle moves to after crossing the 
-        node 'crossed_node' from 'old_vessel'. Returns None if it's an outflow 
-        node (particle exits the network).
+       Determines the next vessel an RBC (Red Blood Cell) moves to after crossing a node.
 
-            - The starting node (crossed_node) must have a higher pressure 
-            than the node the edge leads to (to ensure flow).
+        This function ensures RBCs follow the flow direction dictated by the pressure gradient 
+        while also considering the vessel's particle capacity constraints. If multiple vessels 
+        are available, a bifurcation strategy specific to RBCs is used.
+
+        Parameters:
+        -----------
+        - old_vessel (int): The vessel ID the RBC is coming from.
+        - crossed_node (int): The node the RBC has reached.
+
+        Outputs:
+        --------
+        - Returns the next vessel ID if a valid path exists.
+        - Returns `None` if the RBC exits the network (outflow node).
+        - If multiple valid vessels exist, calls `self.rbc_bifurcations()` 
+        to determine the next vessel based on hematocrit and flow conditions.
         """
         # 1) If 'crossed_node' is an outflow node, the particle exits the network
         if crossed_node in self.outflow_vertices:
@@ -693,61 +848,81 @@ class Particle_tracker(object):
         return new_vessel
 
     def rbc_bifurcations(self, old_vessel, valid_edges):
+        """
+            Selects the next vessel for an RBC at a bifurcation point using hematocrit-dependent 
+        probability functions.
 
-            if len(valid_edges) == 1:
-                    new_vessel = valid_edges[0]
+        This function uses the Pries and Secomb (2005) model, which accounts for the phase 
+        separation effect of RBCs at microvascular bifurcations. The probability of RBCs 
+        entering each branch is computed based on vessel diameters, flow rates, and local 
+        hematocrit levels.
 
-            elif len(valid_edges) == 2:
-                total_flow_rate = sum(abs(self.flow_rate[e]) for e in valid_edges)
-                FQ_B = [abs(self.flow_rate[e]) / total_flow_rate for e in valid_edges]
-                FQ_B = np.array(FQ_B)
-                D_f = self.diameter[old_vessel] * 10**6
-                Hd = self.flow_network.hd[old_vessel]
-                X_0 = 0.964 * (1-Hd) / D_f
+        Parameters:
+        -----------
+        - old_vessel (int): The vessel the RBC is coming from.
+        - valid_edges (list of int): List of potential vessels the RBC can enter.
 
-                if FQ_B[0] <= X_0:
-                    FQ_E = np.array([0,1])
-                elif FQ_B[0] >= 1 - X_0:
-                    FQ_E = np.array([1,0])
-                elif X_0 < FQ_B[0] < 1 - X_0:
-                    D_alpha = self.diameter[valid_edges[0]] * 10**6
-                    D_beta = self.diameter[valid_edges[1]] * 10**6
-                    
-                    D_ratio = D_alpha**2 / D_beta**2
-                    D_ratio_inverse = D_ratio**(-1)
+        Outputs:
+        --------
+        - Returns the selected vessel ID based on the probabilistic model.
+        - If only one valid vessel exists, it is selected automatically.
+        - If multiple options exist, flow-based probabilities are used to select the new vessel.
+        """
 
-                    A = np.zeros(2)
-                    FQ_E = np.zeros(2)
-                    probabilities = np.zeros(2)
-                    internal_logit = np.zeros(2)
-                    term = np.zeros(2)
-                    A[0] = -13.29 * ((D_ratio - 1) / (D_ratio + 1)) * (1 - Hd) / D_f
-                    A[1] = -13.29 * ((D_ratio_inverse - 1) / (D_ratio_inverse + 1)) * (1 - Hd) / D_f
-                    B = 1 + 6.98 * (1-Hd) / D_f
-                    
-                    internal_logit[0] = self.logit((FQ_B[0] - X_0) / (1 - 2*X_0))
-                    internal_logit[1] = self.logit((FQ_B[1] - X_0) / (1 - 2*X_0))
-                    term[0] = A[0] + B * internal_logit[0]
-                    term[1] = A[1] + B * internal_logit[1]
-                    exp_term = np.exp(term)
-                    
-                    FQ_E = exp_term / (1 + exp_term)
-                selected_edge = random.choices(valid_edges, weights=FQ_E, k=1)[0]
-                new_vessel = selected_edge
+        if len(valid_edges) == 1:
+                new_vessel = valid_edges[0]
 
-            elif len(valid_edges) > 2:
+        elif len(valid_edges) == 2:
+            total_flow_rate = sum(abs(self.flow_rate[e]) for e in valid_edges)
+            FQ_B = [abs(self.flow_rate[e]) / total_flow_rate for e in valid_edges]
+            FQ_B = np.array(FQ_B)
+            D_f = self.diameter[old_vessel] * 10**6
+            Hd = self.flow_network.hd[old_vessel]
+            X_0 = 0.964 * (1-Hd) / D_f
+
+            if FQ_B[0] <= X_0:
+                FQ_E = np.array([0,1])
+            elif FQ_B[0] >= 1 - X_0:
+                FQ_E = np.array([1,0])
+            elif X_0 < FQ_B[0] < 1 - X_0:
+                D_alpha = self.diameter[valid_edges[0]] * 10**6
+                D_beta = self.diameter[valid_edges[1]] * 10**6
                 
-                total_flow_rate = sum(abs(self.flow_rate[e]) for e in valid_edges)
-                probabilities = [abs(self.flow_rate[e]) / total_flow_rate for e in valid_edges]
+                D_ratio = D_alpha**2 / D_beta**2
+                D_ratio_inverse = D_ratio**(-1)
 
-                selected_edge = random.choices(valid_edges, weights=probabilities, k=1)[0]
-                new_vessel = selected_edge
+                A = np.zeros(2)
+                FQ_E = np.zeros(2)
+                probabilities = np.zeros(2)
+                internal_logit = np.zeros(2)
+                term = np.zeros(2)
+                A[0] = -13.29 * ((D_ratio - 1) / (D_ratio + 1)) * (1 - Hd) / D_f
+                A[1] = -13.29 * ((D_ratio_inverse - 1) / (D_ratio_inverse + 1)) * (1 - Hd) / D_f
+                B = 1 + 6.98 * (1-Hd) / D_f
+                
+                internal_logit[0] = self.logit((FQ_B[0] - X_0) / (1 - 2*X_0))
+                internal_logit[1] = self.logit((FQ_B[1] - X_0) / (1 - 2*X_0))
+                term[0] = A[0] + B * internal_logit[0]
+                term[1] = A[1] + B * internal_logit[1]
+                exp_term = np.exp(term)
+                
+                FQ_E = exp_term / (1 + exp_term)
+            selected_edge = random.choices(valid_edges, weights=FQ_E, k=1)[0]
+            new_vessel = selected_edge
 
-            else:
-                print("Invalid number of bifurcating vessels.")
-                new_vessel = None
+        elif len(valid_edges) > 2:
+            
+            total_flow_rate = sum(abs(self.flow_rate[e]) for e in valid_edges)
+            probabilities = [abs(self.flow_rate[e]) / total_flow_rate for e in valid_edges]
 
-            return new_vessel
+            selected_edge = random.choices(valid_edges, weights=probabilities, k=1)[0]
+            new_vessel = selected_edge
+
+        else:
+            print("Invalid number of bifurcating vessels.")
+            new_vessel = None
+
+        return new_vessel
 
     def logit(self, x):
             return np.log(x / (1 - x))
@@ -781,17 +956,27 @@ class Particle_tracker(object):
     
     def _update_ghost_particles_passive(self, ghost_particles, active_vessels):
         """
-        Updates the ghost particle positions for active inflow vessels based on the distance traveled.
-        
-        Now, stores a simple list of vessel ID and local position for each particle.
+        Updates the positions of ghost particles in active inflow vessels for passive particle tracking.
+
+        This function simulates the introduction of new particles into the microvascular network 
+        by tracking their movement within 'ghost' vessels. These ghost vessels act as a buffer for 
+        particles entering the system, ensuring a realistic distribution.
+
+        The function:
+        - Computes how far particles travel within the ghost vessel in the current timestep.
+        - Resets the ghost vessel properties if the traveled distance exceeds its length.
+        - Determines which particles within the ghost vessel are ready to be introduced into the network.
+        - Returns the list of newly introduced particles and their positions.
 
         Parameters:
-        - ghost_particles: Dictionary containing ghost vessel particle data.
-        - active_vessels: List of currently active inflow vessels.
-        - timestep_volume: Dictionary with the volume of blood introduced per vessel.
+        -----------
+        - ghost_particles (dict): Dictionary storing information about ghost vessels and their particles.
+        - active_vessels (list of int): List of vessels currently receiving new particles.
 
         Returns:
-        - inflow_particles: List of tuples, each containing the vessel ID and local position for each particle.
+        --------
+        - inflow_particles (numpy array): List of tuples (vessel ID, local position) for new particles.
+        - timestep_particles_count (int): Number of particles introduced in the current timestep.
         """
         inflow_particles = []
         timestep_particles_count = 0
@@ -877,17 +1062,25 @@ class Particle_tracker(object):
        
     def _update_ghost_particles_rbc(self, ghost_particles, active_vessels, remaining_capacity):
         """
-        Updates the ghost particle positions for active inflow vessels based on the distance traveled.
-        
-        Now, stores a simple list of vessel ID and local position for each particle.
+        Updates the positions of ghost RBCs in active inflow vessels while respecting capacity constraints.
+
+        This function manages the entry of RBCs into the vascular network, ensuring:
+        - RBCs follow realistic inflow dynamics.
+        - The ghost vessel properties (length, volume, particle count) update based on flow velocity.
+        - RBCs are introduced only if the downstream vessel has available capacity.
+
+        If too many RBCs are generated within a timestep, excess RBCs are queued for future entry.
 
         Parameters:
-        - ghost_particles: Dictionary containing ghost vessel particle data.
-        - active_vessels: List of currently active inflow vessels.
-        - timestep_volume: Dictionary with the volume of blood introduced per vessel.
+        -----------
+        - ghost_particles (dict): Dictionary tracking ghost vessel data.
+        - active_vessels (list of int): List of vessels currently receiving RBCs.
+        - remaining_capacity (numpy array): The available space in each active vessel.
 
         Returns:
-        - inflow_particles: List of tuples, each containing the vessel ID and local position for each particle.
+        --------
+        - inflow_particles (numpy array): List of RBCs entering the network (vessel ID, local position).
+        - timestep_particles_count (int): Number of RBCs successfully introduced in this timestep.
         """
         inflow_particles = []
         timestep_particles_count = 0
@@ -1001,8 +1194,35 @@ class Particle_tracker(object):
     
     def transform_to_global_coordinates(self, parallel=False):
         """
-        Transforms the local coordinates of the particles to global coordinates.
-        If `parallel` is set to True, the computation will be distributed across MPI processes.
+        Converts the local coordinates of particles within the vascular network to global coordinates.
+
+        This function is responsible for mapping each particle’s position from a local coordinate 
+        system (relative to its vessel) to a global coordinate system within the vascular network. 
+        It supports both **sequential** and **parallel processing** using MPI for large-scale simulations.
+
+        The method follows two approaches:
+        
+        - **Parallel Execution (MPI-based)**: Distributes the computation across multiple processes, 
+        where each process calculates the global coordinates for a subset of particles.
+        - **Sequential Execution**: Computes global coordinates in a single-threaded manner.
+
+        The function supports two positioning modes:
+        
+        - **With Tortuosity (`use_tortuosity=1`)**:
+            - Uses vessel-specific segment points for more precise tracking of particle paths.
+            - Performs interpolation between vessel points based on the normalized position within the vessel.
+        - **Without Tortuosity (`use_tortuosity=0`)**:
+            - Assumes vessels are straight lines between their two endpoints.
+            - The particle position is calculated based on a linear interpolation between these two endpoints.
+
+        Parameters:
+        -----------
+        - `parallel` (bool): If True, enables MPI-based parallel computation. Default is False (sequential execution).
+
+        Returns:
+        --------
+        - `numpy.ndarray`: A (N_particles_total, N_timesteps+1, 3) array with global coordinates (x, y, z) 
+        for each particle at every timestep.
         """
 
         # PARALLEL IMPLEMENTATION
@@ -1142,8 +1362,7 @@ class Particle_tracker(object):
                         interpolation_factor = (local_coord - local_start) / (local_end - local_start)
                         particle_global_position = point_start + interpolation_factor * (point_end - point_start)
 
-                        self.particles_evolution_global[p, t] = particle_global_position
-                # self.save_particles_evolution_global_to_excel(particles_evolution_global)   
+                        self.particles_evolution_global[p, t] = particle_global_position   
                 return self.particles_evolution_global
 
             elif self.use_tortuosity == 0:
@@ -1176,7 +1395,12 @@ class Particle_tracker(object):
 #################################################################################### 
 ####################################################################################
     def update_boundary_classification_after_sign_change(self, changed_vessels_boundary):
+        """
+        Updates the classification of inflow and outflow vessels after a change in flow direction.
 
+        If any boundary vessel changes flow direction, this function reclassifies affected vessels
+        and boundary nodes based on updated pressure conditions.
+        """
         if len(changed_vessels_boundary) == 0:
             return
         print("These boundary vessels changed direction of flow:", changed_vessels_boundary)
@@ -1223,19 +1447,47 @@ class Particle_tracker(object):
         self.outflow_vertices.sort()
         
     def get_boundary_velocities(self, velocities_full):
+        """
+        Extracts velocity values for boundary vessels from the full velocity array.
+
+        Returns:
+        --------
+        - `numpy.ndarray`: Velocities of boundary vessels.
+        """
         return velocities_full[self.boundary_vessels]
 
     def detect_boundary_velocity_sign_change(self, prev_vel_boundary, curr_vel_boundary):
+        """
+            Detects vessels where the velocity sign has changed between timesteps.
+
+            Returns:
+            --------
+            - `list`: Indices of boundary vessels that changed flow direction.
+        """
         sign_change_local = np.where(np.sign(prev_vel_boundary) != np.sign(curr_vel_boundary))[0]
         sign_change_global = [self.boundary_vessels[i] for i in sign_change_local]
         return sign_change_global
     
     def detect_velocity_sign_change(self, previous_velocities, current_velocities):
+        """
+        Detects vessels with velocity direction changes in the entire network.
+
+        Returns:
+        --------
+        - `numpy.ndarray`: Indices of vessels with sign changes in velocity.
+        """
         sign_change_indices = np.where(np.sign(previous_velocities) != np.sign(current_velocities))[0]
         self.vessels_direction_changes[sign_change_indices] = 1
         return sign_change_indices 
     
     def classify_boundary_node(self, bv):
+        """
+        Classifies a boundary node as inflow or outflow based on its pressure relative to connected nodes.
+
+        Returns:
+        --------
+        - Lists of inflow and outflow nodes.
+        """
         inflow_list = []
         outflow_list = []
         edges_connected = self.graph.incident(bv, mode="ALL")
@@ -1250,6 +1502,13 @@ class Particle_tracker(object):
         return inflow_list, outflow_list
     
     def classify_boundary_vessel(self, edge_idx):
+        """
+        Classifies a boundary vessel as inflow or outflow based on pressure difference.
+
+        Returns:
+        --------
+        -  Lists of inflow and outflow vessels.
+        """
         inflow_list = []
         outflow_list = []
         s, t = self.es[edge_idx]
@@ -1273,11 +1532,32 @@ class Particle_tracker(object):
 ####################################################################################
 
     def save_steady_state(self):
-        # Obtén el último timestep del steady state
+        """
+        Saves the current steady-state configuration of the simulation.
+
+        This function captures the particle positions at the last simulation timestep 
+        and stores them for potential reinitialization in future runs.
+
+        Process:
+        --------
+        1. Identifies all active particles at the last simulation timestep.
+        2. Stores their positions and IDs in `self.steady_state_particles`.
+
+        Stored Data:
+        ------------
+        - `active_particles`: Indices of particles that are still active at the last timestep.
+        - `positions`: The positions of these active particles at the last timestep.
+
+        Usage:
+        ------
+        This function is useful for restarting simulations from an equilibrated state rather 
+        than initializing from scratch.
+        """
+        
         last_timestep = self.N_timesteps
         active_particles = np.where((~self.inactive_particles[:self.N_particles_count]))[0]
         
-        # Guarda las posiciones y los estados de las partículas activas
+       
         self.steady_state_particles = {
             "active_particles": active_particles,
             "positions": self.particles_evolution[active_particles, last_timestep, :].copy()
@@ -1285,10 +1565,33 @@ class Particle_tracker(object):
 
     def initialize_from_steady_state(self):
         """
-        Reinitialize matrix particle_evolurion using the previously computed steady state.
+        Reinitializes the simulation using a previously saved steady-state configuration.
+
+        This function restores the particle positions and redefines key simulation parameters 
+        to continue running the simulation from a predefined stable state.
+
+        Process:
+        --------
+        1. Retrieves the number of active particles from the saved steady-state.
+        2. Prints initialization details and sets the appropriate simulation flags.
+        3. Adjusts the number of total particles with a buffer (adding 10,000 extra slots).
+        4. Initializes a new particle evolution matrix filled with NaN values.
+        5. Restores particle positions and resets inactive particles.
+
+        Parameters:
+        ------------
+        - `self.N_timesteps`: Set from the user-defined simulation parameters.
+        - `self.timestep_type_after_preinitialization`: Determines the timestep type after preinit.
+        - `0`: Uses a fixed timestep (`delta_t_after_preinitialization`).
+        - `1`: Enables an adaptive timestep approach.
+        
+        Key Variables Updated:
+        ----------------------
+        - `self.particles_evolution`: Matrix storing particle positions per timestep.
+        - `self.inactive_particles`: Boolean mask tracking active/inactive particles.
+        - `self.N_particles_total`: Total number of particles including a buffer.
         """
         self.N_timesteps =  self._PARAMETERS["N_timesteps"]
-        print("Number of simulated particles after preinitialization: ", self.N_particles_count )
         self.N_particles_count = len(self.steady_state_particles["positions"])
 
         print("Number of active particles after preinitialization: ", self.N_particles_count )
@@ -1304,9 +1607,8 @@ class Particle_tracker(object):
         self.N_particles_total = int(self.N_particles_count + 10000)
 
         self.particles_evolution = np.zeros((self.N_particles_total, self.N_timesteps + 1, 2), dtype=object)
-        self.particles_evolution[:, :, :] = np.nan  # Partículas inactivas están llenas de NaN
+        self.particles_evolution[:, :, :] = np.nan  
         
-        # Coloca las partículas activas en el nuevo timestep inicial
         active_particles = self.steady_state_particles["active_particles"]
         positions = self.steady_state_particles["positions"]
         
@@ -1363,30 +1665,39 @@ class Particle_tracker(object):
             self.create_vtk_particles_per_timestep()
             print("VTK files created at", self.output_dir)
 
-    def save_particles_evolution_to_csv(self):
-        # Extraer las dimensiones del array
-        N_particles_total, N_timesteps_plus_1, _ = self.particles_evolution.shape
+    def save_particles_evolution_to_csv(self):  
+        """
+        Saves the evolution of particle positions over time to a CSV file.
 
-        # Crear una lista de columnas: una columna por cada timestep
+        Process:
+        --------
+        1. Extracts the particle evolution matrix containing vessel IDs and local positions.
+        2. Formats the data into a table where each row represents a particle.
+        3. Saves the data to `particles_evolution_local.csv` in `self.output_dir`.
+
+        Output:
+        -------
+        - A CSV file with columns `Timestep_0, Timestep_1, ..., Timestep_N`, 
+        where each cell contains `(vessel_id, position)` for the corresponding particle.
+
+        """ 
+        N_particles_total, N_timesteps_plus_1, _ = self.particles_evolution.shape
+  
         columns = [f'Timestep_{t}' for t in range(N_timesteps_plus_1)]
 
-        # Inicializar una lista para almacenar los datos de cada partícula
         data = []
 
-        # Recorrer cada partícula y combinar (vessel, position) en una misma celda para cada timestep
         for i in range(self.N_particles_count):
             particle_data = []
             for t in range(N_timesteps_plus_1):
-                vessel = self.particles_evolution[i, t, 0]  # valor del vaso sanguíneo
-                position = self.particles_evolution[i, t, 1]  # valor de la posición local
-                # Concatenar en un formato (vessel, position)
+                vessel = self.particles_evolution[i, t, 0] 
+                position = self.particles_evolution[i, t, 1]  
+                
                 particle_data.append(f'({vessel}, {position})')
             data.append(particle_data)
 
-        # Crear un DataFrame a partir de los datos
         df = pd.DataFrame(data, columns=columns)
 
-        # Guardar el DataFrame en un archivo CSV
         file_name = os.path.join(self.output_dir, "particles_evolution_local.csv")
         df.to_csv(file_name, index=False)
 
@@ -1406,19 +1717,23 @@ class Particle_tracker(object):
 
     def save_nkind_matrix_to_csv(self):
         """
-        Save nkind_matrix to CSV with integer formatting.
+        Save nkind_matrix to CSV with integer formatting. nkind makes reference to the type of vessel.
+        The type of vessel at which the particle is at every timestep is saved.
         """
         file_nkind = os.path.join(self.output_dir, "nkind_matrix.csv")
         pd.DataFrame(self.nkind_matrix).to_csv(file_nkind, index=False, header=False, sep=',', float_format='%.0f')
 
     def save_vessels_evolution_to_csv(self):
+        """
+        Save vessel ID at which every particle is at every timestep
+        """
         file_vessel = os.path.join(self.output_dir, "vessels_evolution.csv")
         df = pd.DataFrame(self.particles_evolution[:self.N_particles_count, :, 0])
         df.to_csv(file_vessel, index=False, header=False, sep=',', float_format='%.0f')
 
     def save_global_coordinates_to_csv(self):
         """
-        Save the global coordinates matrices (x, y, z) to CSV files with proper number formatting and semicolon separator.
+        Save the global coordinates matrices (x, y, z) to CSV files with proper number formatting and scomma separator.
         """
         file_x = os.path.join(self.output_dir, "global_x_coordinate.csv")
         file_y = os.path.join(self.output_dir, "global_y_coordinate.csv")
@@ -1434,7 +1749,8 @@ class Particle_tracker(object):
     def compute_nkind_matrix(self):
         """
         This function generates a matrix where each row corresponds to a particle, and each column corresponds
-        to a timestep. The matrix stores the 'nkind' value of the vessel in which each particle is located at each timestep.
+        to a timestep. The matrix stores the 'nkind' value of the vessel (type of vessel) in which each particle is located at each timestep.
+        -1 represents that the particle is out of the network.
     
         Returns:
             - nkind_matrix: A matrix where each entry stores the 'nkind' value for the vessel in which the particle is located.
@@ -1557,6 +1873,22 @@ class Particle_tracker(object):
         return self.velocity_x, self.velocity_y, self.velocity_z
     
     def create_vtk_particles_per_timestep(self):
+        """
+        Generates VTK files for visualizing particle evolution at each timestep.
+
+        Process:
+        --------
+        1. Creates a directory for storing VTK files.
+        2. Iterates over timesteps, extracting valid particle positions.
+        3. Saves each timestep as a separate `.vtk` file for visualization.
+        4. Generates an index file listing all timesteps for easy loading in Paraview.
+
+        Output:
+        -------
+        - A series of `.vtk` files in `vtk_particles/`, each representing particle 
+        positions at a specific timestep.
+        - `particles_timestep_index.vtk` for indexing all timesteps.
+        """
         output_dir = os.path.join(self.output_dir, "vtk_particles")
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
