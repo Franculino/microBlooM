@@ -16,14 +16,13 @@ import source.setup.setup as setup
 PARAMETERS = MappingProxyType(
     {
         # Setup parameters for blood flow model
-        "read_network_option": 1,  # 1: generate hexagonal graph
-                                   # 2: import graph from csv files
+        "read_network_option": 3,  # 1: generate hexagonal graph
                                    # 3: import graph from igraph format (pickle file)
         "write_network_option": 1,  # 1: do not write anything
                                     # 2: write to igraph format (.pkl)
                                     # 3: write to vtp format (.vtp)
                                     # 4: write to two csv files (.csv)
-        "tube_haematocrit_option": 3,  # 1: No RBCs (ht=0)
+        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
                                        # 2: Constant haematocrit
                                        # 3: Hematocrit computed based on number of particles in each vessel
         "rbc_impact_option": 3,  # 1: No RBCs (hd=0) - makes only sense if tube_haematocrit_option:1 or ht=0
@@ -77,18 +76,18 @@ PARAMETERS = MappingProxyType(
 
         # OPTIONS for Particle tracking:
 
-        "particles_type": 1, # 0 = passive particles (don't affect the flowfiled), 1 = RBCs
+        "particles_type": 0, # 0 = passive particles (don't affect the flowfiled), 1 = RBCs
                              # IMPORTANT!!!: for RBC usage set "tube_haematocrit_option" = 3
-        "N_timesteps": 60, # Number of timesteps the simulations has to be run
+        "N_timesteps": 400, # Number of timesteps the simulations has to be run
         "rbc_volume": 4.9e-17, # Volume of the particles you are introducing. In the case of passive particle 
                                # is also needed for initialization. Common value for mice: 4.9e-17 m^3.
-        "ht_initial": 0.1, # Initial hematocrit in the network. Controls amount of particles introduced 
+        "ht_initial": 0.0001, # Initial hematocrit in the network. Controls amount of particles introduced 
                            # in the network before running the simulation. Also used in passive particle case
                            # for initialization.
-        "ht_boundary_condition":0.3, # Controls amount of particles introduced in the network at every timestep. 
+        "ht_boundary_condition":0.1, # Controls amount of particles introduced in the network at every timestep. 
                                      # Simulates an external microvasculature connected to the inflow nodes with
                                      # average constant hematocrit equal to ht_boundary_condition.
-        "times_basic_delta_t": 1,   # The basic timestep is computed as the minimum vessel length divided by
+        "times_basic_delta_t": 5,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
                                     #   delta_t = times_basic_delta_t * basic_timestep
 
@@ -98,13 +97,13 @@ PARAMETERS = MappingProxyType(
                                          # Controls amount of timesteps for the preinitialization defined as
                                          # N_timesteps_preinit = K * Characteristic_time. K is the user choice here.
                                          # Characteristic_time = (Total_blood_volume) [m^3] / (Outflow_rate) [m^3 / s]
-        "timestep_type_after_preinitialization": 1, # 0 = fixed timestep to be specified in "delta_t_after_preinitialization"
+        "timestep_type_after_preinitialization": 0, # 0 = fixed timestep to be specified in "delta_t_after_preinitialization"
                                                     # 1 = adaptative timestep 
-        "delta_t_after_preinitialization": 0.0002, # Only affects if "preinitialize_with_iterations" = 1 
+        "delta_t_after_preinitialization": 0.0001, # Only affects if "preinitialize_with_iterations" = 1 
                                                     # and "timestep_type_after_preinitialization"=  0
                                                     # Timestep in seconds after the preinit iterations
        
-        "use_tortuosity": 0,  # 0: Tortuosity off, 1: Tortuosity on. ONLY avaialable if: "read_network_option" = 3
+        "use_tortuosity": 1,  # 0: Tortuosity off, 1: Tortuosity on. ONLY avaialable if: "read_network_option" = 3
         "parallel": False,  # Set to True for parallel execution, False for sequential
                           # NOTE: For running the parallel version the user should:
                           #          1- Have an MPI implementation installed on the system.
@@ -116,7 +115,7 @@ PARAMETERS = MappingProxyType(
         "output_directory": "data/network/output", # Folder for saving output files
         "output_particles_evolution": 1,   # CSV with (vessel, alpha) for every particle for every timestep
         "output_vessel_evolution": 1,      # CSV with vessel for every particle for every timestep
-        "output_velocity_components": 0,   # compute velocity components per particle and timestep + save in csv files. Only available if "use_tortuosity"= 1.
+        "output_velocity_components": 1,   # compute velocity components per particle and timestep + save in csv files. Only available if "use_tortuosity"= 1.
         "output_nkind_matrix": 1,          # compute matrix indicating type of vessel per particle and timestep + save in csv file
         "compute_global_coords": 1,        # compute global coordiantes per particle and timestep   
         "save_global_coords": 1,           # ONLY if "compute_global_coords" = 1. save global coordinates per particle and timestep in csv files

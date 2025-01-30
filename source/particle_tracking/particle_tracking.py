@@ -101,7 +101,6 @@ class Particle_tracker(object):
         self.boundary_vessels = list(self.boundary_vessels)
         self.inflow_vertices, self.outflow_vertices = self.detect_inflow_outflow_vertices()
         self.inflow_vertices = np.array(self.inflow_vertices)
-        # self.node_classification = self.classify_nodes(self.graph)
         self.inflow_vessels, self.outflow_vessels= self.detect_possible_inflow_outflow_vessels()
 
         # Computation of steady state
@@ -404,7 +403,7 @@ class Particle_tracker(object):
                         alpha_final = alpha_start + alpha_step
                         
                         if (alpha_final > 1.0) or (alpha_final < 0.0):
-                            print("WARNING: Particle out of [0,1] range => reduce timestep.")
+                            print("WARNING: Particle out of [0,1] => reduce timestep by reducing times_basic_delta_t or delta_t_after_preinitialization.")
 
                         self.particles_evolution[particle_idx, t, 0] = new_vessel
                         self.particles_evolution[particle_idx, t, 1] = alpha_final
@@ -441,7 +440,7 @@ class Particle_tracker(object):
                         alpha_step  = (vel_new * leftover) / length_new
                         alpha_final = alpha_start + alpha_step
                         if (alpha_final > 1.0) or (alpha_final < 0.0):
-                            print("WARNING: Particle out of [0,1] => reduce timestep.")
+                            print("WARNING: Particle out of [0,1] => reduce timestep by reducing times_basic_delta_t or delta_t_after_preinitialization.")
 
                         self.particles_evolution[particle_idx, t, 0] = new_vessel
                         self.particles_evolution[particle_idx, t, 1] = alpha_final
@@ -1302,7 +1301,7 @@ class Particle_tracker(object):
             self.delta_t = self.delta_t_after_preinitialization
 
         # Total number of particles
-        self.N_particles_total = int(self.N_particles + 10000)
+        self.N_particles_total = int(self.N_particles_count + 10000)
 
         self.particles_evolution = np.zeros((self.N_particles_total, self.N_timesteps + 1, 2), dtype=object)
         self.particles_evolution[:, :, :] = np.nan  # Partículas inactivas están llenas de NaN
@@ -1522,42 +1521,34 @@ class Particle_tracker(object):
                 vessel_id = self.particles_evolution[p, actual_timestep, 0]
                 local_coord = self.particles_evolution[p, actual_timestep, 1]
 
-                # Verificar si la partícula está activa (si no es NaN)
                 if np.isnan(vessel_id) or np.isnan(local_coord):
                     continue
 
                 vessel_id = int(vessel_id)
 
-                # Obtener los puntos del vaso y las longitudes normalizadas
                 vessel_points = self.vessel_data[vessel_id]['points']
                 normalized_lengths = self.vessel_data[vessel_id]['normalized_lengths']
 
-                # Encontrar los puntos adyacentes más cercanos basados en la coordenada local
                 point_idx = np.searchsorted(normalized_lengths, local_coord, side='right') - 1
-                point_idx = min(point_idx, len(vessel_points) - 2)  # Asegurarse de no exceder el índice
+                point_idx = min(point_idx, len(vessel_points) - 2)  
 
                 point_start = vessel_points[point_idx]
                 point_end = vessel_points[point_idx + 1]
 
-                # Coordenadas normalizadas de los puntos
                 local_start = normalized_lengths[point_idx]
                 local_end = normalized_lengths[point_idx + 1]
 
-                # Calcular el vector director del tramo del vaso (punto_end - punto_start)
                 direction_vector = point_end - point_start
                 norm = np.linalg.norm(direction_vector)
 
-                # Normalizar el vector director si su norma no es cero
                 if norm != 0:
                     direction_vector_normalized = direction_vector / norm
                 else:
                     direction_vector_normalized = np.zeros_like(direction_vector)
 
-                # Multiplicar el vector normalizado por la velocidad del RBC en ese vaso
                 rbc_velocity = abs(self.rbc_velocity[vessel_id])
                 velocity_vector = direction_vector_normalized * rbc_velocity
 
-                # Guardar las componentes de velocidad en las matrices correspondientes
                 self.velocity_x[p, t] = velocity_vector[0]
                 self.velocity_y[p, t] = velocity_vector[1]
                 self.velocity_z[p, t] = velocity_vector[2]
