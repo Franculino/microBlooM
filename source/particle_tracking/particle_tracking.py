@@ -1630,11 +1630,14 @@ class Particle_tracker(object):
         
         # 1) Save particles_evolution to CSV (local vessel/alpha)
         if self._PARAMETERS.get("output_particles_evolution", 0) == 1:
+            print("Saving particle evolution...")
             self.save_particles_evolution_to_csv()
+            print("Saving particle evolution saved.")
 
         if self._PARAMETERS.get("output_vessel_evolution", 0) == 1:
+            print("Saving vessel evolution...")
             self.save_vessels_evolution_to_csv()
-        
+            print("Saving vessel evolution saved.")
 
         # 2) Velocity components
         if self._PARAMETERS.get("output_velocity_components", 0) == 1:
@@ -1767,6 +1770,8 @@ class Particle_tracker(object):
         n_timesteps_to_keep = end_time - start_time + 1
 
         # Initialize the matrix with NaN values
+        # Comment for Chryso - Postprocessing
+        # Dimensions of vessel evolution matrix --> N_particles_count: rows and n_timesteps_to_keep: columns
         self.nkind_matrix = np.full((self.N_particles_count, n_timesteps_to_keep), -1, dtype=np.int32)
 
         # Fill the matrix based on the particles' positions in 'particles_evolution'

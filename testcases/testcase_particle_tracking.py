@@ -1,13 +1,7 @@
-import sys
-import time
+
 import numpy as np
-import pandas as pd
-import matplotlib.animation as animation
-from matplotlib.widgets import Button
-import matplotlib.pyplot as plt
 
 from source.flow_network import FlowNetwork
-from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 from source.particle_tracking.particle_tracking import Particle_tracker
 import source.setup.setup as setup
@@ -22,7 +16,7 @@ PARAMETERS = MappingProxyType(
                                     # 2: write to igraph format (.pkl)
                                     # 3: write to vtp format (.vtp)
                                     # 4: write to two csv files (.csv)
-        "tube_haematocrit_option": 3,  # 1: No RBCs (ht=0)
+        "tube_haematocrit_option": 2,  # 1: No RBCs (ht=0)
                                        # 2: Constant haematocrit
                                        # 3: Hematocrit computed based on number of particles in each vessel
         "rbc_impact_option": 3,  # 1: No RBCs (hd=0) - makes only sense if tube_haematocrit_option:1 or ht=0
@@ -64,7 +58,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "./testcases/MVN2_corrected_SI.pkl",
+        "pkl_path_igraph": "./testcases/MVN1_corrected_SI.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
@@ -75,11 +69,10 @@ PARAMETERS = MappingProxyType(
         "write_path_igraph": "data/network/network_simulated",
 
         # OPTIONS for Particle tracking:
-
-        "particles_type": 1, # 0 = passive particles (don't affect the flowfiled), 1 = RBCs
+        "particles_type": 0, # 0 = passive particles (don't affect the flowfiled), 1 = RBCs
                              # IMPORTANT!!!: for RBC usage set "tube_haematocrit_option" = 3
-        "N_timesteps": 400, # Number of timesteps the simulations has to be run
-        "rbc_volume": 4.9e-17, # Volume of the particles you are introducing. In the case of passive particle 
+        "N_timesteps": 100, # Number of timesteps the simulations has to be run (iterations saved as output)
+        "rbc_volume": 4.9e-17, # Volume of the particles you are introducing. In the case of passive particle
                                # is also needed for initialization. Common value for mice: 4.9e-17 m^3.
         "ht_initial": 0.0001, # Initial hematocrit in the network. Controls amount of particles introduced 
                            # in the network before running the simulation. Also used in passive particle case
@@ -88,21 +81,21 @@ PARAMETERS = MappingProxyType(
         "ht_boundary_condition":0.1, # Controls amount of particles introduced in the network at every timestep. 
                                      # Simulates an external microvasculature connected to the inflow nodes with
                                      # average constant hematocrit equal to ht_boundary_condition.
-        "times_basic_delta_t": 5,   # The basic timestep is computed as the minimum vessel length divided by
+        "times_basic_delta_t": 6,   # The basic timestep is computed as the minimum vessel length divided by
                                     # the maximum rbc_velocity. The timestep used is computed as:
-                                    #   delta_t = times_basic_delta_t * basic_timestep
+                                    #   delta_t = times_basic_delta_t * basic_timestep (adaptative timestep)
 
         "preinitialize_with_iterations": 1, # Option for running some iterations based on characteristic time
                                             # before computing the actual simulation. 0 = off, 1 = on
-        "times_Tc_preinitialization": 0.5, # Only affects if "preinitialize_with_iterations" = 1.
+        "times_Tc_preinitialization": 0.1, # Only affects if "preinitialize_with_iterations" = 1.
                                          # Controls amount of timesteps for the preinitialization defined as
                                          # N_timesteps_preinit = K * Characteristic_time. K is the user choice here.
                                          # Characteristic_time = (Total_blood_volume) [m^3] / (Outflow_rate) [m^3 / s]
         "timestep_type_after_preinitialization": 0, # 0 = fixed timestep to be specified in "delta_t_after_preinitialization"
                                                     # 1 = adaptative timestep 
-        "delta_t_after_preinitialization": 0.0001, # Only affects if "preinitialize_with_iterations" = 1 
+        "delta_t_after_preinitialization": 0.0005, # Only affects if "preinitialize_with_iterations" = 1
                                                     # and "timestep_type_after_preinitialization"=  0
-                                                    # Timestep in seconds after the preinit iterations
+                                                    # Timestep in seconds after the pre-initialize iterations
        
         "use_tortuosity": 1,  # 0: Tortuosity off, 1: Tortuosity on. ONLY avaialable if: "read_network_option" = 3
         "parallel": False,  # Set to True for parallel execution, False for sequential
@@ -113,7 +106,7 @@ PARAMETERS = MappingProxyType(
                           #             Where x is the number of processes selected.   
         
         # Output control (0 = off, 1 = on)
-        "output_directory": "data/network/output", # Folder for saving output files
+        "output_directory": "output/particle_tracking_output", # Folder for saving output files
         "output_particles_evolution": 1,   # CSV with (vessel, alpha) for every particle for every timestep
         "output_vessel_evolution": 1,      # CSV with vessel for every particle for every timestep
         "output_velocity_components": 1,   # compute velocity components per particle and timestep + save in csv files. Only available if "use_tortuosity"= 1.
