@@ -71,10 +71,10 @@ PARAMETERS = MappingProxyType(
         # OPTIONS for Particle tracking:
         "particles_type": 0, # 0 = passive particles (don't affect the flowfiled), 1 = RBCs
                              # IMPORTANT!!!: for RBC usage set "tube_haematocrit_option" = 3
-        "N_timesteps": 100, # Number of timesteps the simulations has to be run (iterations saved as output)
+        "N_timesteps": 800, # Number of timesteps the simulations has to be run (iterations saved as output)
         "rbc_volume": 4.9e-17, # Volume of the particles you are introducing. In the case of passive particle
                                # is also needed for initialization. Common value for mice: 4.9e-17 m^3.
-        "ht_initial": 0.0001, # Initial hematocrit in the network. Controls amount of particles introduced 
+        "ht_initial": 0.01, # Initial hematocrit in the network. Controls amount of particles introduced 
                            # in the network before running the simulation. Also used in passive particle case
                            # for initialization. This value has to be grater than zero !!! At least one particle has to be initialized
                            # in the netowrk.
@@ -87,7 +87,7 @@ PARAMETERS = MappingProxyType(
 
         "preinitialize_with_iterations": 1, # Option for running some iterations based on characteristic time
                                             # before computing the actual simulation. 0 = off, 1 = on
-        "times_Tc_preinitialization": 0.1, # Only affects if "preinitialize_with_iterations" = 1.
+        "times_Tc_preinitialization": 0.5, # Only affects if "preinitialize_with_iterations" = 1.
                                          # Controls amount of timesteps for the preinitialization defined as
                                          # N_timesteps_preinit = K * Characteristic_time. K is the user choice here.
                                          # Characteristic_time = (Total_blood_volume) [m^3] / (Outflow_rate) [m^3 / s]
@@ -110,10 +110,9 @@ PARAMETERS = MappingProxyType(
         "output_particles_evolution": 1,   # CSV with (vessel, alpha) for every particle for every timestep
         "output_vessel_evolution": 1,      # CSV with vessel for every particle for every timestep
         "output_velocity_components": 1,   # compute velocity components per particle and timestep + save in csv files. Only available if "use_tortuosity"= 1.
-        "output_nkind_matrix": 1,          # compute matrix indicating type of vessel per particle and timestep + save in csv file
         "compute_global_coords": 1,        # compute global coordiantes per particle and timestep   
         "save_global_coords": 1,           # ONLY if "compute_global_coords" = 1. save global coordinates per particle and timestep in csv files
-        "output_vtp_files": 1,             # ONLY if "compute_global_coords" = 1. Creates 1 .vtp file per timestep for Paraview visualization
+        "output_vtp_files": 0,             # ONLY if "compute_global_coords" = 1. Creates 1 .vtp file per timestep for Paraview visualization
 
     }
 )
