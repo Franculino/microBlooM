@@ -47,13 +47,13 @@ PARAMETERS = MappingProxyType(
         "ZeroFlowThreshold": False,
 
         # Hexagonal network properties. Only required for "read_network_option" 1
-        "nr_of_hexagon_x": 11,
-        "nr_of_hexagon_y": 11,
+        "nr_of_hexagon_x": 3,
+        "nr_of_hexagon_y": 3,
         "hexa_edge_length": 62.e-6,
         "hexa_diameter": 4.e-6,
-        "hexa_boundary_vertices": [0, 14, 275],
-        "hexa_boundary_values": [2, 2, 1],
-        "hexa_boundary_types": [1,1, 1],
+        "hexa_boundary_vertices": [0, 27],
+        "hexa_boundary_values": [2, 1],
+        "hexa_boundary_types": [1, 1],
 
         # Import network from csv options. Only required for "read_network_option" 2
         "csv_path_vertex_data": "data/network/node_data.csv",
