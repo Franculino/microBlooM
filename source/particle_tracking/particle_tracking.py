@@ -1647,22 +1647,14 @@ class Particle_tracker(object):
             self.save_velocity_components_to_csv()
             print("Velocity components saved.")
 
-        # 3) nkind matrix
-        if self._PARAMETERS.get("output_nkind_matrix", 0) == 1:
-            print("Computing nkind_matrix...")
-            self.nkind_matrix = self.compute_nkind_matrix()
-            print("Saving nkind matrix to CSV...")
-            self.save_nkind_matrix_to_csv()
-            print("nkind matrix saved.")
-
-        # 4) Global coordinates
+        # 3) Global coordinates
         
         if self._PARAMETERS.get("save_global_coords", 0) == 1:
             print("Saving global coordinates to CSV...")
             self.save_global_coordinates_to_csv()
             print("Global coordinates saved.")
 
-        # 5) Paraview files
+        # 4) Paraview files
         if self._PARAMETERS.get("output_vtp_files", 0) == 1:
             print("Creating VTK files for Paraview...")
             self.create_vtk_particles_per_timestep()
@@ -1718,14 +1710,6 @@ class Particle_tracker(object):
         pd.DataFrame(self.velocity_y).to_csv(file_y, index=False, header=False, sep=',', float_format='%.10f')
         pd.DataFrame(self.velocity_z).to_csv(file_z, index=False, header=False, sep=',', float_format='%.10f')
 
-    def save_nkind_matrix_to_csv(self):
-        """
-        Save nkind_matrix to CSV with integer formatting. nkind makes reference to the type of vessel.
-        The type of vessel at which the particle is at every timestep is saved.
-        """
-        file_nkind = os.path.join(self.output_dir, "nkind_matrix.csv")
-        pd.DataFrame(self.nkind_matrix).to_csv(file_nkind, index=False, header=False, sep=',', float_format='%.0f')
-
     def save_vessels_evolution_to_csv(self):
         """
         Save vessel ID at which every particle is at every timestep
@@ -1748,58 +1732,6 @@ class Particle_tracker(object):
             .to_csv(file_y, index=False, header=False, sep=',', float_format='%.10f')
         pd.DataFrame(self.particles_evolution_global[:self.N_particles_count, :, 2]) \
             .to_csv(file_z, index=False, header=False, sep=',', float_format='%.10f')
-    
-    def compute_nkind_matrix(self):
-        """
-        This function generates a matrix where each row corresponds to a particle, and each column corresponds
-        to a timestep. The matrix stores the 'nkind' value of the vessel (type of vessel) in which each particle is located at each timestep.
-        -1 represents that the particle is out of the network.
-    
-        Returns:
-            - nkind_matrix: A matrix where each entry stores the 'nkind' value for the vessel in which the particle is located.
-        """
-        # Load the .pkl file that contains the 'nkind' attribute for each edge
-        with open(self._PARAMETERS["pkl_path_igraph"], 'rb') as file:
-            graph_data = pickle.load(file)
-
-        # Extract the 'nkind' attribute from the edges
-        self.nkind = graph_data.es['nkind']  # Assuming 'nkind' is stored as an attribute for each edge
-
-        start_time = 0
-        end_time = self._PARAMETERS["N_timesteps"]
-        n_timesteps_to_keep = end_time - start_time + 1
-
-        # Initialize the matrix with NaN values
-        # Comment for Chryso - Postprocessing
-        # Dimensions of vessel evolution matrix --> N_particles_count: rows and n_timesteps_to_keep: columns
-        self.nkind_matrix = np.full((self.N_particles_count, n_timesteps_to_keep), -1, dtype=np.int32)
-
-        # Fill the matrix based on the particles' positions in 'particles_evolution'
-        for p in range(self.N_particles_count):
-
-            if p % 1000 == 0:
-                print(f"Processing nkind: particle {p} of {self.N_particles_count}...")
-
-            for t in range(n_timesteps_to_keep): 
-                actual_timestep = start_time + t 
-                # Identify the vessel where the particle is located at the current timestep
-                vessel_id = self.particles_evolution[p, actual_timestep, 0]
-
-                # Check if the particle is active (i.e., not NaN)
-                if np.isnan(vessel_id):
-                    continue
-
-                # Convert vessel_id to integer
-                vessel_id = int(vessel_id)
-
-                # Get the 'nkind' value of the corresponding vessel
-                nkind_value = self.nkind[vessel_id]
-
-                # Fill the nkind matrix
-                self.nkind_matrix[p, t] = int(nkind_value)
-        print("Computation of nkind_matrix is complete.")
-
-        return self.nkind_matrix
 
     def compute_velocity_components(self):
         """
