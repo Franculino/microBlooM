@@ -1,5 +1,6 @@
 import source.fileio.read_network as readnetwork
 import source.fileio.write_network as writenetwork
+import source.fileio.read_vascular_properties as read_vascular_properties
 import source.bloodflowmodel.tube_haematocrit as tubehaematocrit
 import source.bloodflowmodel.discharge_haematocrit as dischargehaematocrit
 import source.bloodflowmodel.transmissibility as transmissibility
@@ -8,6 +9,7 @@ import source.bloodflowmodel.build_system as buildsystem
 import source.bloodflowmodel.rbc_velocity as rbc_velocity
 import source.bloodflowmodel.iterative as iterative_routine
 import source.bloodflowmodel.flow_balance as flow_balance
+import source.distensibilitymodules.initialise_tube_law as init_tube_law
 from types import MappingProxyType
 
 
@@ -19,6 +21,8 @@ class FlowNetwork(object):
                  imp_transmiss: transmissibility.Transmissibility, imp_buildsystem: buildsystem.BuildSystem,
                  imp_solver: pressureflowsolver.PressureFlowSolver, imp_rbcvelocity: rbc_velocity.RbcVelocity,
                  imp_iterative: iterative_routine.IterativeRoutine, imp_balance: flow_balance.FlowBalance,
+                 imp_read_vascular_properties: read_vascular_properties.ReadVascularProperties,
+                 imp_tube_law_ref_state: init_tube_law.TubeLawInitialision,
                  PARAMETERS: MappingProxyType):
 
         # Network attributes
@@ -54,6 +58,25 @@ class FlowNetwork(object):
         self.system_matrix = None  # system matrix of linear system of equations
         self.rhs = None  # right hand side of linear system of equations
 
+        # Tube law: Reference values
+        self.pressure_ref = None
+        self.diameter_ref = None
+        self.pressure_external = None
+        self.diameter_baseline = None  # For checking the diameter_ref
+
+        # Tube law: Material parameters (constants)
+        self.e_modulus = None  # E modulus for each vessel with distensibility
+        self.wall_thickness = None  # Vessel wall thickness
+        self.nu = 0.5  # Poisson ratio of the vessel wall. nu = 0.5, if vessel walls are incompressible
+
+        # For autoregulation model (Variables for export)
+        self.percent_pressure_change = None  # Precent of pressure change
+        self.rel_stiffness = None  # Relative stiffness
+        self.rel_compliance = None  # Relative Compliance
+        self.sensitivity_direct = None  # sensitivity for the direct stress, Sσ
+        self.sensitivity_shear = None  # sensitivity for the shear stress, Sτ
+
+
         # "References" to implementations
         self._imp_readnetwork = imp_readnetwork
         self._imp_writenetwork = imp_writenetwork
@@ -65,12 +88,12 @@ class FlowNetwork(object):
         self._imp_rbcvelocity = imp_rbcvelocity
         self._imp_balance = imp_balance
         self.imp_iterative = imp_iterative
+        self._imp_tube_law_ref_state = imp_tube_law_ref_state
+        self._imp_read_vascular_properties = imp_read_vascular_properties
 
         # Threshold for zero-loops
         self.zeroFlowThreshold = None
 
-        # Threshold for zero-loops
-        self.zeroFlowThreshold = None
 
         # "Reference" to parameter dict
         self._PARAMETERS = PARAMETERS
@@ -177,6 +200,13 @@ class FlowNetwork(object):
         Check flow balance
         """
         self._imp_balance.check_flow_balance(self)
+
+    def initialise_tube_law(self):
+        """
+        Update transmissibility of all edges in the vascular network.
+        """
+        self._imp_read_vascular_properties.read(self)
+        self._imp_tube_law_ref_state.initialise_ref_state(self)
 
     # Needed for Iterative procedure
     @property

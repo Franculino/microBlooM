@@ -8,7 +8,9 @@ Furthermore, different inverse models are available. One version can infer vascu
 The simulations are associated with test cases that can be modified by the user (see [Usage](#usage)). The following list reports the designed test case:
 
 - [`testcase_blood_flow_model.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_blood_flow_model.py): stationary blood flow in microvascular networks.
+- [`testcase_blood_flow_iterative_model.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_blood_flow_iterative_model.py): stationary blood flow in microvascular networks, using the phase separation rule applied through an iterative or waterfall approach.
 - [`testcase_distensibility.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_distensibility.py): stationary blood flow in microvascular networks considering vascular distensibility, i.e., the ability of blood vessels to passively change their diameters with respect to intra- and extravascular pressure.
+- [`testcase_autoregulation.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_autoregulation.py): stationary blood flow in microvascular networks considering cerebral autoregulation, i.e., the ability of blood vessels to actively change their diameters based on myogenic and endothelial responses.
 - [`testcase_inverse_problem.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_inverse_problem.py): an inverse model approach for estimating vascular parameters such as diameters and transmissibilities of microvascular networks based on given flow rates and velocities in selected vessels.
 - [`testcase_bc_tuning.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_bc_tuning.py): an inverse model approach for estimating network boundary conditions based on given flow rates and velocities in selected vessels.
 
@@ -33,6 +35,7 @@ Please find a more detailed description for each test case in the corresponding 
 - igraph 0.10.2
 - Pandas 1.5.1
 - Pyamg 4.2.3
+- pypardiso 0.4.7
 
 ## Installation
 
@@ -62,7 +65,7 @@ The framework does not have yet an executable file to launch the program and sel
 
 The available simulation can be run from [`main.py`](https://github.com/Franculino/microBlooM/blob/main/main.py). In order to select the desired simulation it is necessary to uncomment the specific test cases.
 
-### Input files
+### Input Network files
 
 A prerequisite to run the simulation is the vascular network in graph format. The graph can be loaded in igraph format either stored in pickle file (.pkl) or CSV, that need to be stored in `data\network` folder and modify the relative path in the chosen test case file. In case there is no network available, it is possible to create a hexagonal network.
 

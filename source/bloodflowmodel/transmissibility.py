@@ -79,10 +79,14 @@ class TransmissibilityVitroPries(Transmissibility):
         diameter_um = flownetwork.diameter * 1E06  # Diameter in micro meters
         hd = flownetwork.hd
 
-        C = (0.8 + np.exp(-0.075 * diameter_um)) * (-1. + 1. / (1. + 1.e-11 * np.power(diameter_um, 12.))) + 1. / (
-                1 + 1.e-11 * np.power(diameter_um, 12.))  # Eq.(4) in paper
-        mu_rel_45 = 220 * np.exp(-1.3 * diameter_um) + 3.2 - 2.44 * np.exp(
-            -0.06 * np.power(diameter_um, 0.645))  # Eq.(2) in paper
+        # Correct the diameters to compute the relative apparent viscosity
+        diameter_um_correct = np.copy(diameter_um)
+        diameter_um_correct[diameter_um < 3.] = 3.  # Vessel diameter in micro meters
+
+        C = (0.8 + np.exp(-0.075 * diameter_um_correct)) * (-1. + 1. / (1. + 1.e-11 * np.power(diameter_um_correct, 12.))) + 1. / (
+                1 + 1.e-11 * np.power(diameter_um_correct, 12.))  # Eq.(4) in paper
+        mu_rel_45 = 220 * np.exp(-1.3 * diameter_um_correct) + 3.2 - 2.44 * np.exp(
+            -0.06 * np.power(diameter_um_correct, 0.645))  # Eq.(2) in paper
 
         mu_rel = 1 + (mu_rel_45 - 1) * (np.power((1 - hd), C) - 1) / (np.power((1. - 0.45), C) - 1)  # Eq.(7) in paper
 

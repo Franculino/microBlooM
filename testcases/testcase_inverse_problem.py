@@ -13,12 +13,10 @@ Capabilities:
 9. Optimisation of diameters for a fixed number of iteration steps.
 10. Save the results in a file.
 """
-import sys
 
 from source.flow_network import FlowNetwork
 from source.inverse_model import InverseModel
 from source.exportdata.simulation_monitoring_inverseproblem import SimulationMonitoring
-from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
 
@@ -41,10 +39,27 @@ PARAMETERS = MappingProxyType(
                                  # 3: Laws by Pries and Secomb (2005)
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
+                             # 3: Pardiso solver
+        "iterative_routine": 1,  # 1: Forward problem
+                                 # 2: Iterative routine (ours)
+                                 # 3: Iterative routine (Berg Thesis) [https://oatao.univ-toulouse.fr/25471/1/Berg_Maxime.pdf]
+                                 # 4: Iterative routine (Rasmussen et al. 2018) [https://onlinelibrary.wiley.com/doi/10.1111/micc.12445]
+
+        # Elastic vessel - vascular properties (tube law) - Only required for distensibility and autoregulation models
+        "pressure_external": 0.,  # Constant external pressure
+        "read_vascular_properties_option": 1,  # 1: Do not read anything
+        "tube_law_ref_state_option": 1,  # 1: No compute of reference diameters (d_ref)
+        "csv_path_vascular_properties": "not_needed",  # Young's Modulus and Wall Thickness for all vessels
 
         # Blood properties
         "ht_constant": 0.3,
         "mu_plasma": 0.0012,
+
+        # Zero Flow Vessel Threshold
+        # True: the vessel with low flow are set to zero
+        # The threshold is set as the max of mass-flow balance
+        # The function is reported in set_low_flow_threshold()
+        "ZeroFlowThreshold": False,
 
         # Hexagonal network properties - Only required for "read_network_option": 1
         "nr_of_hexagon_x": 3,
@@ -86,6 +101,7 @@ PARAMETERS = MappingProxyType(
                                      # 2: Restriction of parameter by a +/- tolerance to baseline
         "inverse_model_solver": 1,  # 1: Direct solver
                                     # 2: PyAMG solver
+                                    # 3: Pardiso solver
 
         # Filepath to prescribe target values / constraints on edges
         "csv_path_edge_target_data": "data/inverse_model/edge_target.csv",
@@ -110,7 +126,7 @@ setup_simulation = setup.SetupSimulation()
 
 # Initialise objects related to simulate blood flow without RBC tracking.
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver = setup_simulation.setup_bloodflow_model(PARAMETERS)
+    imp_solver, imp_iterative, imp_balance, imp_read_vascular_properties, imp_tube_law_ref_state = setup_simulation.setup_bloodflow_model(PARAMETERS)
 
 # Initialise objects related to the inverse model.
 imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter, imp_adjoint_solver, \
@@ -118,10 +134,11 @@ imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter, imp_adjoint_sol
 
 # Initialise flownetwork and inverse model objects
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
-                           imp_solver, imp_velocity, PARAMETERS)
+                           imp_solver, imp_velocity, imp_iterative, imp_balance, imp_read_vascular_properties,
+                           imp_tube_law_ref_state, PARAMETERS)
 inverse_model = InverseModel(flow_network, imp_readtargetvalues, imp_readparameters, imp_adjoint_parameter,
                              imp_adjoint_solver, imp_alpha_mapping, PARAMETERS)
-flow_balance = FlowBalance(flow_network)
+
 simulation_monitoring = SimulationMonitoring(flow_network, inverse_model, PARAMETERS)
 
 print("Read network: ...")
@@ -137,7 +154,7 @@ flow_network.update_blood_flow()
 print("Update flow, pressure and velocity: DONE")
 
 print("Check flow balance: ...")
-flow_balance.check_flow_balance()
+flow_network.check_flow_balance()
 print("Check flow balance: DONE")
 
 inverse_model.initialise_inverse_model()
@@ -152,7 +169,7 @@ for i in range(1,nr_of_iterations+1):
     inverse_model.update_state()
     flow_network.update_transmissibility()
     flow_network.update_blood_flow()
-    flow_balance.check_flow_balance()
+    flow_network.check_flow_balance()
     inverse_model.update_cost()
 
     if i % 10 == 0:

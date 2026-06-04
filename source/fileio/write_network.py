@@ -93,7 +93,12 @@ class WriteNetworkIgraph(WriteNetwork):
         if flownetwork.pressure is not None:
             graph.vs["pressure"] = flownetwork.pressure
 
-        graph.write_pickle(self._PARAMETERS["write_path_igraph"] + ".pkl")
+        if flownetwork.percent_pressure_change is not None:
+            fname = self._PARAMETERS["write_path_igraph"] + "_" + str(flownetwork.percent_pressure_change) + ".pkl"
+        else:
+            fname = self._PARAMETERS["write_path_igraph"] + ".pkl"
+
+        graph.write_pickle(fname)
 
 
 class WriteNetworkVtp(WriteNetwork):
@@ -274,7 +279,10 @@ class WriteNetworkVtp(WriteNetwork):
         G.delete_edges(np.nonzero(G.is_loop())[0].tolist())
 
         tab = "  "
-        fname = self._PARAMETERS["write_path_igraph"] + ".vtp"
+        if flownetwork.percent_pressure_change is not None:
+            fname = self._PARAMETERS["write_path_igraph"] + "_" + str(flownetwork.percent_pressure_change) + ".vtp"
+        else:
+            fname = self._PARAMETERS["write_path_igraph"] + ".vtp"
         f = open(fname, 'w')
 
         # Find unconnected vertices:
@@ -394,6 +402,18 @@ class WriteNetworkCsv(WriteNetwork):
         if flownetwork.num_particles_in_vessel is not None:
             df_edge_data["num_particles_in_vessel"] = flownetwork.num_particles_in_vessel
 
+        if flownetwork.rel_stiffness is not None:
+            df_edge_data["rel_stiffness"] = flownetwork.rel_stiffness
+
+        if flownetwork.rel_compliance is not None:
+            df_edge_data["rel_compliance"] = flownetwork.rel_compliance
+
+        if flownetwork.sensitivity_direct is not None:
+            df_edge_data["sens_direct"] = flownetwork.sensitivity_direct
+
+        if flownetwork.sensitivity_shear is not None:
+            df_edge_data["sens_shear"] = flownetwork.sensitivity_shear
+
         # Write all the vertex based attributes and results
         df_vertex_data = pd.DataFrame()
         df_vertex_data["x"] = flownetwork.xyz[:, 0]
@@ -403,6 +423,10 @@ class WriteNetworkCsv(WriteNetwork):
         if flownetwork.pressure is not None:
             df_vertex_data["pressure"] = flownetwork.pressure
 
-        df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_edge_data.csv", index=False)
-        df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_vertex_data.csv", index=False)
+        if flownetwork.percent_pressure_change is not None:
+            df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_edge_data_" + str(flownetwork.percent_pressure_change) + ".csv", index=False)
+            df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_vertex_data_" + str(flownetwork.percent_pressure_change) + ".csv", index=False)
+        else:
+            df_edge_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_edge_data.csv", index=False)
+            df_vertex_data.to_csv(self._PARAMETERS["write_path_igraph"] + "_vertex_data.csv", index=False)
 

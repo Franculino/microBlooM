@@ -68,13 +68,17 @@ class DischargeHaematocritVitroPries1992(DischargeHaematocrit):
         ht = flownetwork.ht  # Tube haematocrit
         diameter_um = 1.e6 * flownetwork.diameter  # Vessel diameter in micro meters
 
-        x_tmp = 1. + 1.7 * np.exp(-0.35 * diameter_um) - 0.6 * np.exp(-0.01 * diameter_um)  # Eq. (9) in paper
+        # Correct the diameters to compute the Hd
+        diameter_um_correct = np.copy(diameter_um)
+        diameter_um_correct[diameter_um < 3.] = 3.  # Vessel diameter in micro meters
+
+        x_tmp = 1. + 1.7 * np.exp(-0.35 * diameter_um_correct) - 0.6 * np.exp(-0.01 * diameter_um_correct)  # Eq. (9) in paper
         x_bound = np.copy(x_tmp)
-        x_bound[x_tmp > 0.99] = 0.99  # Bound x to values < 1. Equation in paper is only valid for x < 1.
+        x_bound[x_tmp > 0.9999] = 0.9999  # Bound x to values < 1. Equation in paper is only valid for x < 1.
 
         hd = -x_bound / (2 - 2 * x_bound) + np.sqrt(
             np.square(x_bound / (2 - 2 * x_bound)) + ht / (1 - x_bound))  # Eq 10 in paper
-        hd[x_tmp > 0.99] = ht[x_tmp > 0.99]  # For very small and very large diameters: set ht=hd
+        hd[x_tmp > 0.9999] = ht[x_tmp > 0.9999]  # For very small and very large diameters: set ht=hd
 
         flownetwork.hd = hd  # Update discharge haematocrit
 
@@ -95,13 +99,17 @@ class DischargeHaematocritVitroPries2005(DischargeHaematocrit):
         ht = flownetwork.ht  # Tube haematocrit
         diameter_um = 1.e6 * flownetwork.diameter  # Vessel diameter in micro meters
 
-        x_tmp = 1. + 1.7 * np.exp(-0.415 * diameter_um) - 0.6 * np.exp(-0.011 * diameter_um)  # From Eq.(1) in paper
+        # Correct the diameters to compute the Hd
+        diameter_um_correct = np.copy(diameter_um)
+        diameter_um_correct[diameter_um < 3.] = 3.  # Vessel diameter in micro meters
+
+        x_tmp = 1. + 1.7 * np.exp(-0.415 * diameter_um_correct) - 0.6 * np.exp(-0.011 * diameter_um_correct)  # From Eq.(1) in paper
         x_bound = np.copy(x_tmp)
-        x_bound[x_tmp > 0.99] = 0.99  # Bound x to values < 1. Equation in paper is only valid for x < 1.
+        x_bound[x_tmp > 0.9999] = 0.9999  # Bound x to values < 1. Equation in paper is only valid for x < 1.
 
         hd = -x_bound / (2 - 2 * x_bound) + np.sqrt(
             np.square(x_bound / (2 - 2 * x_bound)) + ht / (1 - x_bound))
-        hd[x_tmp > 0.99] = ht[x_tmp > 0.99]  # For very small and very large diameters: set ht=hd
+        hd[x_tmp > 0.9999] = ht[x_tmp > 0.9999]  # For very small and very large diameters: set ht=hd
 
         flownetwork.hd = hd  # Update discharge haematocrit
 

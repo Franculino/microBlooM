@@ -4,7 +4,7 @@ from types import MappingProxyType
 from scipy.sparse import csc_matrix, csr_matrix
 from scipy.sparse.linalg import spsolve, cg
 from pyamg import smoothed_aggregation_solver
-
+import pypardiso
 
 class AdjointMethodSolver(ABC):
     """
@@ -82,4 +82,24 @@ class AdjointMethodSolverPyAMG(AdjointMethodSolver):
         else:
             inversemodel._lambda, _ = cg(flownetwork.system_matrix.transpose(), -inversemodel.d_f_d_pressure,
                                          x0=inversemodel._lambda, tol=tol, M=M)  # solve with CG
+        return inversemodel._lambda
+    
+class AdjointMethodSolverSparsePardiso(AdjointMethodSolver):
+    """
+    Class for updating the gradient in alpha space with the Pardiso solver.
+    Original Paper: https://www.sciencedirect.com/science/article/pii/S0167739X00000765
+    Python wrapper: https://pypi.org/project/pypardiso/0.4.7/
+    """
+
+    def _get_lambda_vector(self, inversemodel, flownetwork):
+        """
+        Solve the adjoint equation with a sparse direct solver.
+        :param inversemodel: inverse model object
+        :type inversemodel: source.inverse_model.InverseModel
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        :returns: Lambda vector
+        :rtype: 1d numpy array
+        """
+        inversemodel._lambda = pypardiso.spsolve(csc_matrix(flownetwork.system_matrix.transpose()), -inversemodel.d_f_d_pressure)
         return inversemodel._lambda

@@ -35,15 +35,22 @@ PARAMETERS = MappingProxyType(
                                     # 4: Laws for phase separation by Preis (1996)
         "solver_option": 1,     # 1: Direct solver
                                 # 2: PyAMG solver visual
+                                # 3: Pardiso solver
                                 # ...: other solvers
         "iterative_routine": 2,     # 1: Forward problem
                                     # 2: Iterative routine (ours)
                                     # 3: Iterative routine (Berg Thesis) [https://oatao.univ-toulouse.fr/25471/1/Berg_Maxime.pdf]
                                     # 4: Iterative routine (Rasmussen et al. 2018) [https://onlinelibrary.wiley.com/doi/10.1111/micc.12445]
 
+        # Elastic vessel - vascular properties (tube law) - Only required for distensibility and autoregulation models
+        "pressure_external": 0.,  # Constant external pressure
+        "read_vascular_properties_option": 1,  # 1: Do not read anything
+        "tube_law_ref_state_option": 1,  # 1: No compute of reference diameters (d_ref)
+        "csv_path_vascular_properties": "not_needed",  # Young's Modulus and Wall Thickness for all vessels
+
         # Blood properties
-        "ht_constant": 4E-05,  # only required if RBC impact is considered
-        "mu_plasma": 0.0052,
+        "ht_constant": 0.45,  # only required if RBC impact is considered
+        "mu_plasma": 0.0012,
         "boundary_hematocrit": 0.4,
         "network_name": "Network_001", 
 
@@ -65,7 +72,7 @@ PARAMETERS = MappingProxyType(
 
         # Import network from csv options. Only required for "read_network_option" 2
         "csv_path_vertex_data": "data/network/node_data.csv",
-        "csv_path_edge_data": "data/network/edge_data.csv"",
+        "csv_path_edge_data": "data/network/edge_data.csv",
         "csv_path_boundary_data": "data/network/boundary_node_data.csv",
         "csv_diameter": "D", "csv_length": "L",
         "csv_edgelist_v1": "n1", "csv_edgelist_v2": "n2",
@@ -95,15 +102,16 @@ PARAMETERS = MappingProxyType(
 )
 
 # Create an object to set up the simulation and initialise the simulation
-setup_blood_flow = setup.SetupSimulation()
+setup_simulation = setup.SetupSimulation()
 # Initialise the implementations based on the parameters specified
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver, imp_iterative, imp_balance = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
+    imp_solver, imp_iterative, imp_balance, imp_read_vascular_properties, imp_tube_law_ref_state = setup_simulation.setup_bloodflow_model(PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
-                           imp_solver, imp_velocity, imp_iterative, imp_balance, PARAMETERS)
+                           imp_solver, imp_velocity, imp_iterative, imp_balance, imp_read_vascular_properties,
+                           imp_tube_law_ref_state, PARAMETERS)
 
 # Import or generate the network
 print("Read network: ...")

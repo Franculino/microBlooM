@@ -9,10 +9,13 @@
 # 3) Run test case with the blood flow model considering vascular distensibility
 # import testcases.testcase_distensibility
 
-# 4) Run test case to tune diameters or transmissibilitites with the inverse model
+# 4) Run test case with the blood flow model considering autoregulation mechanisms (myogenic and endothelial response)
+# import testcases.testcase_autoregulation
+
+# 5) Run test case to tune diameters or transmissibilitites with the inverse model
 # import testcases.testcase_inverse_problem
 
-# 5) Run test case to tune boundary pressures with the inverse model
+# 6) Run test case to tune boundary pressures with the inverse model
 # import testcases.testcase_bc_tuning
 
 # Import a testcase based on the options above. 

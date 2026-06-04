@@ -6,12 +6,8 @@ Capabilities:
 3. Solve for flow rates, pressures and RBC velocities
 4. Save the results in a file
 """
-import sys
-import numpy as np
-import pandas as pd
 
 from source.flow_network import FlowNetwork
-from source.bloodflowmodel.flow_balance import FlowBalance
 from types import MappingProxyType
 import source.setup.setup as setup
 
@@ -22,7 +18,7 @@ PARAMETERS = MappingProxyType(
         "read_network_option": 1,  # 1: generate hexagonal graph
                                    # 2: import graph from csv files
                                    # 3: import graph from igraph format (pickle file)
-        "write_network_option": 3,  # 1: do not write anything
+        "write_network_option": 1,  # 1: do not write anything
                                     # 2: write to igraph format (.pkl)
                                     # 3: write to vtp format (.vtp)
                                     # 4: write to two csv files (.csv)
@@ -33,6 +29,17 @@ PARAMETERS = MappingProxyType(
                                  # 3: Laws by Pries and Secomb (2005)
         "solver_option": 1,  # 1: Direct solver
                              # 2: PyAMG solver
+                             # 3: Pardiso solver
+        "iterative_routine": 1,  # 1: Forward problem
+                                 # 2: Iterative routine (ours)
+                                 # 3: Iterative routine (Berg Thesis) [https://oatao.univ-toulouse.fr/25471/1/Berg_Maxime.pdf]
+                                 # 4: Iterative routine (Rasmussen et al. 2018) [https://onlinelibrary.wiley.com/doi/10.1111/micc.12445]
+
+        # Elastic vessel - vascular properties (tube law) - Only required for distensibility and autoregulation models
+        "pressure_external": 0.,  # Constant external pressure
+        "read_vascular_properties_option": 1,  # 1: Do not read anything
+        "tube_law_ref_state_option": 1,  # 1: No compute of reference diameters (d_ref)
+        "csv_path_vascular_properties": "not_needed",  # Young's Modulus and Wall Thickness for all vessels
 
         # Blood properties
         "ht_constant": 0.3,  # only required if RBC impact is considered
@@ -42,11 +49,7 @@ PARAMETERS = MappingProxyType(
         # True: the vessel with low flow are set to zero
         # The threshold is set as the max of mass flow balance
         # The function is reported in set_low_flow_threshold()
-        "ZeroFlowThreshold": False ,
-        "iterative_routine": 1,     # 1: Forward problem
-                                    # 2: Iterative routine (ours)
-                                    # 3: Iterative routine (Berg Thesis) [https://oatao.univ-toulouse.fr/25471/1/Berg_Maxime.pdf]
-                                    # 4: Iterative routine (Rasmussen et al. 2018) [https://onlinelibrary.wiley.com/doi/10.1111/micc.12445]
+        "ZeroFlowThreshold": False,
 
         # Hexagonal network properties. Only required for "read_network_option" 1
         "nr_of_hexagon_x": 3,
@@ -67,7 +70,7 @@ PARAMETERS = MappingProxyType(
         "csv_boundary_vs": "nodeId", "csv_boundary_type": "boundaryType", "csv_boundary_value": "boundaryValue",
 
         # Import network from igraph option. Only required for "read_network_option" 3
-        "pkl_path_igraph": "C:/Users/manuf/Documents/2º DELFT/Intership/microBlooM/testcases/Graph_Manuel3.pkl",
+        "pkl_path_igraph": "data/network/network_graph.pkl",
         "ig_diameter": "diameter", "ig_length": "length", "ig_coord_xyz": "coords",
         "ig_boundary_type": "boundaryType",  # 1: pressure & 2: flow rate
         "ig_boundary_value": "boundaryValue",
@@ -80,15 +83,16 @@ PARAMETERS = MappingProxyType(
 )
 
 # Create object to set up the simulation and initialise the simulation
-setup_blood_flow = setup.SetupSimulation()
+setup_simulation = setup.SetupSimulation()
 # Initialise the implementations based on the parameters specified
 imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_velocity, imp_buildsystem, \
-    imp_solver, imp_iterative, imp_balance = setup_blood_flow.setup_bloodflow_model(PARAMETERS)
+    imp_solver, imp_iterative, imp_balance, imp_read_vascular_properties, imp_tube_law_ref_state = setup_simulation.setup_bloodflow_model(PARAMETERS)
 
 # Build flownetwork object and pass the implementations of the different submodules, which were selected in
 #  the parameter file
 flow_network = FlowNetwork(imp_readnetwork, imp_writenetwork, imp_ht, imp_hd, imp_transmiss, imp_buildsystem,
-                           imp_solver, imp_velocity, imp_iterative, imp_balance, PARAMETERS)
+                           imp_solver, imp_velocity, imp_iterative, imp_balance, imp_read_vascular_properties,
+                           imp_tube_law_ref_state, PARAMETERS)
 
 # Import or generate the network
 print("Read network: ...")

@@ -8,6 +8,7 @@ from scipy.sparse.linalg import spsolve
 from pyamg import smoothed_aggregation_solver
 from scipy.sparse import csr_matrix
 
+import pypardiso
 
 class PressureFlowSolver(ABC):
     """
@@ -155,7 +156,7 @@ class PressureFlowSolverSparseDirect(PressureFlowSolver):
         """
         Solve the linear system of equations for the pressure and update the pressure in flownetwork.
         :param flownetwork: flow network object
-        :type flownetwork: source.flow_network.FlowNetworks
+        :type flownetwork: source.flow_network.FlowNetwork
         """
         pressure = spsolve(flownetwork.system_matrix, flownetwork.rhs)
 
@@ -231,3 +232,29 @@ class PressureFlowSolverPyAMG(PressureFlowSolver):
         # Provides convergence information
         if not info == 0:  # if info is zero, successful exit from the iterative solver
             print("ERROR in Solving the Matrix")
+            
+            
+class PressureFlowSolverSparsePardiso(PressureFlowSolver):
+    """
+    Class for calculating the pressure with the Pardiso solver.
+    Original Paper: https://www.sciencedirect.com/science/article/pii/S0167739X00000765
+    Python wrapper: https://pypi.org/project/pypardiso/0.4.7/
+    """
+
+    def _solve_pressure(self, flownetwork):
+        """
+        Solve the linear system of equations for the pressure and update the pressure in flownetwork.
+        :param flownetwork: flow network object
+        :type flownetwork: source.flow_network.FlowNetwork
+        """
+        pressure = pypardiso.spsolve(flownetwork.system_matrix, flownetwork.rhs)
+
+        if self._PARAMETERS['iterative_routine'] == 3:
+            # Berg approach
+            if flownetwork.iteration == 0:
+                flownetwork.pressure_convergence_criteria_berg = None
+            else:
+                _berg_assistance(flownetwork)
+                flownetwork.pressure_convergence_criteria_berg = pressure_berg(flownetwork, pressure)
+
+        flownetwork.pressure = pressure
