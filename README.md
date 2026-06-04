@@ -13,7 +13,7 @@ The simulations are associated with test cases that can be modified by the user 
 - [`testcase_autoregulation.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_autoregulation.py): stationary blood flow in microvascular networks considering cerebral autoregulation, i.e., the ability of blood vessels to actively change their diameters based on myogenic and endothelial responses.
 - [`testcase_inverse_problem.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_inverse_problem.py): an inverse model approach for estimating vascular parameters such as diameters and transmissibilities of microvascular networks based on given flow rates and velocities in selected vessels.
 - [`testcase_bc_tuning.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_bc_tuning.py): an inverse model approach for estimating network boundary conditions based on given flow rates and velocities in selected vessels.
-
+- [`testcase_particle_tracking.py`](https://github.com/Franculino/microBlooM/blob/main/testcases/testcase_particle_tracking.py):  stationary blood flow model with particle tracking in microvascular networks.
 Please find a more detailed description for each test case in the corresponding test cases file.
 
 **NOTE: all parameters are in S.I. units**
