@@ -61,7 +61,10 @@ class TubeHaematocritConstant(TubeHaematocrit):
 
 class TubeHaematocritTracking(TubeHaematocrit):
     def update_ht(self, flownetwork):
-        pass
+        num_particles = flownetwork.num_particles_in_vessel
+        flownetwork.rbc_volume = np.float(self._PARAMETERS["rbc_volume"])
+        flownetwork.ht = num_particles * flownetwork.rbc_volume / flownetwork.volume
+
         # todo implement with RBC tracking (need to have access to "cloud" class object). Count number of RBCs per edge
         #  and compute corresponding ht
 

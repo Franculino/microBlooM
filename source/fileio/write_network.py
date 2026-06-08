@@ -80,6 +80,9 @@ class WriteNetworkIgraph(WriteNetwork):
 
         if flownetwork.hd is not None:
             graph.es["hd"] = flownetwork.hd
+        
+        if flownetwork.num_particles_in_vessel is not None:
+            graph.es["num_particles_in_vessel"] = flownetwork.num_particles_in_vessel
 
         if flownetwork.xyz is not None:  
             graph.vs["xyz"] = flownetwork.xyz.tolist()
@@ -239,6 +242,9 @@ class WriteNetworkVtp(WriteNetwork):
 
         if flownetwork.hd is not None:
             graph.es["hd"] = flownetwork.hd
+        
+        if flownetwork.num_particles_in_vessel is not None:
+            graph.es["num_particles_in_vessel"] = flownetwork.num_particles_in_vessel
 
         graph.vs["xyz"] = flownetwork.xyz.tolist()
 
@@ -392,6 +398,9 @@ class WriteNetworkCsv(WriteNetwork):
 
         if flownetwork.ht is not None:
             df_edge_data["ht"] = flownetwork.ht
+        
+        if flownetwork.num_particles_in_vessel is not None:
+            df_edge_data["num_particles_in_vessel"] = flownetwork.num_particles_in_vessel
 
         if flownetwork.rel_stiffness is not None:
             df_edge_data["rel_stiffness"] = flownetwork.rel_stiffness

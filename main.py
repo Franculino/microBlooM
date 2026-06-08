@@ -18,6 +18,9 @@
 # 6) Run test case to tune boundary pressures with the inverse model
 # import testcases.testcase_bc_tuning
 
+# 7) Run test case to track particle in microvasculature
+# import testcases.testcase_particle_tracking
+
 # Import a testcase based on the options above. 
 # If not stated otherwise, testcases.testcase_blood_flow_model is executed by default
 if __name__ == "__main__":
