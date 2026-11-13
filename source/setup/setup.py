@@ -120,7 +120,7 @@ class SetupSimulation(Setup):
             case 4:  # Discharging Hematocrit based on the empirical laws by Pries (1990)
                 imp_hd = discharge_haematocrit.DischargeHaematocritPries1990(PARAMETERS)
                 imp_transmiss = transmissibility.TransmissibilityVitroPries(PARAMETERS)
-                imp_velocity = rbc_velocity.RbcVelocityBulk(PARAMETERS)  # No Fahraeus effect (u_RBC = u_Bulk)
+                imp_velocity = rbc_velocity.RbcVelocityFahraeus(PARAMETERS)
             case _:
                 sys.exit("Error: Choose valid option for the handling of RBCs (rbc_impact_option)")
 
