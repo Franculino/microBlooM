@@ -8,8 +8,6 @@ from scipy.sparse.linalg import spsolve
 from pyamg import smoothed_aggregation_solver
 from scipy.sparse import csr_matrix
 
-import pypardiso
-
 class PressureFlowSolver(ABC):
     """
     Abstract base class for the implementations related to the linear solver for the blood flow model.
@@ -247,6 +245,15 @@ class PressureFlowSolverSparsePardiso(PressureFlowSolver):
         :param flownetwork: flow network object
         :type flownetwork: source.flow_network.FlowNetwork
         """
+
+        try:
+            import pypardiso
+        except ImportError as exc:
+            raise ImportError(
+                    "The Pardiso pressure solver requires pypardiso. "
+                    "Install it using: pip install pypardiso"
+                    ) from exc
+
         pressure = pypardiso.spsolve(flownetwork.system_matrix, flownetwork.rhs)
 
         if self._PARAMETERS['iterative_routine'] == 3:

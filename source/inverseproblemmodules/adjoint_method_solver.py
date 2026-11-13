@@ -4,7 +4,6 @@ from types import MappingProxyType
 from scipy.sparse import csc_matrix, csr_matrix
 from scipy.sparse.linalg import spsolve, cg
 from pyamg import smoothed_aggregation_solver
-import pypardiso
 
 class AdjointMethodSolver(ABC):
     """
@@ -101,5 +100,18 @@ class AdjointMethodSolverSparsePardiso(AdjointMethodSolver):
         :returns: Lambda vector
         :rtype: 1d numpy array
         """
-        inversemodel._lambda = pypardiso.spsolve(csc_matrix(flownetwork.system_matrix.transpose()), -inversemodel.d_f_d_pressure)
+
+        try:
+            import pypardiso
+        except ImportError as exc:
+            raise ImportError(
+                    "The Pardiso adjoint solver requires pypardiso. "
+                    "Install it using: pip install pypardiso"
+                    ) from exc
+
+        inversemodel._lambda = pypardiso.spsolve(
+                csc_matrix(flownetwork.system_matrix.transpose()),
+                -inversemodel.d_f_d_pressure
+                )
+
         return inversemodel._lambda
