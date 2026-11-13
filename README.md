@@ -4,7 +4,7 @@
 
 ## MicroBlooM
 
-**MicroBlooM** 
+**MicroBlooM**
 is an open-source simulation framework to study flow characteristics in the microvasculature. The numerical model computes blood flow in microvascular networks for pure plasma flow or considering the impact of red blood cells (Fåhraeus-Linqvist effect) [5,6]. Equations are derived based on Poiseuille’s law and the continuity equation. The microvascular network is represented by a 1D-graph. The elasticity of the blood vessels has been included, allowing the simulation of passive vascular diameter adaptations with respect to pressure changes [7].
 
 Furthermore, different inverse models are available. One version can infer vascular parameters such as vascular diameter and transmissibility based on prescribed flow characteristics [3,4]. Another version can be used to predict pressure boundary conditions required to obtain the prescribed flow characteristics.
@@ -44,7 +44,7 @@ Please find a more detailed description for each test case in the corresponding 
 ## Optional dependency: Pardiso solver
 microBlooM supports the use of the Pardiso sparse direct solver through the pypardiso package (version 0.4.7).
 
-This dependency is optional. The standard solvers can be used without installing pypardiso. 
+This dependency is optional. The standard solvers can be used without installing pypardiso.
 
 Platform compatibility: pypardiso is not compatible with Apple Silicon processors (ARM architecture) in the current configuration. It has been tested on macOS using an Intel (x86_64) Python installation.
 
